@@ -8,10 +8,22 @@ import { useEffect, useId, useRef, useState } from "react";
  * "Prime Telecom — Garantias". Cada valor (tipografia, radios, alturas,
  * colores, duraciones) viene del artboard, no de una aproximacion.
  *
+ * Paleta: alineada 1:1 con los tokens `--om-*` del sistema de diseño
+ * (canvas "Prime Telecom — Garantias" / design system Omelette): fondo
+ * cálido neutro, texto casi negro sobre base cálida, un único acento
+ * terracota reservado para focos/enlaces, y un CTA sólido casi negro
+ * para máximo contraste y una lectura seria (no "naranja de demo IA").
+ *
+ * Tipografia: IBM Plex Sans (Google Fonts). Reemplaza Plus Jakarta Sans
+ * a pedido: IBM Plex es una familia de ingenieria con herencia
+ * corporativa real, se lee "software serio" en vez de "plantilla IA".
+ *
  * Estilos: CSS scopeado con prefijo `pt-` inyectado por el propio componente.
  * No depende de la config de Tailwind del proyecto, asi los valores
- * arbitrarios del diseno (46px, 12.5px, #b45309, 20px radius) no se pierden
- * si el purge o el theme cambian.
+ * arbitrarios del diseno (46px, 12.5px, 20px radius) no se pierden
+ * si el purge o el theme cambian. Tambien resetea explicitamente
+ * `text-align`/`font` para no heredar el boilerplate global de
+ * index.css (plantilla Vite) que no está pensado para esta pantalla.
  *
  * Props:
  *   onSubmit({ email, password, remember }) -> Promise
@@ -30,93 +42,124 @@ const MIN_PASSWORD = 10;
 const CSS = `
 .pt-login,.pt-login *{box-sizing:border-box}
 .pt-login{
+  /* --- paleta: tokens del sistema (canvas "Prime Telecom — Garantias"),
+     un unico acento (terracota) reservado para foco/enlaces; el CTA
+     principal usa el casi-negro para maxima seriedad y contraste. --- */
+  --pt-bg-app:#faf9f5;
+  --pt-bg-surface:#ffffff;
+  --pt-border-subtle:rgba(15,12,8,.08);
+  --pt-border-card:rgba(15,12,8,.12);
+  --pt-border-strong:rgba(15,12,8,.22);
+  --pt-border-focus:rgba(15,12,8,.36);
+  --pt-text-primary:rgba(15,12,8,.92);
+  --pt-text-secondary:rgba(15,12,8,.64);
+  --pt-text-tertiary:rgba(15,12,8,.6);
+  --pt-text-inverse:#faf9f5;
+  --pt-accent:#d97757;
+  --pt-accent-hover:#c46a4d;
+  --pt-accent-active:#b05e43;
+  --pt-accent-bg:rgba(217,119,87,.12);
+  --pt-accent-tint:rgba(217,119,87,.04);
+  --pt-cta:#191915;
+  --pt-cta-hover:#2b2b26;
+  --pt-cta-active:#0f0c08;
+  --pt-error:#a63244;
+  --pt-error-bg:rgba(166,50,68,.05);
+  --pt-info:#2a78d6;
+  --pt-info-bg:rgba(42,120,214,.1);
+  --pt-shadow-sm:0 1px 3px rgba(20,20,19,.06);
+  --pt-shadow-card:0 18px 44px rgba(20,20,19,.1),0 3px 10px rgba(20,20,19,.05);
+  --pt-ease:cubic-bezier(.23,1,.32,1);
+
   min-height:100vh;min-height:100dvh;width:100%;
   display:flex;align-items:center;justify-content:center;
   padding:40px 16px;
-  background:#f7f5f0;
-  font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
-  color:#0f172a;
+  background:var(--pt-bg-app);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--pt-text-primary);
+  text-align:left;
   -webkit-font-smoothing:antialiased;
 }
 .pt-shell{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center}
 
 /* ---- tarjeta ---- */
 .pt-card{
-  width:100%;background:#fff;
-  border:1px solid rgba(15,23,42,.08);border-radius:20px;
-  box-shadow:0 1px 2px rgba(16,24,40,.03),0 12px 32px rgba(16,24,40,.05);
+  width:100%;background:var(--pt-bg-surface);
+  border:1px solid var(--pt-border-card);border-radius:20px;
+  box-shadow:var(--pt-shadow-card);
   padding:36px 32px 32px;
 }
 .pt-head{display:flex;flex-direction:column;align-items:center;margin-bottom:22px}
 .pt-logo{width:52px;height:52px;border-radius:14px;margin-bottom:18px;display:block}
-.pt-title{margin:0 0 6px;font-size:20px;font-weight:500;letter-spacing:-.2px;color:#0f172a;text-align:center}
-.pt-sub{margin:0;font-size:12.5px;color:#8a8578;text-align:center;line-height:1.5;max-width:280px}
+.pt-title{margin:0 0 6px;font-size:20px;font-weight:500;letter-spacing:-.2px;color:var(--pt-text-primary);text-align:center}
+.pt-sub{margin:0;font-size:12.5px;color:var(--pt-text-tertiary);text-align:center;line-height:1.5;max-width:280px}
+
+/* ---- cabecera de campo (garantiza el mismo nivel/alto para ambas
+   etiquetas, tengan o no un enlace a la derecha) ---- */
+.pt-fieldhead{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:20px;margin-bottom:6px}
+.pt-label{display:block;font-size:13px;font-weight:600;color:#334155;margin:0;line-height:20px}
 
 /* ---- campos ---- */
-.pt-label{display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:6px}
 .pt-fldwrap{position:relative}
 .pt-fldicon{
   position:absolute;left:14px;top:50%;transform:translateY(-50%);
-  color:#a8a29a;pointer-events:none;transition:color .15s ease-out;
+  color:#a8a29a;pointer-events:none;transition:color .18s var(--pt-ease);
 }
-.pt-fldwrap:focus-within .pt-fldicon{color:#b45309}
+.pt-fldwrap:focus-within .pt-fldicon{color:var(--pt-accent)}
 .pt-fld{
   font-family:inherit;font-size:14px;
   border:1px solid #e5e2da;border-radius:10px;height:46px;
   padding:0 14px 0 40px;width:100%;
-  background:#fbfaf7;color:#0f172a;
-  transition:border-color .15s ease-out,background-color .15s ease-out,box-shadow .15s ease-out;
+  background:#fbfaf7;color:var(--pt-text-primary);
+  transition:border-color .18s var(--pt-ease),background-color .18s var(--pt-ease),box-shadow .18s var(--pt-ease);
 }
 .pt-fld::placeholder{color:#a8a29a}
 .pt-fld:hover{border-color:#d6d2c6}
-.pt-fld:focus{outline:none;border-color:#e3ad76;background:#fff;box-shadow:0 0 0 3px rgba(180,83,9,.12)}
+.pt-fld:focus{outline:none;border-color:var(--pt-accent);background:#fff;box-shadow:0 0 0 3px var(--pt-accent-bg)}
 .pt-fld:disabled{opacity:.6;cursor:not-allowed}
 .pt-fld.pt-haspwtoggle{padding-right:64px}
 .pt-fld[aria-invalid="true"]{border-color:#d99b96}
-.pt-fld[aria-invalid="true"]:focus{border-color:#9f2f2d;box-shadow:0 0 0 3px rgba(159,47,45,.12)}
+.pt-fld[aria-invalid="true"]:focus{border-color:var(--pt-error);box-shadow:0 0 0 3px var(--pt-error-bg)}
 
 .pt-pwtoggle{
   position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  font-size:12px;font-weight:600;color:#b45309;
+  font-size:12px;font-weight:600;color:var(--pt-accent);
   background:none;border:none;cursor:pointer;font-family:inherit;
-  padding:4px 2px;transition:color .15s ease-out;
+  padding:4px 2px;transition:color .18s var(--pt-ease);
 }
-.pt-pwtoggle:hover{color:#92400e}
-.pt-pwtoggle:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(180,83,9,.25);border-radius:4px}
+.pt-pwtoggle:hover{color:var(--pt-accent-hover)}
+.pt-pwtoggle:focus-visible{outline:none;box-shadow:0 0 0 2px var(--pt-accent-bg);border-radius:4px}
 
 .pt-helper{font-size:11.5px;color:#94a3b8;margin-top:6px;line-height:1.4}
-.pt-helper.pt-helper-err{color:#9f2f2d}
-
-.pt-pwrow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:12px}
-.pt-pwrow .pt-label{margin-bottom:0}
+.pt-helper.pt-helper-err{color:var(--pt-error)}
 
 .pt-link{
-  color:#b45309;text-decoration:none;background:none;border:none;padding:0;
-  font-family:inherit;cursor:pointer;transition:color .15s ease-out;
+  color:var(--pt-accent);text-decoration:none;background:none;border:none;padding:0;
+  font-family:inherit;cursor:pointer;transition:color .18s var(--pt-ease);
+  font-size:12px;font-weight:600;line-height:20px;
 }
-.pt-link:hover{color:#92400e}
-.pt-link:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(180,83,9,.25);border-radius:4px}
-.pt-forgotlink{font-size:12px;font-weight:600}
+.pt-link:hover{color:var(--pt-accent-hover)}
+.pt-link:focus-visible{outline:none;box-shadow:0 0 0 2px var(--pt-accent-bg);border-radius:4px}
 
-.pt-remember{display:flex;align-items:center;gap:8px;margin-bottom:20px}
-.pt-remember input[type="checkbox"]{width:16px;height:16px;margin:0;accent-color:#b45309;cursor:pointer;flex:none}
-.pt-remember label{font-size:13px;color:#51606f;cursor:pointer}
+.pt-remember{display:flex;align-items:center;gap:8px;margin:16px 0 20px}
+.pt-remember input[type="checkbox"]{width:16px;height:16px;margin:0;accent-color:var(--pt-accent);cursor:pointer;flex:none}
+.pt-remember label{font-size:13px;color:var(--pt-text-secondary);cursor:pointer}
 
 .pt-btn{
   width:100%;height:46px;border:none;border-radius:10px;
-  background:#b45309;color:#fff;
+  background:var(--pt-cta);color:var(--pt-text-inverse);
   font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:background-color .15s ease-out,transform .15s ease-out;
+  transition:background-color .18s var(--pt-ease),transform .16s var(--pt-ease);
 }
-.pt-btn:hover:not(:disabled){background:#92400e}
-.pt-btn:active:not(:disabled){transform:scale(.98)}
-.pt-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(180,83,9,.28)}
-.pt-btn:disabled{cursor:progress;background:#c07a3d}
+.pt-btn:hover:not(:disabled){background:var(--pt-cta-hover)}
+.pt-btn:active:not(:disabled){background:var(--pt-cta-active);transform:scale(.97)}
+.pt-btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--pt-accent-bg)}
+.pt-btn:disabled{cursor:progress;opacity:.7}
 
 .pt-spinner{
   width:14px;height:14px;flex:none;border-radius:50%;
-  border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+  border:2px solid rgba(250,249,245,.35);border-top-color:var(--pt-text-inverse);
   animation:pt-spin .6s linear infinite;
 }
 @keyframes pt-spin{to{transform:rotate(360deg)}}
@@ -124,10 +167,10 @@ const CSS = `
 /* ---- caja de soporte ---- */
 .pt-support{
   width:100%;margin-top:14px;background:#fdfcfa;
-  border:1px solid rgba(15,23,42,.07);border-radius:14px;
+  border:1px solid var(--pt-border-subtle);border-radius:14px;
   padding:14px 18px;text-align:center;
 }
-.pt-support>span{font-size:12.5px;color:#64748b;line-height:1.55}
+.pt-support>span{font-size:12.5px;color:var(--pt-text-secondary);line-height:1.55}
 
 /* ---- estados ---- */
 .pt-states{width:100%;margin-top:14px;display:flex;gap:10px}
@@ -135,12 +178,12 @@ const CSS = `
 .pt-statebox .pt-stitle{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin-bottom:4px}
 .pt-statebox .pt-stitle svg{flex:none}
 .pt-statebox .pt-sbody{font-size:12px;line-height:1.5}
-.pt-statebox.pt-err{background:#fdebec;border:1px solid rgba(159,47,45,.14)}
-.pt-statebox.pt-err .pt-stitle,.pt-statebox.pt-err svg{color:#9f2f2d}
-.pt-statebox.pt-err .pt-sbody{color:#9f2f2d;opacity:.85}
-.pt-statebox.pt-info{background:#e1f3fe;border:1px solid rgba(31,108,159,.14)}
-.pt-statebox.pt-info .pt-stitle,.pt-statebox.pt-info svg{color:#1f6c9f}
-.pt-statebox.pt-info .pt-sbody{color:#1f6c9f;opacity:.85}
+.pt-statebox.pt-err{background:var(--pt-error-bg);border:1px solid rgba(166,50,68,.14)}
+.pt-statebox.pt-err .pt-stitle,.pt-statebox.pt-err svg{color:var(--pt-error)}
+.pt-statebox.pt-err .pt-sbody{color:var(--pt-error);opacity:.85}
+.pt-statebox.pt-info{background:var(--pt-info-bg);border:1px solid rgba(42,120,214,.14)}
+.pt-statebox.pt-info .pt-stitle,.pt-statebox.pt-info svg{color:var(--pt-info)}
+.pt-statebox.pt-info .pt-sbody{color:var(--pt-info);opacity:.85}
 .pt-statebox:focus{outline:none}
 
 .pt-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
@@ -164,7 +207,7 @@ const CSS = `
 `;
 
 const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
 
 /** Inyecta la fuente y el CSS una sola vez, sea cual sea el bundler. */
 function useLoginStyles() {
@@ -264,17 +307,19 @@ export default function Login({ onSubmit, onForgotPassword, onContactAdmin }) {
         <div className="pt-card">
           <div className="pt-head">
             <img className="pt-logo" src={LOGO_ICON} alt="Prime Telecom" width="52" height="52" />
-            <h1 className="pt-title">Iniciar sesión en Prime Telecom</h1>
+            <h1 className="pt-title">Acceso al sistema en Prime Telecom</h1>
             <p className="pt-sub">
-              Correo y contraseña corporativos. Los módulos y clientes visibles dependen del rol
-              asignado.
+              Sistema integral de Registro y Gestión de garantías.
+              Ingresa tus credenciales para acceder al sistema.
             </p>
           </div>
 
           <form autoComplete="on" onSubmit={handleSubmit} noValidate>
-            <label htmlFor={userId} className="pt-label">
-              Correo corporativo
-            </label>
+            <div className="pt-fieldhead">
+              <label htmlFor={userId} className="pt-label">
+                Correo corporativo
+              </label>
+            </div>
             <div className="pt-fldwrap" style={{ marginBottom: 16 }}>
               <IconUser />
               <input
@@ -293,13 +338,13 @@ export default function Login({ onSubmit, onForgotPassword, onContactAdmin }) {
               />
             </div>
 
-            <div className="pt-pwrow">
+            <div className="pt-fieldhead">
               <label htmlFor={passId} className="pt-label">
                 Contraseña
               </label>
               <button
                 type="button"
-                className="pt-link pt-forgotlink"
+                className="pt-link"
                 onClick={onForgotPassword}
               >
                 ¿Olvidaste tu contraseña?
@@ -332,15 +377,6 @@ export default function Login({ onSubmit, onForgotPassword, onContactAdmin }) {
                 {showPassword ? "Ocultar" : "Mostrar"}
               </button>
             </div>
-
-            <div
-              id={helpId}
-              className={`pt-helper${invalidPass ? " pt-helper-err" : ""}`}
-              style={{ marginBottom: 18 }}
-            >
-              Mínimo {MIN_PASSWORD} caracteres. Distingue mayúsculas y minúsculas.
-            </div>
-
             <div className="pt-remember">
               <input
                 type="checkbox"
@@ -386,7 +422,7 @@ export default function Login({ onSubmit, onForgotPassword, onContactAdmin }) {
                 <div className="pt-sbody">
                   {status === "form"
                     ? `Escribe tu correo corporativo y una contraseña de al menos ${MIN_PASSWORD} caracteres.`
-                    : "No indicamos cuál de los dos falló: revelarlo confirmaría qué cuentas existen."}
+                    : "No indicamos cuál de los dos falló."}
                 </div>
               </div>
             )}
