@@ -1,0 +1,43 @@
+/* Pantallas de estado (cargando / sin alcance). Antes eran atributos `style`
+   en RutaProtegida.jsx y App.jsx; movidas aqui para que la CSP pueda ser
+   `style-src 'self'` sin `unsafe-inline`. */
+.est-centrado {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+.est-cargando {
+  color: #64748b;
+  font: 500 14px/1.5 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.est-sin-acceso {
+  padding: 24px;
+  text-align: center;
+  font: 400 15px/1.6 'Inter', system-ui, -apple-system, sans-serif;
+  background: #f7f5f0;
+}
+
+.est-caja {
+  max-width: 420px;
+}
+
+.est-titulo {
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+
+.est-texto {
+  color: #64748b;
+  margin: 0 0 20px;
+}
+
+.est-boton {
+  border: 1px solid #d6d3cc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  font: 600 14px/1 inherit;
+}

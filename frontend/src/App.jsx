@@ -10,8 +10,10 @@ import { AuthProvider, useAuth } from "./features/auth/AuthContext.jsx";
 import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.jsx";
 import LoginPage from "./features/auth/LoginPage.jsx";
 import Panel from "./features/paneles/Panel.jsx";
+import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./App.css";
+import "./features/auth/estado.css";
 
 export default function App() {
   return (
@@ -32,7 +34,7 @@ function Rutas() {
         path="/admin"
         element={
           <RutaProtegida rolesPermitidos={["ADMIN"]}>
-            <Panel titulo="Administración" />
+            <Tablero />
           </RutaProtegida>
         }
       />
@@ -85,35 +87,14 @@ function Raiz() {
 function SinAcceso() {
   const { perfil, salir } = useAuth();
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "grid",
-        placeItems: "center",
-        padding: 24,
-        textAlign: "center",
-        font: "400 15px/1.6 system-ui, -apple-system, sans-serif",
-        background: "#f7f5f0",
-      }}
-    >
-      <div style={{ maxWidth: 420 }}>
-        <h1 style={{ fontSize: 22, margin: "0 0 8px" }}>Sesión válida, sin alcance</h1>
-        <p style={{ color: "#64748b", margin: "0 0 20px" }}>
+    <div className="est-centrado est-sin-acceso">
+      <div className="est-caja">
+        <h1 className="est-titulo">Sesión válida, sin alcance</h1>
+        <p className="est-texto">
           Tu cuenta ({perfil?.email}) no tiene un rol con acceso a esta
           aplicación. Contacta con el departamento de sistemas.
         </p>
-        <button
-          type="button"
-          onClick={salir}
-          style={{
-            border: "1px solid #d6d3cc",
-            background: "#fff",
-            borderRadius: 10,
-            padding: "9px 16px",
-            cursor: "pointer",
-            font: "600 14px/1 inherit",
-          }}
-        >
+        <button type="button" onClick={salir} className="est-boton">
           Cerrar sesión
         </button>
       </div>

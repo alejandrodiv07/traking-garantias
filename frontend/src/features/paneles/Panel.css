@@ -1,0 +1,81 @@
+/* Panel provisional. Los valores vienen del objeto `estilos` que este
+   componente pasaba en atributos `style`; se movieron aqui para que la CSP
+   pueda ser `style-src 'self'` sin `unsafe-inline`. */
+.pn-pagina {
+  min-height: 100dvh;
+  background: #f7f5f0;
+  padding: 40px 24px;
+  font: 400 15px/1.6 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0f172a;
+}
+
+.pn-cabecera {
+  max-width: 720px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pn-kicker {
+  margin: 0;
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b45309;
+  font-weight: 600;
+}
+
+.pn-titulo {
+  margin: 4px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pn-boton {
+  border: 1px solid #d6d3cc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font: 600 14px/1 inherit;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.pn-tarjeta {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e7e4dd;
+  border-radius: 20px;
+  padding: 8px;
+}
+
+.pn-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1efe9;
+}
+
+.pn-etiqueta {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.pn-valor {
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.pn-nota {
+  max-width: 720px;
+  margin: 20px auto 0;
+  color: #64748b;
+  font-size: 13.5px;
+}

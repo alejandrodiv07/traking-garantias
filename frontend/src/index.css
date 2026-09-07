@@ -1,3 +1,9 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -11,8 +17,8 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -54,12 +60,14 @@ body {
   margin: 0;
 }
 
+/* Antes esto era el envoltorio de la plantilla de Vite: 1126 px fijos,
+   centrado, con borde a los lados y `text-align: center`. Servia para la
+   pagina de bienvenida y estorbaba a todo lo demas: el tablero necesita el
+   ancho completo, y `text-align: center` obligaba a cada pantalla a
+   desactivarlo por su cuenta (lo hacen `.pt-login` y `.tg`). Se deja lo
+   unico que aportaba: que el contenido ocupe el alto de la ventana. */
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  width: 100%;
   min-height: 100svh;
   display: flex;
   flex-direction: column;

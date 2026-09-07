@@ -10,6 +10,7 @@
  * `{"role":"ADMIN"}` en el metadata, aquí seguiría leyéndose TECNICO.
  */
 import { useAuth } from "../auth/AuthContext.jsx";
+import "./Panel.css";
 
 const ETIQUETA = {
   ADMIN: "Administración",
@@ -22,18 +23,18 @@ export default function Panel({ titulo }) {
   const { perfil, rol, salir, sesion } = useAuth();
 
   return (
-    <div style={estilos.pagina}>
-      <header style={estilos.cabecera}>
+    <div className="pn-pagina">
+      <header className="pn-cabecera">
         <div>
-          <p style={estilos.kicker}>Prime Telecom · Track Garantía</p>
-          <h1 style={estilos.titulo}>{titulo ?? ETIQUETA[rol] ?? "Panel"}</h1>
+          <p className="pn-kicker">Prime Telecom · Track Garantía</p>
+          <h1 className="pn-titulo">{titulo ?? ETIQUETA[rol] ?? "Panel"}</h1>
         </div>
-        <button type="button" onClick={salir} style={estilos.boton}>
+        <button type="button" onClick={salir} className="pn-boton">
           Cerrar sesión
         </button>
       </header>
 
-      <section style={estilos.tarjeta}>
+      <section className="pn-tarjeta">
         <Dato etiqueta="Nombre" valor={perfil?.full_name} />
         <Dato etiqueta="Correo" valor={perfil?.email} />
         <Dato etiqueta="Rol (leído de profiles, no del formulario)" valor={rol} />
@@ -47,7 +48,7 @@ export default function Panel({ titulo }) {
         />
       </section>
 
-      <p style={estilos.nota}>
+      <p className="pn-nota">
         Módulo de garantías pendiente. Esta pantalla confirma que la
         autenticación y la resolución de rol funcionan de extremo a extremo.
       </p>
@@ -57,69 +58,9 @@ export default function Panel({ titulo }) {
 
 function Dato({ etiqueta, valor }) {
   return (
-    <div style={estilos.fila}>
-      <span style={estilos.etiqueta}>{etiqueta}</span>
-      <span style={estilos.valor}>{valor ?? "—"}</span>
+    <div className="pn-fila">
+      <span className="pn-etiqueta">{etiqueta}</span>
+      <span className="pn-valor">{valor ?? "—"}</span>
     </div>
   );
 }
-
-const estilos = {
-  pagina: {
-    minHeight: "100dvh",
-    background: "#f7f5f0",
-    padding: "40px 24px",
-    font: "400 15px/1.6 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
-    color: "#0f172a",
-  },
-  cabecera: {
-    maxWidth: 720,
-    margin: "0 auto 24px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-    flexWrap: "wrap",
-  },
-  kicker: {
-    margin: 0,
-    fontSize: 12.5,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    color: "#b45309",
-    fontWeight: 600,
-  },
-  titulo: { margin: "4px 0 0", fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" },
-  boton: {
-    border: "1px solid #d6d3cc",
-    background: "#fff",
-    borderRadius: 10,
-    padding: "9px 16px",
-    font: "600 14px/1 inherit",
-    cursor: "pointer",
-    color: "#0f172a",
-  },
-  tarjeta: {
-    maxWidth: 720,
-    margin: "0 auto",
-    background: "#fff",
-    border: "1px solid #e7e4dd",
-    borderRadius: 20,
-    padding: 8,
-  },
-  fila: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 16,
-    padding: "14px 16px",
-    borderBottom: "1px solid #f1efe9",
-  },
-  etiqueta: { color: "#64748b", fontSize: 14 },
-  valor: { fontWeight: 600, textAlign: "right", wordBreak: "break-word" },
-  nota: {
-    maxWidth: 720,
-    margin: "20px auto 0",
-    color: "#64748b",
-    fontSize: 13.5,
-  },
-};

@@ -35,8 +35,10 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
-const URL = import.meta.env.VITE_SUPABASE_URL;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const URL = (import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+const ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? "")
+  .trim()
+  .replace(/^['"]|['"]$/g, "");
 
 // Fallar aquí, al arrancar, y no en el primer login con un error de red
 // indescifrable. Un `.env.local` sin cargar es el fallo nº 1 de integración.

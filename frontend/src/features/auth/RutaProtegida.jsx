@@ -11,6 +11,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext.jsx";
 import { rutaDeInicio } from "./authService.js";
+import "./estado.css";
 
 export default function RutaProtegida({ rolesPermitidos, children }) {
   const { autenticado, rol, cargando } = useAuth();
@@ -36,15 +37,7 @@ export default function RutaProtegida({ rolesPermitidos, children }) {
 
 export function PantallaCargando() {
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "grid",
-        placeItems: "center",
-        color: "#64748b",
-        font: "500 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif",
-      }}
-    >
+    <div className="est-centrado est-cargando">
       <span role="status" aria-live="polite">
         Verificando sesión…
       </span>
