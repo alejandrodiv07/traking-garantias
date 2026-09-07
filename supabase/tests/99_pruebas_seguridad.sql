@@ -99,18 +99,28 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-SELECT * FROM public.crear_garantia(
-  (SELECT id FROM public.clientes LIMIT 1), (SELECT id FROM public.productos LIMIT 1),
-  CURRENT_DATE - 30, 'No enciende');   -- DEBE FALLAR 42501
+-- Renombrada a crear_orden() en ...0004_tablero_operativo (ADR-009): el alta
+-- de cliente/producto nuevos pasó a ser atómica y la firma cambió entera.
+SELECT * FROM public.crear_orden(
+  p_fecha_compra    => CURRENT_DATE - 30,
+  p_falla_reportada => 'No enciende',
+  p_cliente_id      => (SELECT id FROM public.clientes LIMIT 1),
+  p_producto_id     => (SELECT id FROM public.productos LIMIT 1));   -- DEBE FALLAR 42501
 ROLLBACK;
 
 -- ============ T7: RECEPCION CREA LA ORDEN Y RECIBE EL TOKEN UNA VEZ ============
 SET request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
 SET request.jwt.claim.session_id = '33333333-3333-3333-3333-333333333333';
 SET ROLE authenticated;
-CREATE TEMP TABLE t7_src AS SELECT * FROM public.crear_garantia(
-  (SELECT id FROM public.clientes LIMIT 1), (SELECT id FROM public.productos LIMIT 1),
-  CURRENT_DATE - 30, 'No enciende, huele a quemado', 'SN-0001', 'F-889');
+CREATE TEMP TABLE t7_src AS
+SELECT orden_id AS garantia_id, numero_orden, consulta_token, cobertura, vence_el
+  FROM public.crear_orden(
+  p_fecha_compra    => CURRENT_DATE - 30,
+  p_falla_reportada => 'No enciende, huele a quemado',
+  p_cliente_id      => (SELECT id FROM public.clientes LIMIT 1),
+  p_producto_id     => (SELECT id FROM public.productos LIMIT 1),
+  p_numero_serie    => 'SN-0001',
+  p_numero_factura  => 'F-889');
 RESET ROLE;
 CREATE TEMP TABLE t7 AS SELECT * FROM t7_src;
 SELECT pg_temp.chk('T7 numero_orden legible y secuencial',
