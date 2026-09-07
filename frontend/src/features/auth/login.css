@@ -175,3 +175,63 @@
 .pt-fldwrap--gap-lg{margin-bottom:16px}
 .pt-fldwrap--gap-sm{margin-bottom:8px}
 
+
+/* =====================================================================
+   PASO 2 — codigo de verificacion (2FA por correo)
+   Mismos tokens, misma tarjeta. Solo cambia el contenido: el marco
+   (380px, radio 20px, sombra, caja de soporte) no se mueve entre pasos.
+   ===================================================================== */
+
+/* Sello sobre el titulo: circulo de acento al 12% con el sobre dentro.
+   Reemplaza al parrafo de subtitulo largo como ancla visual del paso. */
+.pt-sealwrap{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--pt-accent-bg);color:var(--pt-accent-text);
+  margin:-6px 0 12px;
+}
+.pt-mailmark{
+  color:var(--pt-text-primary);font-weight:600;
+  white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+
+.pt-step2{display:flex;flex-direction:column;animation:pt-entra .26s var(--pt-ease) both}
+@keyframes pt-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.pt-label--center{text-align:center;margin-bottom:10px}
+.pt-helper--center{text-align:center;margin:8px 0 16px;font-variant-numeric:tabular-nums}
+
+/* El campo del codigo. Un solo input; el aspecto de "seis huecos" lo da el
+   letter-spacing, y el text-indent compensa el espacio que el propio
+   letter-spacing añade DESPUES del ultimo digito (si no, las seis cifras
+   quedan visualmente desplazadas media letra a la izquierda).
+   tabular-nums: sin ancho fijo de cifra, el codigo baila al teclear. */
+.pt-otp{
+  font-family:inherit;font-size:26px;font-weight:600;
+  letter-spacing:14px;text-indent:14px;text-align:center;
+  font-variant-numeric:tabular-nums;
+  border:1px solid #e5e2da;border-radius:12px;height:60px;
+  width:100%;padding:0;
+  background:#fbfaf7;color:var(--pt-text-primary);
+  transition:border-color .18s var(--pt-ease),background-color .18s var(--pt-ease),box-shadow .18s var(--pt-ease);
+}
+.pt-otp::placeholder{color:#d6d2c6;font-size:22px}
+.pt-otp:hover{border-color:#d6d2c6}
+.pt-otp:focus{outline:none;border-color:var(--pt-accent);background:#fff;box-shadow:0 0 0 3px var(--pt-accent-bg)}
+.pt-otp:disabled{opacity:.6;cursor:not-allowed}
+.pt-otp[aria-invalid="true"]{border-color:#d99b96}
+.pt-otp[aria-invalid="true"]:focus{border-color:var(--pt-error);box-shadow:0 0 0 3px var(--pt-error-bg)}
+
+.pt-resend{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-top:16px;min-height:20px;
+}
+.pt-resend .pt-link:disabled{color:var(--pt-text-tertiary);cursor:default}
+.pt-sep{color:var(--pt-border-strong);font-size:12px;line-height:20px}
+
+@media (max-width:420px){
+  /* Con 22px de fuente el codigo ya no cabe con 14px de tracking en
+     pantallas de 320px. Se reduce el tracking, no la fuente: leer el
+     codigo importa mas que el efecto de separacion. */
+  .pt-otp{font-size:22px;letter-spacing:10px;text-indent:10px;height:56px}
+}

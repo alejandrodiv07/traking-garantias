@@ -133,6 +133,90 @@ export async function iniciarSesion({ email, password, recordar = false }) {
 }
 
 /**
+ * ===========================================================================
+ * SEGUNDO FACTOR POR CORREO
+ * ===========================================================================
+ * Tres RPC, y ninguna devuelve el código. Eso no es un detalle de estilo: si
+ * `generate_mfa_code` devolviera el número, quien tiene la contraseña robada
+ * —el único atacante contra el que existe este paso— lo leería en la pestaña
+ * Network y verificaría sin abrir el correo. El código se queda en Postgres y
+ * lo lee solo el emisor del correo, con `service_role`, del lado del servidor.
+ *
+ * Y la pantalla del código no es la que protege nada: cuando llegas aquí el
+ * JWT ya existe y ya es válido. Lo que hace real al segundo factor es que
+ * `mi_rol()` exige `mfa_ok()` en la base (migración ...0003_mfa_email §6):
+ * sin verificar, toda consulta a garantías devuelve cero filas.
+ */
+
+/**
+ * Emite un código y lo manda por correo. Devuelve CUÁNDO caduca (no el
+ * código): el navegador nunca lo ve, ni en este `data` ni en la pestaña
+ * Network.
+ *
+ * Pasa por la Edge Function `mfa-enviar-codigo` y no por la RPC directa.
+ * Dentro, la función llama a esta misma RPC con el JWT de quien llama (así
+ * `auth.uid()` y el límite de 5 por 15 minutos siguen siendo los del
+ * usuario, no un contador compartido) y manda el código a Resend con
+ * service_role. Un 5xx de la función (Resend caído, sin API key) se trata
+ * IGUAL que el 429 de cuota: como fallo del envío, nunca como éxito.
+ */
+export async function solicitarCodigoMfa() {
+  const { data, error } = await supabase.functions.invoke("mfa-enviar-codigo");
+
+  if (error) {
+    // supabase-js no parsea el cuerpo de un error HTTP de la función: hay
+    // que leerlo del Response crudo que cuelga de `error.context`. Si esa
+    // lectura falla (la función no respondió con JSON, o no hay `context`),
+    // se cae al mensaje genérico y no se revienta mostrando un error crudo.
+    const cuerpo = await error.context?.json?.().catch(() => null);
+    // 54000 = program_limit_exceeded: sexto código en 15 minutos. Merece
+    // mensaje propio, igual que el 429 del login: el usuario legítimo que
+    // reintenta a ciegas solo agrava su propio bloqueo.
+    const e = new Error(
+      cuerpo?.code === "54000"
+        ? "Demasiadas solicitudes de código. Espera unos minutos."
+        : "No se pudo enviar el código de verificación."
+    );
+    e.code = cuerpo?.code;
+    throw e;
+  }
+
+  return { expiraEn: data?.expira_en };
+}
+
+/**
+ * Verifica el código. Lanza ante CUALQUIER fallo, con un solo mensaje.
+ *
+ * `verify_mfa_code` devuelve false tanto si el código está mal como si venció
+ * o si ya se usó. Esa indistinción es deliberada en la base y se conserva
+ * aquí: decirle al atacante "vencido" en vez de "incorrecto" le confirma que
+ * acertó el número pero llegó tarde.
+ */
+export async function verificarCodigoMfa(codigo) {
+  const { data, error } = await supabase.rpc("verify_mfa_code", {
+    p_code: String(codigo ?? "").trim(),
+  });
+
+  if (error || data !== true) {
+    throw new Error("Código incorrecto o vencido");
+  }
+  return true;
+}
+
+/**
+ * ¿Esta sesión superó el segundo factor?
+ *
+ * Se consulta a la BASE y no a un flag de React porque el permiso vive en la
+ * base: está anclado al `session_id` del JWT. Un `mfaOk = true` en el estado
+ * del navegador no abre ninguna fila, y un usuario que lo ponga a mano en las
+ * DevTools verá los paneles vacíos.
+ */
+export async function mfaVerificada() {
+  const { data, error } = await supabase.rpc("mfa_ok");
+  return !error && data === true;
+}
+
+/**
  * Cierra la sesión. No lanza nunca.
  *
  * `scope: "local"` NO basta: dejaría vivo el refresh token en el servidor.

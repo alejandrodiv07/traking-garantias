@@ -7,6 +7,30 @@ INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
  ('11111111-1111-1111-1111-111111111111','admin@primetelecom.com','{"full_name":"Ada Admin","role":"ADMIN"}'::jsonb),
  ('22222222-2222-2222-2222-222222222222','tecnico@primetelecom.com','{"full_name":"Tito Tecnico","role":"ADMIN"}'::jsonb),
  ('33333333-3333-3333-3333-333333333333','sinmeta@primetelecom.com','{}'::jsonb);
+-- ---------------------------------------------------------------------
+--  SEMILLA DEL SEGUNDO FACTOR  (migración ...0003_mfa_email)
+-- ---------------------------------------------------------------------
+-- Desde esa migración, `mi_rol()` exige `mfa_ok()`: un JWT sin código
+-- verificado no tiene rol efectivo. Estas pruebas comprueban ROLES y RLS, no
+-- el 2FA (eso es 96_pruebas_mfa), así que sus usuarios entran con el segundo
+-- factor ya superado. Sin esta semilla, cada prueba que dependa de un rol
+-- mediría el 2FA por accidente y fallaría por el motivo equivocado.
+--
+-- CONVENIO: el `session_id` de las pruebas ES el id del usuario. Un uuid vale
+-- igual que otro para `mfa_sesiones`, y así cada transacción de abajo puede
+-- fijar los dos claims con el mismo literal, sin una tabla de constantes.
+--
+-- El bloque se guarda con `to_regclass`: si estas pruebas se corren SOLO con
+-- ...0001_auth_base (sin la migración del 2FA), no hay tabla, no hay puerta
+-- que abrir, y el fichero sigue pasando igual.
+DO $$
+BEGIN
+  IF to_regclass('public.mfa_sesiones') IS NULL THEN RETURN; END IF;
+  INSERT INTO public.mfa_sesiones (session_id, user_id)
+  SELECT p.id, p.id FROM public.profiles p
+  ON CONFLICT (session_id) DO NOTHING;
+END $$;
+
 
 SELECT pg_temp.chk('R1 metadata {"role":"ADMIN"} NO escala: los 3 nacen TECNICO',
   (SELECT bool_and(role='TECNICO') FROM public.profiles));
@@ -23,6 +47,7 @@ CREATE TEMP TABLE r3 AS SELECT 1 WHERE false;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 SELECT pg_temp.chk('R3 la consulta EXACTA de obtenerPerfil() devuelve 1 fila',
   (SELECT count(*)=1 FROM (SELECT id, full_name, email, role, is_active
      FROM public.profiles WHERE id = auth.uid()) q));
@@ -43,6 +68,7 @@ SELECT pg_temp.chk('R4c anon NO tiene EXECUTE sobre mi_rol()',
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
 UPDATE public.profiles SET role='TECNICO' WHERE id=auth.uid();
 RESET ROLE;
 SELECT pg_temp.chk('R5 el ADMIN NO puede auto-degradarse',
@@ -53,6 +79,7 @@ ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
 UPDATE public.profiles SET email='robado@x.com' WHERE id='22222222-2222-2222-2222-222222222222';
 RESET ROLE;
 SELECT pg_temp.chk('R6 ni un ADMIN puede reescribir profiles.email',
@@ -63,6 +90,7 @@ ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.profiles SET role='ADMIN' WHERE id=auth.uid();
 RESET ROLE;
 SELECT pg_temp.chk('R7 TECNICO no puede auto-promoverse',
@@ -71,6 +99,7 @@ ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.profiles SET full_name='Hackeado' WHERE id='11111111-1111-1111-1111-111111111111';
 RESET ROLE;
 SELECT pg_temp.chk('R8 TECNICO no edita el perfil de otro',
@@ -97,6 +126,7 @@ UPDATE public.profiles SET is_active=false WHERE id='22222222-2222-2222-2222-222
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 SELECT pg_temp.chk('R11 un desactivado solo ve SU fila (el frontend la lee y lo expulsa)',
   (SELECT count(*)=1 FROM public.profiles));
 SELECT pg_temp.chk('R11c ...y no puede enumerar al resto del personal',
@@ -115,6 +145,7 @@ ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
 SELECT pg_temp.chk('R13 ADMIN lista todos los perfiles sin recursion 42P17',
   (SELECT count(*)>=3 FROM public.profiles));
 COMMIT;

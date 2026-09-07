@@ -12,6 +12,30 @@ INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
  ('11111111-1111-1111-1111-111111111111','admin@primetelecom.com',   '{"full_name":"Ada Admin","role":"ADMIN"}'::jsonb),
  ('22222222-2222-2222-2222-222222222222','tecnico@primetelecom.com', '{"full_name":"Tito Tecnico","role":"ADMIN"}'::jsonb),
  ('33333333-3333-3333-3333-333333333333','recep@primetelecom.com',   '{"full_name":"Rosa Recepcion"}'::jsonb);
+-- ---------------------------------------------------------------------
+--  SEMILLA DEL SEGUNDO FACTOR  (migración ...0003_mfa_email)
+-- ---------------------------------------------------------------------
+-- Desde esa migración, `mi_rol()` exige `mfa_ok()`: un JWT sin código
+-- verificado no tiene rol efectivo. Estas pruebas comprueban ROLES y RLS, no
+-- el 2FA (eso es 96_pruebas_mfa), así que sus usuarios entran con el segundo
+-- factor ya superado. Sin esta semilla, cada prueba que dependa de un rol
+-- mediría el 2FA por accidente y fallaría por el motivo equivocado.
+--
+-- CONVENIO: el `session_id` de las pruebas ES el id del usuario. Un uuid vale
+-- igual que otro para `mfa_sesiones`, y así cada transacción de abajo puede
+-- fijar los dos claims con el mismo literal, sin una tabla de constantes.
+--
+-- El bloque se guarda con `to_regclass`: si estas pruebas se corren SOLO con
+-- ...0001_auth_base (sin la migración del 2FA), no hay tabla, no hay puerta
+-- que abrir, y el fichero sigue pasando igual.
+DO $$
+BEGIN
+  IF to_regclass('public.mfa_sesiones') IS NULL THEN RETURN; END IF;
+  INSERT INTO public.mfa_sesiones (session_id, user_id)
+  SELECT p.id, p.id FROM public.profiles p
+  ON CONFLICT (session_id) DO NOTHING;
+END $$;
+
 
 -- T1: METADATA MANIPULADO NO OTORGA ADMIN  (la vulnerabilidad original)
 SELECT pg_temp.chk('T1 metadata {"role":"ADMIN"} NO escala privilegios',
@@ -30,6 +54,7 @@ VALUES ('V','12345678','Juan Perez','juan@correo.com');
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 SELECT pg_temp.chk('T2 SELECT profiles como authenticated sin recursion (42P17)',
   (SELECT count(*)>0 FROM public.profiles));
 SELECT pg_temp.chk('T2b mi_rol() resuelve el rol', public.mi_rol()::text = 'TECNICO');
@@ -39,6 +64,7 @@ COMMIT;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.profiles SET role='ADMIN' WHERE id=auth.uid();  -- DEBE FALLAR
 ROLLBACK;
 SELECT pg_temp.chk('T3 TECNICO no puede auto-promoverse a ADMIN',
@@ -48,6 +74,7 @@ SELECT pg_temp.chk('T3 TECNICO no puede auto-promoverse a ADMIN',
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.profiles SET full_name='Hackeado' WHERE id='11111111-1111-1111-1111-111111111111';
 SELECT pg_temp.chk('T4 TECNICO no edita el perfil de otro (0 filas afectadas)',
   (SELECT full_name='Ada Admin' FROM public.profiles WHERE id='11111111-1111-1111-1111-111111111111'));
@@ -71,6 +98,7 @@ ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 SELECT * FROM public.crear_garantia(
   (SELECT id FROM public.clientes LIMIT 1), (SELECT id FROM public.productos LIMIT 1),
   CURRENT_DATE - 30, 'No enciende');   -- DEBE FALLAR 42501
@@ -78,6 +106,7 @@ ROLLBACK;
 
 -- ============ T7: RECEPCION CREA LA ORDEN Y RECIBE EL TOKEN UNA VEZ ============
 SET request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+SET request.jwt.claim.session_id = '33333333-3333-3333-3333-333333333333';
 SET ROLE authenticated;
 CREATE TEMP TABLE t7_src AS SELECT * FROM public.crear_garantia(
   (SELECT id FROM public.clientes LIMIT 1), (SELECT id FROM public.productos LIMIT 1),
@@ -112,6 +141,7 @@ ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.garantias SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T9 TECNICO asignado SI puede avanzar su orden',
   (SELECT estado='EN_DIAGNOSTICO' FROM public.garantias));
@@ -121,6 +151,7 @@ UPDATE public.garantias SET tecnico_asignado_id='11111111-1111-1111-1111-1111111
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.garantias SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T9b TECNICO NO asignado no modifica (0 filas)',
   (SELECT estado='RECIBIDO' FROM public.garantias));

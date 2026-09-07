@@ -24,7 +24,7 @@ import {
   useState,
 } from "react";
 import { supabase } from "../../lib/supabaseClient.js";
-import { cerrarSesion, obtenerPerfil } from "./authService.js";
+import { cerrarSesion, mfaVerificada, obtenerPerfil } from "./authService.js";
 
 const AuthContext = createContext(null);
 
@@ -36,6 +36,11 @@ export function AuthProvider({ children }) {
   // en /admin parpadea a /login y vuelve — y en una conexión lenta el usuario
   // ve la pantalla de acceso durante un segundo entero.
   const [cargando, setCargando] = useState(true);
+  // ¿Esta sesión superó el segundo factor? Arranca en false y solo lo pone a
+  // true una consulta a `mfa_ok()` en la base. No es cosmética: entra en
+  // `autenticado`, así que una sesión a medio verificar NO es una sesión
+  // autenticada para el router (ver el comentario de `autenticado` abajo).
+  const [mfaOk, setMfaOk] = useState(false);
 
   const montado = useRef(true);
 
@@ -44,6 +49,7 @@ export function AuthProvider({ children }) {
       if (montado.current) {
         setSesion(null);
         setPerfil(null);
+        setMfaOk(false);
         setCargando(false);
       }
       return;
@@ -59,12 +65,20 @@ export function AuthProvider({ children }) {
       await cerrarSesion();
       setSesion(null);
       setPerfil(null);
+      setMfaOk(false);
       setCargando(false);
       return;
     }
 
+    // Una RPC más por arranque de sesión. Se paga aquí y no en cada ruta:
+    // `RutaProtegida` se renderiza en cada navegación, `mfa_ok()` no.
+    const verificada = await mfaVerificada();
+
+    if (!montado.current) return;
+
     setSesion(nuevaSesion);
     setPerfil(p);
+    setMfaOk(verificada);
     setCargando(false);
   }, []);
 
@@ -85,6 +99,7 @@ export function AuthProvider({ children }) {
       if (evento === "SIGNED_OUT") {
         setSesion(null);
         setPerfil(null);
+        setMfaOk(false);
         setCargando(false);
         return;
       }
@@ -107,6 +122,7 @@ export function AuthProvider({ children }) {
     await cerrarSesion();
     setSesion(null);
     setPerfil(null);
+    setMfaOk(false);
   }, []);
 
   const valor = useMemo(
@@ -114,14 +130,23 @@ export function AuthProvider({ children }) {
       sesion,
       perfil,
       rol: perfil?.role ?? null,
-      autenticado: Boolean(sesion && perfil),
+      // `autenticado` INCLUYE el segundo factor, y ahí está toda la gracia:
+      // sin tocar ni `RutaProtegida` ni `SoloInvitados`, una sesión a medio
+      // verificar deja de ser "autenticada" para el router. Si `autenticado`
+      // fuera solo sesión + perfil, `SoloInvitados` sacaría al usuario de
+      // /login en el instante en que la contraseña se acepta —justo cuando
+      // hay que pintarle el paso 2— y el código no se pediría nunca.
+      autenticado: Boolean(sesion && perfil && mfaOk),
+      // Para el contenedor del login: hay sesión, pero le falta el código.
+      sesionSinVerificar: Boolean(sesion && perfil && !mfaOk),
+      mfaOk,
       cargando,
       salir,
       // Para cuando un ADMIN se cambia el nombre y la cabecera debe reflejarlo
       // sin recargar la página.
       refrescarPerfil: () => sincronizarPerfil(sesion),
     }),
-    [sesion, perfil, cargando, salir, sincronizarPerfil]
+    [sesion, perfil, mfaOk, cargando, salir, sincronizarPerfil]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
