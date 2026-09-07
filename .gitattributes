@@ -1,0 +1,19 @@
+# Finales de línea: LF en el repositorio, siempre.
+#
+# Sin este fichero, el árbol arrastraba ~70 archivos marcados como
+# modificados cuyo `git diff -w` salía vacío: solo cambiaba CRLF por LF.
+# El efecto práctico era que cualquier commit se volvía ilegible, porque
+# un cambio de dos líneas aparecía como 318 insertions / 318 deletions.
+#
+# `text=auto eol=lf` normaliza al entrar y deja LF en el índice; en Windows
+# el fichero se sigue trabajando como el editor prefiera.
+* text=auto eol=lf
+
+# Binarios: que git no intente convertir nada.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.zip binary
+*.woff binary
+*.woff2 binary
