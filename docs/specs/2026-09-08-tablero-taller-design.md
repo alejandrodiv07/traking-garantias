@@ -526,6 +526,8 @@ El punto 4 es lo que garantiza que no haya huérfanos: **hasta que la orden no s
 
 **Esta pantalla es un requisito funcional, no un extra.** `crear_orden()` devuelve `consulta_token` en claro exactamente una vez; en la base solo queda su SHA-256. Ni el ADMIN, ni el SQL Editor, ni `service_role` pueden recuperarlo. Si el modal se cierra sin mostrarlo, ese cliente pierde para siempre el acceso al portal público de esa orden.
 
+> **Válvula de escape (ADR-011).** Desde la migración `...0005`, `regenerar_token_orden(orden_id)` emite un token nuevo cuando el comprobante se pierde. No recupera el anterior —eso sigue siendo imposible— lo **sustituye**, invalidando el que el cliente tuviera. Esto no relaja ninguna de las reglas de abajo: la pantalla de entrega única sigue siendo obligatoria, porque la alternativa es hacerle volver al taller.
+
 Reglas:
 
 - Al crear, el modal **no se cierra**: cambia a la vista de token.
@@ -603,7 +605,7 @@ Se incorporan al apéndice C del Blueprint maestro.
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| La Fase 0 no está ejecutada: dos migraciones comparten el timestamp `20260906000001` | `supabase db reset` falla antes de llegar a esta migración | **Bloqueante para verificar P1/P2 contra una base real.** Ejecutar Fase 0 primero |
+| ~~La Fase 0 no está ejecutada~~ | — | **Resuelto el 2026-09-08.** Cinco migraciones sin colisión; `db reset` corre limpio |
 | El trigger de cobertura está probado y se modifica | Regresión silenciosa en el cálculo de vigencia | Los pgTAP existentes deben seguir verdes; los nuevos van en RED antes de tocarlo |
 | `JSONB` mueve la validación de tipos dentro de la función | Un `marca_id` mal formado falla en tiempo de ejecución, no de firma | Los `CHECK` de `clientes`/`productos` siguen siendo los que validan; el frontend valida antes de enviar |
 | Interpolación del término en la gramática de PostgREST | Consulta malformada, error opaco | Sanear `[(),*]` antes de construir el `.or()` |

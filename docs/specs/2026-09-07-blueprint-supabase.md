@@ -359,7 +359,7 @@ flowchart LR
     F4 -.- G4["Cliente<br/>autoservicio"]
 ```
 
-### Fase 0 — Saneamiento (bloqueante)
+### Fase 0 — Saneamiento ✅ **completada (2026-09-08)**
 
 **Objetivo:** que exista un solo árbol coherente. Hoy el repositorio contiene dos migraciones con el **mismo timestamp** (`20260906000001`), un fichero de referencia que nunca se aplica pero contiene correcciones que la migración activa no tiene, y ~3.500 líneas de documentación que describen un backend que no existe.
 
@@ -373,6 +373,11 @@ flowchart LR
 | Podar dependencias sin uso | `tailwindcss` + `@tailwindcss/vite` (instalado, cero clases usadas) y `@fontsource/ibm-plex-sans` (sin importar) |
 
 **Criterio de aceptación:** `supabase db reset` corre limpio desde cero sobre una base vacía; no queda ningún documento vigente que mencione Python, MySQL, Flask ni TOTP.
+
+**Resultado.** Cumplido. Cinco migraciones sin colisión de timestamps, aplicadas en orden desde una base vacía, con 110 pruebas verdes. Dos matices sobre lo planificado:
+
+- **No había nada que rescatar del fichero `_referencia_`.** Contiene exactamente los mismos 86 objetos que `auth_base` + `garantias`, y las cinco correcciones que el audit le atribuía ya estaban vivas en `auth_base`. El hallazgo era cierto frente a `esquema_inicial`, no frente a la migración vigente.
+- **CSO-07 no se arregla solo en `Login.jsx`.** Subir el mínimo únicamente en el formulario de login habría dejado sin poder enviarlo a cualquiera con una contraseña de 6 a 11 caracteres. El mínimo se sube a 12 en los dos sitios: el formulario y `minimum_password_length` de `config.toml`. Los hallazgos de seguridad que sobreviven a Supabase quedan en `docs/deuda-seguridad.md`.
 
 ### Fase 1 — Identidad y acceso ✅ **completada**
 
@@ -585,6 +590,18 @@ Hallazgos de la auditoría de sobre-ingeniería, ordenados por tamaño del corte
 **Decisión.** `numero_serie` es nullable y no único; `numero_orden` (`ORD-2026-000001`) es la identidad de cara al cliente y al taller.
 **Alternativa descartada.** `UNIQUE` sobre el serial, como en el blueprint original.
 **Motivo.** Llegan equipos sin serial legible, con serial repetido de fábrica, y el mismo equipo vuelve varias veces. Imponer unicidad sobre un dato que el negocio no controla bloquea altas legítimas en el mostrador. Además, nadie dicta un UUID por teléfono sin equivocarse.
+
+---
+
+### ADR-011 · El token de consulta se regenera, no se recupera
+
+**Contexto.** `crear_orden()` entrega el token en claro una sola vez. Si el comprobante se pierde, el cliente queda sin acceso al portal público de su orden y nadie puede devolvérselo: en la tabla solo está el SHA-256.
+**Decisión.** `regenerar_token_orden(orden_id)` emite un token nuevo e **invalida el anterior**, con los mismos roles que `crear_orden()` y dejando nota en `notas_internas`.
+**Alternativa descartada.** Guardar el token cifrado en vez de hasheado, para poder mostrarlo de nuevo.
+**Motivo.** Cifrar exige una clave que vive en el mismo sistema que el dato: un volcado de la base con acceso a esa clave devuelve todos los tokens en claro, que es justo lo que el hash evita. Regenerar conserva la propiedad de que la base **no sabe** ningún token.
+**Por qué deja rastro.** Una válvula de escape sin auditoría es una puerta trasera: permitiría a cualquiera con rol de mostrador emitirse acceso a la orden de un cliente sin constancia. La nota va en la misma transacción que el `UPDATE`, así que no hay forma de rotar el token en silencio. Se usa `notas_internas` —ya append-only, con autor y fecha— en vez de crear una tabla de auditoría nueva; `historial_garantias` no sirve porque su `CHECK` exige un cambio de estado, y esto no lo es.
+**Consecuencia aceptada, y hay que decírsela al cliente.** El papel que tenga en la mano deja de servir en el momento en que se pulsa. No es reversible.
+**Ensanchamiento deliberado de la RLS.** La función es `SECURITY DEFINER` y se salta `gar_update_recepcion`, que solo deja a RECEPCION tocar órdenes ya terminadas. Un cliente que perdió su comprobante aparece por el mostrador en cualquier punto del ciclo, no solo cuando el equipo está listo.
 
 ---
 

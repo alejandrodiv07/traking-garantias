@@ -425,7 +425,8 @@ $$;
 --    vector real en un B2B cerrado. NO protege contra un buzón corporativo
 --    comprometido: quien lee el correo recibe el código, y además puede
 --    pedir un "olvidé mi contraseña". Si algún día hace falta subir ese
---    techo, lo que toca es TOTP (Supabase Auth ya lo trae), no otro correo.
+--    techo, lo que toca es un SEGUNDO CANAL (WhatsApp), no otro correo.
+--    El TOTP quedó descartado por directiva del proyecto (ADR-004).
 --
 -- 5) SPF, DKIM y DMARC del dominio en Resend antes de producción. Un OTP
 --    que cae en spam es una puerta cerrada para el usuario legítimo, y el

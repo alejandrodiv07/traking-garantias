@@ -1,3 +1,5 @@
+> **SUPERADO (2026-09-08).** Describe el backend Flask/MySQL que se abandonó. Se conserva como registro histórico del diseño del segundo factor, cuyo concepto sí sobrevive. La arquitectura vigente está en `2026-09-07-blueprint-supabase.md`; la deuda de seguridad que este documento originó, en `../deuda-seguridad.md`.
+
 # Spec de arranque — Fase 1-A: Login seguro
 **Fecha:** 2026-09-05 · **Proyecto:** Prime Telecom · **Estado:** aprobado para codificar
 

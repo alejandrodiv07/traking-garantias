@@ -334,3 +334,76 @@ SELECT pg_temp.chk('F4 sla_por_vencer cuadra con el calculo derivado',
   = (SELECT count(*)::int FROM public.garantias
       WHERE estado NOT IN ('ENTREGADO','ANULADO')
         AND fecha_ingreso::date + sla_dias <= current_date + 2));
+
+
+-- =====================================================================
+--  G. VÁLVULA DE ESCAPE DEL TOKEN  (migración ...0005_regenerar_token)
+-- =====================================================================
+
+-- G1 · Un TECNICO no emite credenciales de consulta.
+SELECT pg_temp.chk('G1 TECNICO recibe 42501 al regenerar un token',
+  pg_temp.errcode('aaaaaaaa-0000-0000-0000-000000000002',
+    'SELECT public.regenerar_token_orden((SELECT id FROM public.garantias LIMIT 1))') = '42501');
+
+-- G2 · Una orden inexistente no inventa un token.
+SELECT pg_temp.chk('G2 orden inexistente => P0002',
+  pg_temp.errcode('aaaaaaaa-0000-0000-0000-000000000001',
+    'SELECT public.regenerar_token_orden(''00000000-0000-0000-0000-000000000000''::uuid)') = 'P0002');
+
+SELECT set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000001',FALSE);
+SELECT set_config('request.jwt.claim.session_id','aaaaaaaa-0000-0000-0000-000000000001',FALSE);
+
+-- Estado previo: el hash actual de la orden de t_ext y su nota más reciente.
+CREATE TEMP TABLE g_antes AS
+SELECT g.id,
+       g.consulta_token_hash AS hash_viejo,
+       (SELECT count(*) FROM public.notas_internas n WHERE n.garantia_id = g.id) AS notas
+  FROM public.garantias g, t_ext t WHERE g.id = t.orden_id;
+
+CREATE TEMP TABLE g_nuevo AS
+SELECT * FROM public.regenerar_token_orden((SELECT id FROM g_antes));
+
+-- G3 · El token nuevo es válido y distinto del anterior.
+SELECT pg_temp.chk('G3 el token regenerado es de 128 bits en hexadecimal',
+  (SELECT consulta_token ~ '^[0-9a-f]{32}$' FROM g_nuevo));
+
+SELECT pg_temp.chk('G4 el hash guardado corresponde al token NUEVO',
+  EXISTS (SELECT 1 FROM public.garantias g, g_nuevo n, g_antes a
+           WHERE g.id = a.id
+             AND g.consulta_token_hash = extensions.digest(n.consulta_token,'sha256')));
+
+-- G5 · LA PROPIEDAD QUE HAY QUE DECIRLE AL CLIENTE: el anterior muere.
+SELECT pg_temp.chk('G5 el token ANTERIOR queda invalidado',
+  NOT EXISTS (SELECT 1 FROM public.garantias g, g_antes a
+               WHERE g.id = a.id AND g.consulta_token_hash = a.hash_viejo));
+
+-- G6 · No se puede rotar en silencio: queda nota, con autor.
+SELECT pg_temp.chk('G6 la regeneracion deja nota interna atribuida',
+  (SELECT count(*) FROM public.notas_internas n, g_antes a
+    WHERE n.garantia_id = a.id
+      AND n.autor_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+      AND n.nota LIKE 'Token de consulta regenerado%') = 1
+  AND (SELECT count(*) FROM public.notas_internas n, g_antes a WHERE n.garantia_id = a.id)
+      = (SELECT notas FROM g_antes) + 1);
+
+-- G7 · El número de orden NO cambia: es lo que el cliente dicta por teléfono.
+SELECT pg_temp.chk('G7 el numero de orden se conserva',
+  (SELECT n.numero_orden = t.numero_orden FROM g_nuevo n, t_ext t));
+
+-- G8 · La consulta pública funciona con el token nuevo y no con el viejo.
+--      Se comprueba contra la RPC real, no contra la tabla.
+RESET ROLE;
+SELECT pg_temp.chk('G8 consultar_garantia acepta el token NUEVO',
+  EXISTS (SELECT 1 FROM public.consultar_garantia(
+            (SELECT numero_orden FROM g_nuevo),
+            (SELECT consulta_token FROM g_nuevo))));
+
+SELECT pg_temp.chk('G9 consultar_garantia RECHAZA el token viejo (0 filas, sin excepcion)',
+  NOT EXISTS (SELECT 1 FROM public.consultar_garantia(
+            (SELECT numero_orden FROM g_nuevo),
+            (SELECT consulta_token FROM t_ext))));
+
+-- G10 · anon no puede regenerar nada.
+SELECT pg_temp.chk('G10 anon NO ejecuta regenerar_token_orden',
+  pg_temp.errcode_anon(
+    'SELECT public.regenerar_token_orden((SELECT id FROM public.garantias LIMIT 1))') <> 'OK');

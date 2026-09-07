@@ -833,8 +833,11 @@ COMMIT;
 --    cuentas las crea un ADMIN por invitación. Es una superficie de
 --    ataque menos, igual que en el blueprint original.
 --
--- 3) MFA (TOTP). Authentication → Multi-Factor. Obligatorio para ADMIN y
---    JEFE_SERVICIO. Es el sustituto del OTP por correo que se sacrificó.
+-- 3) SEGUNDO FACTOR: OTP POR CORREO. Lo implementa la migración
+--    ...0003_mfa_email.sql, y `mi_rol()` lo exige vía `mfa_ok()`. Esta nota
+--    proponía TOTP como sustituto; quedó descartado por directiva del
+--    proyecto (ADR-004 del Blueprint) y los interruptores de
+--    `[auth.mfa.totp]` permanecen apagados en config.toml.
 --
 -- 4) LA CLAVE service_role NUNCA VA AL FRONTEND. Bypassea toda la RLS de
 --    §11. En el navegador solo la anon key.
