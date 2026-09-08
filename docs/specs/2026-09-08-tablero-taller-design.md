@@ -30,6 +30,7 @@
 | "Colaboradores CM LF +" del mockup | Presencia en tiempo real: otro subsistema | Sin planificar |
 | "Enviar recordatorios" y campana de avisos | Necesitan el outbox | Fase 4 |
 | Pantallas de `/jefe`, `/tecnico`, `/recepcion` | Alcance cerrado | Fase 2.1 |
+| Política de resolución: nota de crédito (ingreso por tienda) vs. cambio directo (cliente final) | Requiere el flujo de cierre de diagnóstico / ficha de detalle, que no existe hasta la Fase 2.1 | Fase 2.1 — **requisito innegociable**, confirmado por operativa real de mostrador (2026-09-08) |
 
 ### 1.1 Divergencias del mockup, resueltas a favor del esquema
 
@@ -264,6 +265,90 @@ La RPC **devuelve `cliente_id` y `producto_id`** para que el frontend refresque 
 
 ---
 
+### 2.5 Documentos de la orden — `documentos_garantia`
+
+Confirmado en la ronda de grilling del 2026-09-08: el alta permite adjuntar documentos (factura escaneada, fotos del equipo), opcional, hasta 5 archivos de máx. 10 MB cada uno, en PDF/JPG/PNG.
+
+**La subida no es atómica con `crear_orden()`.** Storage no participa de una transacción SQL: no puede viajar dentro de la RPC como sí viajan `p_cliente_nuevo`/`p_producto_nuevo` (ADR-009). La orden se crea primero -- con su `orden_id` y su token de un solo uso -- y los archivos se suben después contra ese `orden_id`. Si un archivo falla, la orden queda igual creada: revertirla para "no dejar una orden a medias" sería peor, porque perdería el token de consulta que no se puede recuperar (ADR-003, ADR-011). La interfaz avisa por archivo, no por orden. Ver ADR-012.
+
+```sql
+BEGIN;
+
+CREATE TYPE public.tipo_documento_garantia AS ENUM ('FACTURA','FOTO_EQUIPO','OTRO');
+
+CREATE TABLE public.documentos_garantia (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    garantia_id     UUID NOT NULL REFERENCES public.garantias(id) ON DELETE CASCADE,
+    tipo            public.tipo_documento_garantia NOT NULL,
+    ruta_storage    TEXT NOT NULL,          -- path dentro del bucket, no la URL
+    nombre_original TEXT NOT NULL,
+    tamano_bytes    INTEGER NOT NULL CHECK (tamano_bytes > 0 AND tamano_bytes <= 10485760),
+    subido_por      UUID NOT NULL REFERENCES public.profiles(id),
+    creado_en       TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    UNIQUE (garantia_id, ruta_storage)
+);
+
+CREATE INDEX idx_documentos_garantia_orden ON public.documentos_garantia (garantia_id);
+
+ALTER TABLE public.documentos_garantia ENABLE ROW LEVEL SECURITY;
+
+-- Misma regla que gar_select: son cuatro personas en un taller, todo
+-- authenticated ve todo. La restricción real está en la escritura.
+CREATE POLICY doc_gar_select ON public.documentos_garantia
+    FOR SELECT TO authenticated
+    USING (true);
+
+-- Mismos roles que pueden crear la orden (ADMIN, JEFE_SERVICIO, RECEPCION).
+-- TECNICO no sube documentos en esta fase: no crea órdenes.
+CREATE POLICY doc_gar_insert ON public.documentos_garantia
+    FOR INSERT TO authenticated
+    WITH CHECK (public.tiene_rol('ADMIN','JEFE_SERVICIO','RECEPCION'));
+
+-- Sin UPDATE ni DELETE: no hay edición de documentos en esta fase (S1,
+-- Fase 2.1). Si un archivo se subió mal, se sube uno nuevo tipo OTRO;
+-- limpiar el incorrecto es tarea de Fase 2.1 junto con la ficha de detalle.
+
+COMMIT;
+```
+
+**Por qué `ruta_storage` y no la URL.** El bucket es privado: no hay URL pública fija que guardar. Guardar el *path* dentro del bucket y firmar la URL en el momento de la lectura (URL de corta duración) es lo que evita que un `SELECT *` filtrado por error exponga acceso permanente a un archivo -- el mismo principio que ya aplica `consulta_token_hash` con el token de consulta.
+
+**Por qué no hay `UPDATE`/`DELETE`.** Editar o borrar documentos pertenece a la ficha de detalle de la orden (Fase 2.1), que todavía no existe. Sin ella, dar `UPDATE`/`DELETE` sería una puerta sin pared: la política existiría pero ninguna pantalla la usaría con criterio.
+
+#### Bucket de Storage
+
+```sql
+-- Bucket privado (public = false): el acceso es siempre por URL firmada,
+-- nunca por URL fija. No hay bucket público en este proyecto para nada
+-- que identifique a un cliente o su equipo.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'documentos-garantias', 'documentos-garantias', false,
+    10485760,  -- 10 MB, espejo del CHECK de la tabla
+    ARRAY['application/pdf','image/jpeg','image/png']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Convencion de path: <garantia_id>/<uuid_archivo>.<ext> -- el primer
+-- segmento es lo que las políticas usan para saber a qué orden pertenece
+-- un objeto, sin tabla intermedia.
+CREATE POLICY doc_storage_select ON storage.objects
+    FOR SELECT TO authenticated
+    USING (bucket_id = 'documentos-garantias');
+
+CREATE POLICY doc_storage_insert ON storage.objects
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        bucket_id = 'documentos-garantias'
+        AND public.tiene_rol('ADMIN','JEFE_SERVICIO','RECEPCION')
+    );
+```
+
+**Riesgo aceptado:** `doc_storage_select` no cruza contra `documentos_garantia.garantia_id` -- no puede: `storage.objects` no conoce esa tabla sin una función. Es equivalente en efecto a `gar_select` (todo `authenticated` ve todo el taller), así que no reduce la seguridad ya decidida; si el taller alguna vez necesitara ocultar documentos de una orden a ciertos roles, ahí sí haría falta una política con subconsulta.
+
+---
+
 ## 3. Capa de lectura
 
 ### 3.1 `v_ordenes_tablero` — una vista, no un endpoint por consulta
@@ -378,7 +463,8 @@ frontend/src/features/taller/
 ├── datos/
 │   ├── ordenes.js              consultas a v_ordenes_tablero · rpc crear_orden
 │   ├── catalogos.js            estados · marcas · productos · clientes
-│   └── hooks.js                useOrdenes · useKpis · usePorVencer · useEstados · useBusqueda
+│   ├── hooks.js                useOrdenes · useKpis · usePorVencer · useEstados · useBusqueda
+│   └── documentos.js           subirDocumento · rutaFirmada — sube a Storage, no participa de la transacción SQL
 ├── componentes/
 │   ├── BarraLateral.jsx        ← existe, sin cambios
 │   ├── TablaOrdenes.jsx        ← existe, sin cambios (recibe filas ya resueltas)
@@ -392,6 +478,7 @@ frontend/src/features/taller/
     ├── SelectorAsincrono.jsx   NUEVO — base compartida de autocompletado
     ├── CampoCliente.jsx        NUEVO — busca, o compone el JSONB de cliente nuevo
     ├── CampoProducto.jsx       NUEVO — busca, o compone el JSONB de producto nuevo
+    ├── CampoDocumentos.jsx     NUEVO — adjuntos opcionales, sube tras crear_orden()
     ├── TokenDeConsulta.jsx     NUEVO — la entrega única
     └── NuevaOrden.css
 ```
@@ -463,6 +550,7 @@ Un solo cuadro busca por número de orden, cliente, documento, equipo, serial o 
 | **CU-05** | Registrar una orden | ADMIN · JEFE · RECEPCION | Se crea con `crear_orden()`; el tablero se refresca; el `TECNICO` **no ve el botón**, y si fuerza la llamada recibe `42501` |
 | **CU-06** | Registrar un cliente o equipo que no existe | ADMIN · JEFE · RECEPCION | Se envía en el mismo `crear_orden()`; si la orden falla, el cliente **no** queda creado |
 | **CU-07** | Entregar el token al cliente | Quien creó la orden | Se muestra **una vez**, con aviso explícito de que no se puede recuperar; recargar la página no lo devuelve |
+| **CU-08** | Adjuntar documentos a la orden | ADMIN · JEFE · RECEPCION | Subir 1-5 archivos PDF/JPG/PNG, <=10MB c/u, tras crear la orden; si uno falla, aviso puntual sin revertir la orden ni el token |
 
 ### 6.1 Reglas de rol en la interfaz
 
@@ -496,19 +584,22 @@ Cada zona con datos tiene cuatro estados, y **"vacío" es de primera clase**, no
 | | Nº de factura | `p_numero_factura` | No |
 | | Categoría | Del producto; **solo lectura** salvo al registrar uno nuevo | — |
 | | **Falla reportada** | `p_falla_reportada`, **5–2000 car.** | **Sí** |
+| | Documentos | Adjuntos opcionales (factura, fotos) -> suben a `documentos-garantias` tras crear la orden | No |
 | Cobertura | Fecha de compra | `p_fecha_compra` (≥ 2000-01-01) | Sí |
 | | Tipo de garantía | `p_tipo_garantia` | Sí (ESTANDAR por defecto) |
 | | Duración | `p_meses_override`; editable solo si EXTENDIDA | Condicional |
 | | *(barra de vigencia)* | Cálculo en pantalla, espejo del trigger | — |
 | Prioridad y asignación | Prioridad | `p_prioridad` | Sí (NORMAL por defecto) |
 | | Técnico | `p_tecnico_id` (perfiles con rol TECNICO) | No |
-| | Plazo de entrega | `p_sla_dias` (1–90, por defecto 5) | Sí |
+| | Plazo de entrega | `p_sla_dias` (1–90, por defecto 5; **operativa real: diagnóstico 7–15 días hábiles**, confirmado 2026-09-08) | Sí |
 
 **`falla_reportada` no aparece en el mockup y es obligatorio en la base.** Se añade como área de texto al final de la primera sección, con contador de caracteres y validación en el cliente (5–2000). Sin él la RPC falla con un error de `CHECK`, y es además lo primero que el técnico lee al abrir la orden.
 
 **La categoría es de solo lectura al seleccionar un producto existente.** Es una propiedad del producto, no de la orden; hacerla editable sugeriría que se puede cambiar por orden, que es falso. Solo se escribe al registrar un producto nuevo.
 
 **La barra de vigencia es un espejo, no la fuente.** Calcula `fecha_compra + meses` en el navegador para dar realimentación inmediata; el valor que queda guardado lo fija el trigger. Si divergen, manda el trigger. Se etiqueta como estimación.
+
+**Los documentos se suben en un paso propio, después de crear la orden.** El formulario los acumula en memoria como archivos pendientes (igual que los datos de cliente/producto nuevo), pero el `POST` a Storage ocurre recién con el `orden_id` que devuelve `crear_orden()` -- en la misma pantalla de entrega del token, y antes de mostrarlo, para que un fallo de subida se note mientras el usuario todavía está mirando la pantalla.
 
 ### 7.2 Autocompletado (`SelectorAsincrono.jsx`)
 
@@ -546,11 +637,12 @@ Cada paso arranca en **RED**: el test se escribe antes.
 |---|---|---|
 | **P1** | Migración `20260908000004`: columnas, trigger ajustado, `crear_orden()` | pgTAP: EXTENDIDA sin meses falla · SIN_GARANTIA no calcula fecha · `sla_dias` fuera de 1–90 falla · un `TECNICO` recibe `42501` · cliente y orden a la vez son atómicos · orden fallida no deja cliente |
 | **P2** | `v_ordenes_tablero` + `kpis_tablero()` | pgTAP: con `anon` la vista devuelve **cero filas** · la vista no expone notas, costo ni diagnóstico · los KPIs cuadran con conteos directos |
+| **P2.5** | Migración `20260908000006`: `documentos_garantia` + bucket `documentos-garantias` + políticas | pgTAP: `anon` no lee ni inserta · un `TECNICO` no inserta · un `tamano_bytes` > 10 MB falla el `CHECK` · borrar la orden borra sus documentos (`ON DELETE CASCADE`) |
 | **P3** | `datos/` + hooks; el Tablero sigue con la fixture detrás del hook | Vitest sobre los hooks con cliente simulado: carga, vacío y error |
 | **P4** | Tablero conectado: KPIs, tabla, vencimientos | La pantalla se ve igual que el mockup con datos reales; `datosDemo` ya no se importa en producción |
 | **P5** | `FiltrosEstado` desde la base + búsqueda contra la vista | Añadir un estado con `INSERT` lo hace aparecer sin tocar React · buscar `Ana, S.A.` (con coma) no rompe la consulta |
 | **P6** | Modal + formulario + autocompletado | Vitest: foco atrapado, Esc cierra, error por campo, `falla_reportada` con 4 caracteres bloquea el envío |
-| **P7** | Alta real + entrega del token | El token se ve una vez; recargar no lo recupera; cerrar pide confirmación; el tablero muestra la orden nueva |
+| **P7** | Alta real + entrega del token + subida de documentos | El token se ve una vez; recargar no lo recupera; cerrar pide confirmación; el tablero muestra la orden nueva; un archivo fallido muestra aviso puntual sin revertir la orden ni el token |
 
 **P1 y P2 son bloqueantes.** Son SQL puro y definen la forma de los datos; el frontend no puede empezar antes.
 
@@ -599,6 +691,15 @@ Se incorporan al apéndice C del Blueprint maestro.
 **Motivo.** Cambiar el `DEFAULT` sin reescribir el histórico deja dos formatos conviviendo en una columna `UNIQUE`, y toda búsqueda futura tendría que contemplar ambos, para siempre. Reescribir el histórico es una migración destructiva sobre el identificador que el cliente lleva impreso en su comprobante. Ninguna de las dos se justifica por estética.
 **Principio general.** La interfaz se subordina a la verdad de los datos, no al revés.
 
+### ADR-012 · Los documentos se suben aparte de `crear_orden()`, y su ausencia no bloquea la orden
+
+**Contexto.** El pedido original incluye "documentos asociados" a la orden (factura escaneada, fotos del equipo). Supabase Storage no participa de una transacción SQL: no puede viajar dentro de `crear_orden()` como sí viajan `p_cliente_nuevo`/`p_producto_nuevo` (ADR-009).
+**Decisión.** La orden se crea primero; los documentos se suben después contra su `orden_id`, en la misma pantalla de entrega del token. Son opcionales: ningún documento es obligatorio para crear la orden. Si una subida falla, se avisa puntualmente y la orden **no se revierte**.
+**Alternativa descartada.** Subir a un directorio temporal antes de crear la orden y moverlo/vincularlo después.
+**Motivo.** Mover un archivo ya subido de "temporal" a "definitivo" es un segundo paso que también puede fallar, y no gana nada: sigue sin ser atómico con la orden. La complejidad no compra la garantía que se busca.
+**Contrapartida aceptada.** Es posible que una orden quede sin sus documentos si el usuario cierra el navegador entre la creación y la subida -- a diferencia del cliente/producto nuevo (ADR-009), que si la orden falla no quedan huérfanos. Es una asimetría deliberada: revertir la orden para mantener simetría perdería el token de un solo uso (ADR-003, ADR-011), que es el daño mayor. Agregar el documento faltante más tarde queda para la ficha de detalle (Fase 2.1).
+**Modelo de datos.** Tabla `documentos_garantia` (metadatos) + bucket privado `documentos-garantias` (binarios), con `ruta_storage` guardando el path, nunca una URL -- el acceso siempre es por URL firmada de corta duración, mismo principio que `consulta_token_hash`. RLS de lectura espejo de `gar_select` (todo `authenticated` ve todo el taller); de escritura, los mismos tres roles que `crear_orden()`.
+
 ---
 
 ## 10. Riesgos abiertos
@@ -612,6 +713,7 @@ Se incorporan al apéndice C del Blueprint maestro.
 | `ilike '%…%'` no usa índice | Ninguno al volumen actual | Si se nota: `pg_trgm` + GIN, sin tocar la interfaz |
 | Renombrar `tablero/` a `taller/` rompe importaciones | Compilación falla, ruidosa e inmediata | Se hace en P3, en un commit propio y solo de movimientos |
 | El árbol tiene churn de fin de línea (CRLF↔LF) en 70 archivos | Los commits se vuelven ilegibles | Commitear solo rutas explícitas; añadir `.gitattributes` con `* text=auto eol=lf` en un commit de normalización aparte |
+| La subida de un documento falla después de creada la orden (red, tamaño, bucket lleno) | Orden completa sin su evidencia adjunta | Aviso puntual por archivo, sin bloquear ni revertir la orden; reintentar en el momento; agregar el documento faltante más tarde queda en Fase 2.1 (ADR-012) |
 
 ---
 

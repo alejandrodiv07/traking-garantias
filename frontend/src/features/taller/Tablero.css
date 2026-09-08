@@ -500,6 +500,35 @@
   font-weight: 600;
 }
 
+/* Esqueleto de carga: nunca un "0". Un taller sin datos y un taller que
+   todavía está cargando deben verse distintos (§6.2 del spec de tablero). */
+.tg-kpi--esqueleto {
+  gap: 8px;
+}
+
+.tg-kpi-esqueleto-linea {
+  display: block;
+  height: 11px;
+  width: 60%;
+  border-radius: 6px;
+  background: var(--tg-border-soft);
+  animation: tg-pulso 1.4s ease-in-out infinite;
+}
+
+.tg-kpi-esqueleto-linea--valor {
+  height: 28px;
+  width: 40%;
+}
+
+@keyframes tg-pulso {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.tg-kpi--error .tg-kpi-valor {
+  color: var(--tg-text-3);
+}
+
 /* ===========================================================================
    5. CUERPO: tabla + panel lateral
    =========================================================================== */
@@ -616,6 +645,13 @@
 .tg-chip-cuenta {
   font-variant-numeric: tabular-nums;
   opacity: 0.7;
+}
+
+.tg-chip--esqueleto {
+  width: 92px;
+  background: var(--tg-border-soft);
+  border-color: transparent;
+  animation: tg-pulso 1.4s ease-in-out infinite;
 }
 
 /* ---- tabla ---- */

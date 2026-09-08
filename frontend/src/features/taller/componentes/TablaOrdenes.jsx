@@ -12,7 +12,7 @@
  * parciales para eso), no en el navegador.
  */
 import { PackageOpen } from "lucide-react";
-import { cobertura as coberturaDe, estado as estadoDe, fechaCorta } from "../dominio.js";
+import { cobertura as coberturaDe, tonoDeEstado, fechaCorta } from "../dominio.js";
 
 const COLUMNAS = [
   "Nº de orden",
@@ -42,7 +42,7 @@ export default function TablaOrdenes({ ordenes, total, hayFiltro, onLimpiar, onV
           </thead>
           <tbody>
             {ordenes.map((o) => {
-              const est = estadoDe(o.estado);
+              const tonoEstado = tonoDeEstado(o.estado);
               const cob = coberturaDe(o.cobertura);
               return (
                 <tr key={o.id}>
@@ -76,9 +76,9 @@ export default function TablaOrdenes({ ordenes, total, hayFiltro, onLimpiar, onV
                     </span>
                   </td>
                   <td data-etiqueta="Estado">
-                    <span className="tg-insignia" data-tono={est.tono}>
+                    <span className="tg-insignia" data-tono={tonoEstado}>
                       <span className="tg-insignia-punto" aria-hidden="true" />
-                      {est.nombre}
+                      {o.estadoNombre}
                     </span>
                   </td>
                   <td data-etiqueta="Ingresó" className="tg-col-fecha">

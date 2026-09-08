@@ -27,7 +27,7 @@
  */
 
 /** Fecha de referencia del mock, para que los "faltan N días" no caduquen. */
-import { ESTADOS_TERMINALES } from "./dominio.js";
+import { ESTADOS_TERMINALES } from "../dominio.js";
 
 export const HOY = new Date("2026-09-07T12:00:00");
 

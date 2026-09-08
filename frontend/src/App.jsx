@@ -10,7 +10,7 @@ import { AuthProvider, useAuth } from "./features/auth/AuthContext.jsx";
 import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.jsx";
 import LoginPage from "./features/auth/LoginPage.jsx";
 import Panel from "./features/paneles/Panel.jsx";
-import Tablero from "./features/tablero/Tablero.jsx";
+import Tablero from "./features/taller/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./App.css";
 import "./features/auth/estado.css";
