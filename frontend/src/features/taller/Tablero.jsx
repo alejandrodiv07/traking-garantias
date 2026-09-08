@@ -176,7 +176,7 @@ export default function Tablero() {
             <section aria-label="Órdenes de servicio">
               <BuscadorOrdenes valor={terminoBusqueda} onCambiar={setTerminoBusqueda} />
 
-              <FiltrosEstado filtro={filtro} onCambiar={setFiltro} />
+              <FiltrosEstado filtro={filtro} termino={terminoDebounced} onCambiar={setFiltro} />
 
               <p className="tg-sr" role="status" aria-live="polite">
                 {cargandoOrdenes ? "Cargando órdenes…" : `${ordenes.length} de ${total} órdenes visibles`}

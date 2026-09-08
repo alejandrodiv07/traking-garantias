@@ -11,10 +11,12 @@
  */
 import { useEstados, useRecuentosPorEstado } from "../datos/hooks.js";
 
-export default function FiltrosEstado({ filtro, onCambiar }) {
+export default function FiltrosEstado({ filtro, termino = "", onCambiar }) {
   const { estados, cargando: cargandoEstados } = useEstados();
   const codigos = ["TODAS", ...estados.map((e) => e.codigo)];
-  const { recuentos, cargando: cargandoRecuentos } = useRecuentosPorEstado(codigos);
+  // El mismo término que la tabla: una píldora que dice 40 junto a una
+  // tabla que muestra 2 obliga al operador a adivinar cuál miente.
+  const { recuentos, cargando: cargandoRecuentos } = useRecuentosPorEstado(codigos, { termino });
 
   if (cargandoEstados) {
     return (

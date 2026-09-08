@@ -10,6 +10,7 @@
  * -- ningún componente lee el mensaje crudo de PostgREST (§5 del spec).
  */
 import { supabase } from "../../../lib/supabaseClient.js";
+import { fechaLocalISO } from "../dominio.js";
 
 const COLUMNAS_BUSQUEDA = [
   "numero_orden",
@@ -20,11 +21,27 @@ const COLUMNAS_BUSQUEDA = [
   "numero_factura",
 ];
 
-/** No es una defensa contra inyección SQL -- PostgREST parametriza -- es
-    para no romper la gramática de `.or()` con una coma o un paréntesis que
-    el usuario tenga en la mano (§5.1 del spec). */
+/** No es una defensa contra inyección SQL -- PostgREST parametriza -- son
+    dos cosas distintas:
+
+    1. `(`, `)`, `,` y `*` rompen la gramática de `.or()` si el usuario los
+       tiene en la mano (§5.1 del spec). Se sustituyen por un espacio.
+    2. `%`, `_` y `\\` son comodines de LIKE. Sin escaparlos, quien busca
+       "100%" no está pidiendo las órdenes que digan "100%": está pidiendo
+       "100 seguido de cualquier cosa", y un `_` suelto pide "cualquier
+       carácter". La búsqueda deja de filtrar justo cuando más falta hace,
+       y el operador ve el taller entero creyendo que buscó algo. */
 function sanearTermino(termino) {
-  return termino.replace(/[(),*]/g, " ");
+  return termino.replace(/[(),*]/g, " ").replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/** La expresión `or` de la búsqueda multicriterio, o `null` si no hay nada
+    que buscar. Es lo que comparten la tabla y los recuentos de las
+    píldoras: si cada uno armara la suya, se separarían al primer cambio. */
+function expresionDeBusqueda(termino) {
+  const t = sanearTermino(String(termino ?? "").trim());
+  if (t.length === 0) return null;
+  return COLUMNAS_BUSQUEDA.map((c) => `${c}.ilike.%${t}%`).join(",");
 }
 
 /** Fila de `v_ordenes_tablero` -> la forma que ya esperan TablaOrdenes y
@@ -61,27 +78,30 @@ export async function consultarOrdenes({
 
   if (estado !== "TODAS") consulta = consulta.eq("estado", estado);
 
-  const t = sanearTermino(String(termino ?? "").trim());
-  if (t.length > 0) {
-    consulta = consulta.or(COLUMNAS_BUSQUEDA.map((c) => `${c}.ilike.%${t}%`).join(","));
-  }
+  const busqueda = expresionDeBusqueda(termino);
+  if (busqueda) consulta = consulta.or(busqueda);
 
   const { data, error, count } = await consulta;
   if (error) throw error;
   return { ordenes: (data ?? []).map(normalizarFila), total: count ?? 0 };
 }
 
-/** Recuento de órdenes por estado, para las píldoras de CU-03.
-    `codigos` incluye `"TODAS"` si se quiere ese recuento también. N
+/** Recuento de órdenes por estado, para las píldoras de CU-03. `codigos`
+    incluye `"TODAS"` si se quiere ese recuento también, y `termino` es el
+    mismo texto del buscador que ve la tabla. N
     consultas `head: true` -- al volumen de un taller es irrelevante; si
     algún día duele, se agrega una vista agregada sin tocar la interfaz. */
-export async function contarPorEstado(codigos) {
+export async function contarPorEstado(codigos, { termino = "" } = {}) {
+  const busqueda = expresionDeBusqueda(termino);
   const entradas = await Promise.all(
     codigos.map(async (codigo) => {
       let consulta = supabase
         .from("v_ordenes_tablero")
         .select("*", { count: "exact", head: true });
       if (codigo !== "TODAS") consulta = consulta.eq("estado", codigo);
+      // El MISMO término que la tabla. Sin esto la píldora dice 40 y la
+      // tabla de al lado muestra 2: dos respuestas a la misma pregunta.
+      if (busqueda) consulta = consulta.or(busqueda);
       const { count, error } = await consulta;
       if (error) throw error;
       return [codigo, count ?? 0];
@@ -99,8 +119,11 @@ export async function consultarKpis() {
 }
 
 export async function consultarPorVencer({ dias = 30 } = {}) {
-  const hoy = new Date().toISOString().slice(0, 10);
-  const limite = new Date(Date.now() + dias * 86_400_000).toISOString().slice(0, 10);
+  // Fechas del calendario LOCAL, no de UTC: pasadas las 20:00 en Caracas
+  // `toISOString()` ya devuelve la de mañana, y la garantía que vence hoy
+  // se caía de la ventana justo en el turno de noche.
+  const hoy = fechaLocalISO();
+  const limite = fechaLocalISO(new Date(Date.now() + dias * 86_400_000));
 
   const { data, error } = await supabase
     .from("v_ordenes_tablero")

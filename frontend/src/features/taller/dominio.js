@@ -66,10 +66,29 @@ export function fechaCorta(iso) {
   return new Date(iso).toLocaleDateString("es-VE", { day: "numeric", month: "short" });
 }
 
-/** Días que faltan (o sobran) hasta una fecha, respecto de `hoy`. */
+/**
+ * La fecha del calendario del usuario en formato `YYYY-MM-DD`.
+ *
+ * NO se usa `toISOString().slice(0,10)`, que da la fecha en UTC. El taller
+ * está en America/Caracas (UTC-4): a partir de las 20:00 hora local, UTC ya
+ * pasó de día. Con la versión UTC, el operador del turno de noche veía
+ * "Venció hace 1 d" en una garantía que vence mañana, y la ventana de
+ * `consultarPorVencer` empezaba en la fecha equivocada -- una garantía que
+ * vence hoy desaparecía del panel a las 8 de la noche.
+ */
+export function fechaLocalISO(fecha = new Date()) {
+  const d = fecha instanceof Date ? fecha : new Date(fecha);
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
+/** Días que faltan (o sobran) hasta una fecha, respecto de `hoy`. Ambos
+    extremos se comparan como fechas de calendario locales, no como
+    instantes: "faltan 3 días" no puede cambiar a las 8 de la noche. */
 export function diasHasta(isoFecha, hoy = new Date()) {
   const MS_DIA = 86_400_000;
-  const a = Date.parse(isoFecha.slice(0, 10) + "T00:00:00");
-  const b = Date.parse(hoy.toISOString().slice(0, 10) + "T00:00:00");
+  const a = Date.parse(String(isoFecha).slice(0, 10) + "T00:00:00");
+  const b = Date.parse(fechaLocalISO(hoy) + "T00:00:00");
   return Math.round((a - b) / MS_DIA);
 }

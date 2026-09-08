@@ -64,7 +64,7 @@ const LOGO_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAYAAAC
 // `minimum_password_length` de supabase/config.toml: si el login exigiera
 // más que la política de alta, una contraseña válida sería irrechazable
 // aquí y el usuario quedaría fuera sin explicación.
-const MIN_PASSWORD = 12;
+const MIN_PASSWORD = 9;
 const LARGO_CODIGO = 6;
 /** Segundos de espera antes de poder reenviar. Anti-mailbomb del lado UI;
  *  el techo de verdad (5 por 15 min) lo aplica `generate_mfa_code()`. */

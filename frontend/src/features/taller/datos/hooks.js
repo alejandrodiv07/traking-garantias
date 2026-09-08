@@ -48,10 +48,14 @@ export function useEstados() {
   return { estados: datos ?? [], cargando, error };
 }
 
-/** Recuento por estado para las píldoras (incluye "TODAS" si se pide). */
-export function useRecuentosPorEstado(codigos) {
-  const clave = codigos.join(",");
-  const cargar = useCallback(() => contarPorEstado(codigos), [clave]); // eslint-disable-line react-hooks/exhaustive-deps
+/** Recuento por estado para las píldoras (incluye "TODAS" si se pide).
+    `termino` es el MISMO texto del buscador que recibe `useOrdenes`: sin
+    él la píldora cuenta el taller entero mientras la tabla de al lado
+    muestra el resultado de la búsqueda, y los dos números se contradicen
+    en pantalla. */
+export function useRecuentosPorEstado(codigos, { termino = "" } = {}) {
+  const clave = `${codigos.join(",")}|${termino}`;
+  const cargar = useCallback(() => contarPorEstado(codigos, { termino }), [clave]); // eslint-disable-line react-hooks/exhaustive-deps
   const { datos, cargando, error } = useCargaAsincrona(cargar, [clave]);
   return { recuentos: datos ?? {}, cargando, error };
 }

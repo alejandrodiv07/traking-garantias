@@ -47,8 +47,8 @@ Si quieres arrancar la interfaz web localmente:
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 La app suele quedar en:
@@ -233,7 +233,7 @@ Luego en otra terminal:
 
 ```bash
 cd frontend
-npm run dev
+pnpm run dev
 ```
 
 Por si necesitas servir la función localmente:
@@ -297,8 +297,8 @@ supabase secrets set RESEND_API_KEY=tu_clave_resend
 supabase secrets set ORIGENES_PERMITIDOS=http://localhost:5173
 supabase functions deploy mfa-enviar-codigo
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Y luego probar la validación con un JWT válido y la URL de la función desplegada.
