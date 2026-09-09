@@ -65,7 +65,7 @@ function cabeceras(origen: string | null) {
   const permitido = origen && ORIGENES.includes(origen) ? origen : ORIGENES[0];
   return {
     "Access-Control-Allow-Origin": permitido,
-    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-application-name",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
