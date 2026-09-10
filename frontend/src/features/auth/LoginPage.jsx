@@ -30,6 +30,7 @@
  */
 import { useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { sileo } from "sileo";
 import Login from "./Login.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import {
@@ -67,6 +68,16 @@ export default function LoginPage() {
       // concedido— en el primer render y no parpadee.
       await refrescarPerfil();
 
+      // Bienvenida al sistema: se lanza aquí, no en `Login.jsx`, porque es el
+      // único punto por el que pasan los dos caminos de entrada (con y sin
+      // segundo factor) y solo se alcanza con acceso concedido de verdad.
+      sileo.success({
+        title: "Sesión iniciada",
+        description: perfil?.full_name
+          ? `Bienvenido al sistema, ${perfil.full_name}.`
+          : "Bienvenido al sistema.",
+      });
+
       // Si el usuario llegó aquí desde una URL protegida, vuelve allí.
       const previa = location.state?.from?.pathname;
       navigate(previa && previa !== "/login" ? previa : destino, { replace: true });
@@ -87,7 +98,12 @@ export default function LoginPage() {
     if (resultado !== Resultado.OK) {
       // `Login.jsx` muestra "Credenciales incorrectas" ante CUALQUIER
       // rechazo. Se le pasa el mensaje ya colapsado por `authService`:
-      // ni el componente ni la consola ven la causa real.
+      // ni el componente ni la consola ven la causa real. El toast repite
+      // el mismo mensaje único: no añade ninguna pista nueva.
+      sileo.error({
+        title: "No se pudo iniciar sesión",
+        description: mensaje ?? "Credenciales incorrectas",
+      });
       throw new Error(mensaje ?? "Credenciales incorrectas");
     }
 
@@ -106,7 +122,18 @@ export default function LoginPage() {
   // ---------------------------------------------------------------- paso 2
   const handleVerify = useCallback(
     async (codigo) => {
-      await verificarCodigoMfa(codigo);   // lanza si no vale
+      try {
+        await verificarCodigoMfa(codigo); // lanza si no vale
+      } catch (err) {
+        // Mismo mensaje único que pinta `Login.jsx`: no distingue "vencido"
+        // de "incorrecto", solo lo hace visible como toast además de en la
+        // tarjeta.
+        sileo.error({
+          title: "Código incorrecto o vencido",
+          description: "Revisa el correo o pide un código nuevo.",
+        });
+        throw err;
+      }
 
       // El rol para decidir la ruta viene del paso 1. Si la cuenta se
       // desactivó entre los dos pasos, el `refrescarPerfil()` de `entrar`

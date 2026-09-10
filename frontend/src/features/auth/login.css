@@ -18,6 +18,13 @@
   --pt-accent-active:#b05e43;
   --pt-accent-bg:rgba(217,119,87,.12);
   --pt-accent-tint:rgba(217,119,87,.04);
+  /* Foco de los campos: antes usaba el acento terracota. Se pide gris/negro
+     de la misma paleta -- se reusa `--pt-border-focus` (ya definido, sin
+     usar) para el borde y se deriva el anillo del mismo neutro cálido
+     (15,12,8) que ya usan los `--pt-border-*`, en vez de introducir un color
+     nuevo. El acento queda reservado para enlaces, como dice el comentario
+     de cabecera del archivo. */
+  --pt-focus-ring:rgba(15,12,8,.14);
   /* Solo para TEXTO sobre blanco: #d97757 da ~3.1:1, insuficiente para
      texto normal (WCAG AA exige 4.5:1). Estas dos si lo cumplen (~4.5:1
      y ~6:1) sin cambiar de matiz. */
@@ -68,7 +75,7 @@
   position:absolute;left:14px;top:50%;transform:translateY(-50%);
   color:#a8a29a;pointer-events:none;transition:color .18s var(--pt-ease);
 }
-.pt-fldwrap:focus-within .pt-fldicon{color:var(--pt-accent)}
+.pt-fldwrap:focus-within .pt-fldicon{color:var(--pt-text-primary)}
 .pt-fld{
   font-family:inherit;font-size:14px;
   border:1px solid #e5e2da;border-radius:10px;height:46px;
@@ -78,7 +85,7 @@
 }
 .pt-fld::placeholder{color:#a8a29a}
 .pt-fld:hover{border-color:#d6d2c6}
-.pt-fld:focus{outline:none;border-color:var(--pt-accent);background:#fff;box-shadow:0 0 0 3px var(--pt-accent-bg)}
+.pt-fld:focus{outline:none;border-color:var(--pt-border-focus);background:#fff;box-shadow:0 0 0 3px var(--pt-focus-ring)}
 .pt-fld:disabled{opacity:.6;cursor:not-allowed}
 .pt-fld.pt-haspwtoggle{padding-right:64px}
 .pt-fld[aria-invalid="true"]{border-color:#d99b96}
@@ -217,7 +224,7 @@
 }
 .pt-otp::placeholder{color:#d6d2c6;font-size:22px}
 .pt-otp:hover{border-color:#d6d2c6}
-.pt-otp:focus{outline:none;border-color:var(--pt-accent);background:#fff;box-shadow:0 0 0 3px var(--pt-accent-bg)}
+.pt-otp:focus{outline:none;border-color:var(--pt-border-focus);background:#fff;box-shadow:0 0 0 3px var(--pt-focus-ring)}
 .pt-otp:disabled{opacity:.6;cursor:not-allowed}
 .pt-otp[aria-invalid="true"]{border-color:#d99b96}
 .pt-otp[aria-invalid="true"]:focus{border-color:var(--pt-error);box-shadow:0 0 0 3px var(--pt-error-bg)}

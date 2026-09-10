@@ -1,0 +1,25 @@
+/**
+ * Ajustes mínimos sobre el CSS por defecto de `sileo` (ver skill
+ * ui-ux-pro-max). Dos problemas reales, no de gusto:
+ *
+ * 1. La librería aplica `text-transform: capitalize` al título del toast.
+ *    Tiene sentido en inglés ("Success" -> "Success"), pero convierte una
+ *    frase en español como "No se pudo iniciar sesión" en Title Case
+ *    ("No Se Pudo Iniciar Sesión"), que no es como se escribe español y
+ *    rompe la voz del resto de la interfaz (login.css nunca usa Title Case).
+ *
+ * 2. El ancho del toast es un valor fijo (`--sileo-width: 350px`) sin
+ *    breakpoint. `login.css` sí define uno (@media max-width:420px) porque
+ *    el artboard es de escritorio y esta app se usa también en celular; el
+ *    toast necesita el mismo cuidado o queda recortado contra el borde
+ *    derecho en pantallas angostas (320–375px).
+ */
+[data-sileo-title] {
+  text-transform: none;
+}
+
+@media (max-width: 420px) {
+  [data-sileo-viewport] {
+    --sileo-width: min(350px, calc(100vw - 2rem));
+  }
+}

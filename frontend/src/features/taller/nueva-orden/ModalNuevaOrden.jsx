@@ -11,6 +11,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { sileo } from "sileo";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { crearOrden } from "../datos/ordenes.js";
 import FormularioOrden from "./FormularioOrden.jsx";
@@ -76,6 +77,13 @@ export default function ModalNuevaOrden({ onCerrar, onOrdenCreada }) {
     setDocumentosPendientes(pendientes);
     setVista("token");
     onOrdenCreada?.();
+
+    sileo.success({
+      title: "Garantía registrada",
+      description: respuesta.datos?.numeroOrden
+        ? `Orden ${respuesta.datos.numeroOrden} creada correctamente.`
+        : "La orden se creó correctamente.",
+    });
   }
 
   return (

@@ -6,19 +6,26 @@
  * arrancar y no una vez por ruta.
  */
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "sileo";
 import { AuthProvider, useAuth } from "./features/auth/AuthContext.jsx";
 import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.jsx";
 import LoginPage from "./features/auth/LoginPage.jsx";
 import Panel from "./features/paneles/Panel.jsx";
 import Tablero from "./features/taller/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
+import "sileo/styles.css";
 import "./App.css";
 import "./features/auth/estado.css";
 
+// Un único `Toaster`, montado una vez en la raíz: cualquier pantalla dispara
+// un aviso con `sileo.success(...)` / `sileo.error(...)` sin volver a montar
+// el contenedor de toasts. `top-right` y tema claro, alineado con la paleta
+// cálida del login (Omelette).
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Toaster position="top-right" theme="light" />
         <Rutas />
       </BrowserRouter>
     </AuthProvider>
