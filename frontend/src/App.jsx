@@ -12,6 +12,7 @@ import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.j
 import LoginPage from "./features/auth/LoginPage.jsx";
 import Panel from "./features/paneles/Panel.jsx";
 import Tablero from "./features/taller/Tablero.jsx";
+import ConsultaGarantia from "./features/garantias/ConsultaGarantia.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "sileo/styles.css";
 import "./App.css";
@@ -42,6 +43,14 @@ function Rutas() {
         element={
           <RutaProtegida rolesPermitidos={["ADMIN"]}>
             <Tablero />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/garantias"
+        element={
+          <RutaProtegida rolesPermitidos={["ADMIN", "JEFE_SERVICIO", "RECEPCION"]}>
+            <ConsultaGarantia />
           </RutaProtegida>
         }
       />

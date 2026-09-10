@@ -24,6 +24,7 @@
  * `BarraLateral`) cambió su contrato de props.
  */
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, LogOut, Plus } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import BarraLateral from "./componentes/BarraLateral.jsx";
@@ -46,6 +47,7 @@ function iniciales(nombre) {
 
 export default function Tablero() {
   const { perfil, rol, salir } = useAuth();
+  const navigate = useNavigate();
   const [filtro, setFiltro] = useState("TODAS");
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
   const [terminoDebounced, setTerminoDebounced] = useState("");
@@ -115,7 +117,10 @@ export default function Tablero() {
       <BarraLateral
         actual="tablero"
         usuario={usuario}
-        onIr={(_, etiqueta) => avisar(`«${etiqueta}» todavía no está construida.`)}
+        onIr={(clave, etiqueta) => {
+          if (clave === "garantias") return navigate("/garantias");
+          avisar(`«${etiqueta}» todavía no está construida.`);
+        }}
       />
 
       <div className="tg-main">
