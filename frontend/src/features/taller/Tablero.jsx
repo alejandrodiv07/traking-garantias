@@ -14,9 +14,10 @@
  *     `kpis_tablero()` y `v_ordenes_tablero`.
  *   - El filtro por estado y la búsqueda pasan a la consulta (parámetros de
  *     PostgREST), no se hacen más en memoria.
- *   - "Nueva orden" abre `ModalNuevaOrden`; el botón se oculta para
- *     `TECNICO` como cortesía (§6.1) -- la restricción real la hace la RLS
- *     de `crear_orden()`.
+ *   - "Agregar nueva garantía" abre `ModalNuevaGarantia` (reemplaza al
+ *     antiguo "Nueva orden" / `ModalNuevaOrden`, ahora sin uso); el botón se
+ *     oculta para `TECNICO` como cortesía (§6.1) -- la restricción real la
+ *     hace la RLS de `crear_orden()`.
  *   - Los demás botones sin acción (campana, recordatorios, nav lateral,
  *     "ver todas") siguen avisando que no están construidos: son
  *     Fase 2.1/Fase 4, fuera de este alcance.
@@ -33,7 +34,7 @@ import PanelVencimientos from "./componentes/PanelVencimientos.jsx";
 import TarjetasKpi from "./componentes/TarjetasKpi.jsx";
 import FiltrosEstado from "./componentes/FiltrosEstado.jsx";
 import BuscadorOrdenes from "./componentes/BuscadorOrdenes.jsx";
-import ModalNuevaOrden from "./nueva-orden/ModalNuevaOrden.jsx";
+import ModalNuevaGarantia from "./nueva-garantia/ModalNuevaGarantia.jsx";
 import { useKpis, useOrdenes, usePorVencer } from "./datos/hooks.js";
 import "./Tablero.css";
 
@@ -106,7 +107,7 @@ export default function Tablero() {
     []
   );
 
-  function alCrearOrden() {
+  function alCrearGarantia() {
     recargarOrdenes();
     recargarKpis();
     recargarPorVencer();
@@ -170,7 +171,7 @@ export default function Tablero() {
                 onClick={() => setModalAbierto(true)}
               >
                 <Plus size={17} strokeWidth={2.4} aria-hidden="true" />
-                Nueva orden
+                Agregar nueva garantía
               </button>
             ) : null}
           </div>
@@ -220,9 +221,9 @@ export default function Tablero() {
       </div>
 
       {modalAbierto ? (
-        <ModalNuevaOrden
+        <ModalNuevaGarantia
           onCerrar={() => setModalAbierto(false)}
-          onOrdenCreada={alCrearOrden}
+          onOrdenCreada={alCrearGarantia}
         />
       ) : null}
 

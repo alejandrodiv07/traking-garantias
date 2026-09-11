@@ -1,0 +1,634 @@
+/* ===========================================================================
+   Modal de "Agregar nueva garantía". Hereda los tokens de `.tg`
+   (Tablero.css): este módulo vive siempre dentro del árbol de
+   `<div className="tg">`, así que las custom properties (--tg-*) ya están
+   disponibles aquí sin duplicarlas.
+
+   Reemplaza a NuevaOrden.css: mismas reglas (clases `no-*` -> `ng-*`), más
+   el indicador de pasos y el resumen que necesita el asistente de 4 pasos.
+   =========================================================================== */
+
+.ng-superposicion {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.42);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 60;
+  animation: ng-aparecer 0.16s ease-out;
+}
+
+@keyframes ng-aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ng-caja {
+  width: min(720px, 100%);
+  max-height: min(88dvh, 900px);
+  background: var(--tg-surface);
+  border-radius: var(--tg-radio);
+  box-shadow: var(--tg-shadow-flotante);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ng-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--tg-border-soft);
+}
+
+.ng-cabecera-ruta {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--tg-text-3);
+}
+
+.ng-cabecera-titulo {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.ng-cerrar {
+  border: 0;
+  background: none;
+  color: var(--tg-text-3);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ng-cerrar:hover {
+  background: var(--tg-neutro-bg);
+  color: var(--tg-text);
+}
+
+.ng-cuerpo {
+  padding: 20px 22px 22px;
+  overflow-y: auto;
+}
+
+.ng-error-envio {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tg-adverso-bg);
+  color: var(--tg-adverso-fg);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* ---- formulario / asistente ---- */
+.ng-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---- indicador de pasos (§multi-step-progress) ---- */
+.ng-pasos {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 6px;
+}
+
+.ng-pasos-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ng-pasos-item:not(:last-child)::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--tg-border);
+  margin: 0 4px;
+}
+
+.ng-pasos-numero {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--tg-border);
+  color: var(--tg-text-3);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ng-pasos-titulo {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tg-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ng-pasos-item--actual .ng-pasos-numero {
+  background: var(--tg-cta);
+  border-color: var(--tg-cta);
+  color: #faf9f5;
+}
+
+.ng-pasos-item--actual .ng-pasos-titulo {
+  color: var(--tg-text);
+}
+
+.ng-pasos-item--hecho .ng-pasos-numero {
+  background: var(--tg-resuelto-bg);
+  border-color: var(--tg-resuelto-bg);
+  color: var(--tg-resuelto-fg);
+}
+
+/* ---- un paso del asistente ---- */
+.ng-paso {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ng-paso-titulo {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tg-text-3);
+}
+
+.ng-paso-titulo--separado {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tg-border-soft);
+}
+
+.ng-paso-ayuda {
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--tg-text-3);
+}
+
+.ng-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ng-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+}
+
+.ng-campo-etiqueta {
+  font-weight: 600;
+  color: var(--tg-text-2);
+}
+
+.ng-campo-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--tg-adverso-fg);
+  font-weight: 600;
+}
+
+.ng-campo-ayuda {
+  font-size: 12px;
+  color: var(--tg-text-3);
+}
+
+.ng-campo-contador {
+  align-self: flex-end;
+  font-size: 11.5px;
+  color: var(--tg-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ng-textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: inherit;
+}
+
+.ng-segmentado {
+  display: flex;
+  border: 1px solid var(--tg-border);
+  border-radius: 10px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.ng-segmentado-opcion {
+  border: 0;
+  background: var(--tg-surface);
+  color: var(--tg-text-2);
+  font: 600 13px inherit;
+  padding: 9px 16px;
+  cursor: pointer;
+  border-right: 1px solid var(--tg-border);
+}
+
+.ng-segmentado-opcion:last-child {
+  border-right: 0;
+}
+
+.ng-segmentado-opcion[aria-checked="true"] {
+  background: var(--tg-cta);
+  color: #faf9f5;
+}
+
+.ng-vigencia-nota {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--tg-text-3);
+}
+
+.ng-formulario-acciones {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--tg-border-soft);
+}
+
+/* ---- cliente/producto nuevo ---- */
+.ng-cliente-nuevo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--tg-border);
+  border-radius: 10px;
+  background: var(--tg-surface-2);
+}
+
+/* ---- SelectorAsincrono ---- */
+.ng-selector {
+  position: relative;
+}
+
+.ng-selector-caja {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ng-selector-icono {
+  position: absolute;
+  right: 11px;
+  color: var(--tg-text-3);
+  pointer-events: none;
+}
+
+.ng-selector-icono--girando {
+  animation: ng-girar 0.8s linear infinite;
+}
+
+@keyframes ng-girar {
+  to { transform: rotate(360deg); }
+}
+
+.ng-selector-lista {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  border-radius: 10px;
+  box-shadow: var(--tg-shadow-flotante);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ng-selector-mensaje {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--tg-text-3);
+}
+
+.ng-selector-opcion {
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.ng-selector-opcion--activa {
+  background: var(--tg-accent-bg);
+}
+
+.ng-selector-opcion--nueva {
+  color: var(--tg-accent-text);
+  font-weight: 600;
+  border-top: 1px solid var(--tg-border-soft);
+  margin-top: 2px;
+}
+
+.ng-selector-principal {
+  font-weight: 500;
+}
+
+.ng-selector-detalle {
+  color: var(--tg-text-3);
+}
+
+.ng-selector--fijado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--tg-border);
+  border-radius: 10px;
+  background: var(--tg-surface-2);
+}
+
+.ng-selector-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tg-resuelto-fg);
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+/* ---- documentos ---- */
+.ng-documentos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ng-documentos-zona {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--tg-border);
+  border-radius: 10px;
+  color: var(--tg-text-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ng-documentos-zona:hover {
+  border-color: var(--tg-accent);
+  color: var(--tg-text);
+}
+
+.ng-documentos-zona--llena {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ng-documentos-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ng-documentos-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--tg-surface-2);
+  font-size: 12.5px;
+}
+
+.ng-documentos-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ng-documentos-tamano {
+  color: var(--tg-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ng-documentos-tipo {
+  font-size: 12px;
+  border: 1px solid var(--tg-border);
+  border-radius: 6px;
+  background: var(--tg-surface);
+  padding: 3px 6px;
+}
+
+.ng-documentos-quitar {
+  border: 0;
+  background: none;
+  color: var(--tg-text-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.ng-documentos-quitar:hover {
+  background: var(--tg-adverso-bg);
+  color: var(--tg-adverso-fg);
+}
+
+/* ---- resumen (paso 4) ---- */
+.ng-resumen-grupo-titulo {
+  margin: 4px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tg-text-3);
+}
+
+.ng-resumen-grupo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tg-surface-2);
+}
+
+.ng-resumen-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ng-resumen-etiqueta {
+  font-size: 11.5px;
+  color: var(--tg-text-3);
+}
+
+.ng-resumen-valor {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tg-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ng-resumen-falla {
+  margin: -6px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tg-surface-2);
+  font-size: 13px;
+  color: var(--tg-text-2);
+  white-space: pre-wrap;
+}
+
+/* ---- token de consulta ---- */
+.ng-token {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ng-token-titulo {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.ng-token-subiendo,
+.ng-token-ok {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--tg-text-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ng-token-aviso-fallo {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tg-progreso-bg);
+  color: var(--tg-progreso-fg);
+  font-size: 13px;
+}
+
+.ng-token-aviso-fallo p {
+  margin: 0;
+}
+
+.ng-token-caja {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--tg-surface-2);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ng-token-etiqueta {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tg-text-3);
+}
+
+.ng-token-valor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ng-token-valor code {
+  font-family: var(--tg-mono);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+  user-select: all;
+}
+
+.ng-token-advertencia {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--tg-adverso-fg);
+  font-weight: 600;
+}
+
+.ng-token-cerrar {
+  align-self: flex-end;
+}
+
+.ng-token-confirmar {
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--tg-adverso-bg);
+  color: var(--tg-adverso-fg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ng-token-confirmar p {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.ng-token-confirmar-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .ng-grid-2,
+  .ng-resumen-grupo {
+    grid-template-columns: 1fr;
+  }
+
+  .ng-pasos-titulo {
+    display: none;
+  }
+}
