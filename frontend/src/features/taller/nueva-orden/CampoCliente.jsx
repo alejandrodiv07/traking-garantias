@@ -33,7 +33,15 @@ export default function CampoCliente({ valor, onCambiar, errores }) {
     email: "",
   });
 
-  const seleccionado = valor?.existente ?? null;
+  // OJO: `valor.existente` también viaja en el borrador de un cliente
+  // NUEVO (línea 66 más abajo, para que el resumen tenga con qué pintar un
+  // nombre) y ese objeto es truthy desde la primera tecla. Si `seleccionado`
+  // se leyera de ahí, tipear cualquier campo del alta lo disparaba a
+  // verdadero y el `if` de abajo abandonaba el formulario de dos campos a
+  // mitad de escritura -- el campo no se "bloqueaba", el formulario entero
+  // desaparecía debajo del cursor. Solo un `id` real (una fila ya elegida
+  // por búsqueda) cuenta como "seleccionado".
+  const seleccionado = valor?.id ? valor.existente : null;
 
   function seleccionarExistente(cliente) {
     onCambiar({ id: cliente.id, existente: cliente });
@@ -72,19 +80,24 @@ export default function CampoCliente({ valor, onCambiar, errores }) {
   }
 
   if (registrandoNuevo && !seleccionado) {
+    const telefonoInvalido =
+      nuevo.telefono.trim() !== "" && !/^[0-9+][0-9]{6,19}$/.test(nuevo.telefono.trim());
+
     return (
       <div className="no-cliente-nuevo">
+        {/* El nombre va solo en su fila: recortarlo a la mitad del ancho
+            junto a la cédula lo hacía ilegible con razones sociales largas. */}
+        <label className="no-campo">
+          <span className="no-campo-etiqueta">Cliente *</span>
+          <input
+            className="tg-input"
+            value={nuevo.nombre}
+            onChange={(e) => actualizarNuevo("nombre", e.target.value)}
+            placeholder="Nombre o razón social"
+            required
+          />
+        </label>
         <div className="no-grid-2">
-          <label className="no-campo">
-            <span className="no-campo-etiqueta">Cliente *</span>
-            <input
-              className="tg-input"
-              value={nuevo.nombre}
-              onChange={(e) => actualizarNuevo("nombre", e.target.value)}
-              placeholder="Nombre o razón social"
-              required
-            />
-          </label>
           <label className="no-campo">
             <span className="no-campo-etiqueta">Cédula / RIF *</span>
             <div className="no-documento">
@@ -108,6 +121,26 @@ export default function CampoCliente({ valor, onCambiar, errores }) {
                 required
               />
             </div>
+          </label>
+          <label className="no-campo">
+            <span className="no-campo-etiqueta">Teléfono</span>
+            <input
+              className="tg-input"
+              type="tel"
+              inputMode="tel"
+              value={nuevo.telefono}
+              onChange={(e) => actualizarNuevo("telefono", e.target.value)}
+              placeholder="04141234567"
+              maxLength={20}
+              aria-invalid={telefonoInvalido ? "true" : undefined}
+              aria-describedby="no-cliente-telefono-ayuda"
+            />
+            <span id="no-cliente-telefono-ayuda" className="no-campo-ayuda">
+              Para enviarle recordatorios de la orden.
+            </span>
+            {telefonoInvalido ? (
+              <p className="no-campo-error">Solo dígitos (y un + inicial opcional), 7 a 20 caracteres.</p>
+            ) : null}
           </label>
         </div>
         {errores?.cliente ? <p className="no-campo-error">{errores.cliente}</p> : null}

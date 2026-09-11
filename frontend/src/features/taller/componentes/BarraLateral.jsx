@@ -1,7 +1,7 @@
 /**
  * Barra de navegación del módulo.
  *
- * En escritorio es una columna de 64 px a la izquierda; por debajo de 900 px
+ * En escritorio es una columna de 80 px a la izquierda; por debajo de 900 px
  * la misma lista se convierte en barra inferior (ver `Tablero.css`, §6). Es el
  * mismo DOM en los dos casos: cambiar el marcado por tamaño de pantalla obliga
  * a mantener dos árboles y a que el foco salte de sitio al rotar el móvil.
@@ -50,7 +50,7 @@ export default function BarraLateral({ actual = "tablero", usuario, onIr }) {
                 aria-current={activo ? "page" : undefined}
                 onClick={() => onIr?.(clave, etiqueta)}
               >
-                <Icono size={22} strokeWidth={1.8} aria-hidden="true" />
+                <Icono size={25} strokeWidth={1.9} aria-hidden="true" />
               </button>
               <span className="tg-tip" aria-hidden="true">
                 {etiqueta}
@@ -68,7 +68,7 @@ export default function BarraLateral({ actual = "tablero", usuario, onIr }) {
             aria-label="Ajustes"
             onClick={() => onIr?.("ajustes", "Ajustes")}
           >
-            <Settings size={22} strokeWidth={1.8} aria-hidden="true" />
+            <Settings size={25} strokeWidth={1.9} aria-hidden="true" />
           </button>
           <span className="tg-tip" aria-hidden="true">
             Ajustes

@@ -13,10 +13,15 @@
    POR QUÉ LOS TOKENS ESTÁN AQUÍ Y NO EN `:root`
    ---------------------------------------------------------------------------
    Misma convención que `login.css`: el módulo declara su paleta en su propio
-   contenedor. Los valores son los del sistema que ya usa la pantalla de
-   acceso (crema #faf9f5, terracota #d97757, Inter), para que iniciar sesión y
-   entrar al tablero se vea como una sola aplicación. El día que haya un
-   fichero de tokens compartido, estas declaraciones se borran y se hereda.
+   contenedor. Fondo, superficies y tipografía (crema #faf9f5, Inter) siguen
+   siendo los de `login.css`, para que iniciar sesión y entrar al tablero se
+   vea como una sola aplicación. El acento de marca (antes terracota #d97757)
+   SÍ se apartó a propósito: este módulo pasó a escala de grises — el acento
+   es ahora el mismo casi-negro que ya usaban el CTA y la barra lateral — y
+   los cuatro tonos de estado se revisaron para que seguir siendo distintos
+   entre sí sin depender de ese color de marca. El día que haya un fichero de
+   tokens compartido, estas declaraciones se borran y se hereda lo que siga
+   siendo común entre pantallas.
    =========================================================================== */
 
 .tg,
@@ -38,26 +43,32 @@
      sube a ~5:1 y cumple AA sin cambiar el tono gris del diseño. */
   --tg-text-3: rgba(15, 12, 8, 0.6);
 
-  /* ---- acento (mismo que el login) ---- */
-  --tg-accent: #d97757;
-  /* #d97757 sobre blanco da ~3.1:1: vale para bordes e iconos, NO para texto.
-     Para texto se usa la variante oscurecida, que sí cumple AA (~4.6:1). */
-  --tg-accent-text: #b85c3f;
-  --tg-accent-text-hover: #9c4c34;
-  --tg-accent-bg: rgba(217, 119, 87, 0.12);
+  /* ---- escala de grises: ya no hay acento de marca (antes terracota
+     #d97757, heredado del login). "Acento" pasó a significar "el propio
+     casi-negro del sistema", igual que en el tablero de Garantías. Los
+     cuatro tonos de estado de abajo SÍ conservan color donde es señal
+     funcional real (resuelto = verde, adverso = rojo); quitarles el color
+     quitaría información, no una preferencia de marca. ---- */
+  --tg-accent: #1a1a1a;
+  --tg-accent-text: #1a1a1a;
+  --tg-accent-text-hover: #0b0b0b;
+  --tg-accent-bg: rgba(26, 26, 26, 0.08);
 
   /* ---- casi-negro: CTA principal y barra lateral ---- */
   --tg-cta: #191915;
   --tg-cta-hover: #2b2b26;
 
   /* ---- cuatro tonos de estado. No diez: el operador distingue "en curso"
-     de "terminado" de un vistazo; el nombre exacto lo lee en la etiqueta. ---- */
+     de "terminado" de un vistazo; el nombre exacto lo lee en la etiqueta.
+     "neutro" y "progreso" son dos pasos de gris bien distintos entre sí
+     (no el mismo tono repetido); "resuelto" y "adverso" mantienen su color
+     porque ahí el color SÍ es la señal (éxito / riesgo). ---- */
   --tg-neutro-bg: #f1efe9;
   --tg-neutro-fg: #5f584d;
   --tg-neutro-dot: #a8a096;
-  --tg-progreso-bg: #fbf0e2;
-  --tg-progreso-fg: #8a5a12;
-  --tg-progreso-dot: #c98a2e;
+  --tg-progreso-bg: #e6e3da;
+  --tg-progreso-fg: #46403a;
+  --tg-progreso-dot: #7a736a;
   --tg-resuelto-bg: #e9f0e8;
   --tg-resuelto-fg: #3f6b46;
   --tg-resuelto-dot: #5c8f66;
@@ -65,7 +76,12 @@
   --tg-adverso-fg: #a63244;
   --tg-adverso-dot: #c25a68;
 
-  --tg-shadow-card: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
+  /* Elevación: una tarjeta se nota levantada de la página (offset + blur
+     real, no una línea plana); una sub-tarjeta anidada dentro de una
+     tarjeta sube un escalón menos, no al nivel de la página. */
+  --tg-shadow-card: 0 1px 2px rgba(20, 20, 19, 0.04), 0 10px 24px rgba(20, 20, 19, 0.07);
+  --tg-shadow-subcard: 0 1px 2px rgba(20, 20, 19, 0.05), 0 3px 10px rgba(20, 20, 19, 0.05);
+  --tg-shadow-subcard-hover: 0 2px 4px rgba(20, 20, 19, 0.06), 0 8px 18px rgba(20, 20, 19, 0.09);
   --tg-shadow-flotante: 0 12px 32px rgba(20, 20, 19, 0.14);
   --tg-ease: cubic-bezier(0.23, 1, 0.32, 1);
   --tg-radio: 14px;
@@ -95,14 +111,14 @@
    1. BARRA LATERAL
    =========================================================================== */
 .tg-rail {
-  width: 64px;
+  width: 80px;
   flex: none;
   background: var(--tg-cta);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 14px 0;
+  gap: 8px;
+  padding: 16px 0;
   position: sticky;
   top: 0;
   height: 100dvh;
@@ -110,23 +126,23 @@
 }
 
 .tg-marca {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   flex: none;
-  border-radius: 11px;
-  background: var(--tg-accent);
-  color: #fff;
+  border-radius: 12px;
+  background: #faf9f5;
+  color: #191915;
   display: grid;
   place-items: center;
   font-weight: 700;
   font-size: 18px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .tg-rail-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
   align-items: center;
   list-style: none;
@@ -139,7 +155,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -150,16 +166,17 @@
   width: 100%;
 }
 
-/* 44×44 reales. El icono mide 22; el resto es área de toque. */
+/* 52×52 reales (mínimo accesible es 44; se agranda para que el icono —ahora
+   de 25 en vez de 22— tenga aire alrededor sin verse apretado). */
 .tg-ic-btn {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: none;
   display: grid;
   place-items: center;
-  color: rgba(250, 249, 245, 0.6);
+  color: rgba(250, 249, 245, 0.55);
   cursor: pointer;
   transition: background-color 0.18s var(--tg-ease), color 0.18s var(--tg-ease);
 }
@@ -170,12 +187,12 @@
 }
 
 .tg-ic-btn[aria-current="page"] {
-  background: rgba(217, 119, 87, 0.22);
+  background: rgba(250, 249, 245, 0.16);
   color: #faf9f5;
 }
 
 .tg-ic-btn:focus-visible {
-  outline-color: var(--tg-accent);
+  outline-color: #faf9f5;
 }
 
 /* Marca de posición actual: además del color, una barra. El color por sí solo
@@ -183,11 +200,11 @@
 .tg-ic-barra {
   position: absolute;
   left: 0;
-  top: 10px;
-  bottom: 10px;
+  top: 11px;
+  bottom: 11px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--tg-accent);
+  background: #faf9f5;
 }
 
 /* La etiqueta existe siempre en el DOM para el lector de pantalla; el hover
@@ -231,13 +248,15 @@
   letter-spacing: 0.02em;
   background: var(--tg-accent-bg);
   color: var(--tg-accent-text);
-  border: 1px solid rgba(217, 119, 87, 0.28);
+  border: 1px solid rgba(26, 26, 26, 0.16);
   flex: none;
 }
 
 .tg-avatar--rail {
-  background: var(--tg-accent);
-  color: #fff;
+  width: 40px;
+  height: 40px;
+  background: #d3d3d3;
+  color: #0b0b0b;
   border-color: transparent;
 }
 
@@ -555,7 +574,7 @@
 }
 
 .tg-buscador:focus-within .tg-buscador-icono {
-  color: var(--tg-accent);
+  color: var(--tg-cta);
 }
 
 .tg-input {
@@ -581,8 +600,8 @@
 
 .tg-input:focus {
   outline: none;
-  border-color: var(--tg-accent);
-  box-shadow: 0 0 0 3px var(--tg-accent-bg);
+  border-color: rgba(15, 12, 8, 0.4);
+  box-shadow: 0 0 0 3px rgba(20, 20, 19, 0.1);
 }
 
 .tg-buscador-limpiar {
@@ -814,6 +833,15 @@
   border: 1px solid var(--tg-border-soft);
   border-radius: 12px;
   padding: 12px;
+  background: var(--tg-surface);
+  box-shadow: var(--tg-shadow-subcard);
+  transition: box-shadow 0.2s var(--tg-ease), transform 0.2s var(--tg-ease), border-color 0.2s var(--tg-ease);
+}
+
+.tg-vencimiento:hover {
+  box-shadow: var(--tg-shadow-subcard-hover);
+  border-color: rgba(15, 12, 8, 0.16);
+  transform: translateY(-1px);
 }
 
 .tg-vencimiento-fila {
