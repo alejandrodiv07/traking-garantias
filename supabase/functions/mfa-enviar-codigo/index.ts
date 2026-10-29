@@ -82,18 +82,46 @@ const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ?? "http://localhost:5173"
   .split(",")
   .map((o) => o.trim());
 
-function cabeceras(origen: string | null) {
+// Cabeceras de respaldo para una respuesta que NO siga a un preflight
+// (un POST directo). Debe citar TODAS las que manda supabase-js: el
+// preflight del navegador pide permiso por CADA una de ellas
+// (Access-Control-Request-Headers), y con una sola ausente el navegador
+// bloquea el POST real aunque el preflight devuelva 200 — se ve como
+// "CORS error" con 0 kB en el Network tab. Bugs del 29-30/10/2026:
+// faltaban `apikey` y `x-client-info` primero y `x-application-name`
+// después (header global de supabaseClient.js, propagado a Functions por
+// supabase-js). Validado con scripts/test-preflight-mfa.sh.
+const CABECERAS_PERMITIDAS =
+  "authorization, content-type, apikey, x-client-info, x-application-name";
+
+/**
+ * La respuesta al preflight hace ECO de las cabeceras que el cliente pidió
+ * (`Access-Control-Request-Headers`). No es confianza ciego ni generosidad:
+ * la cabecera solo dice QUÉ headers puede adjuntar el NAVEGADOR a sus
+ * propias peticiones — la autorización real sigue completa al otro lado
+ * (verify_jwt del gateway aquí, RLS y `auth.uid()` en Postgres). Con el eco,
+ * ningún header que supabase-js agregue en el futuro vuelve a bloquear el
+ * login; la lista estática queda como respaldo para llamadas sin preflight.
+ */
+function cabeceras(origen: string | null, pedidas: string | null) {
   const permitido = origen && ORIGENES.includes(origen) ? origen : ORIGENES[0];
   return {
     "Access-Control-Allow-Origin": permitido,
-    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Headers":
+      pedidas?.trim() || CABECERAS_PERMITIDAS,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
 }
 
-const json = (cuerpo: unknown, status: number, origen: string | null) =>
-  new Response(JSON.stringify(cuerpo), { status, headers: cabeceras(origen) });
+const json = (cuerpo: unknown, status: number, req: Request) =>
+  new Response(JSON.stringify(cuerpo), {
+    status,
+    headers: cabeceras(
+      req.headers.get("origin"),
+      req.headers.get("Access-Control-Request-Headers"),
+    ),
+  });
 
 /**
  * El `sub` del JWT, sin volver a llamar a la red para pedirlo.
@@ -118,17 +146,21 @@ function subDelJwt(auth: string): string | null {
 Deno.serve(async (req) => {
   const origen = req.headers.get("origin");
 
-  if (req.method === "OPTIONS") return new Response(null, { headers: cabeceras(origen) });
-  if (req.method !== "POST") return json({ error: "Método no permitido" }, 405, origen);
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: cabeceras(origen, req.headers.get("Access-Control-Request-Headers")),
+    });
+  }
+  if (req.method !== "POST") return json({ error: "Método no permitido" }, 405, req);
 
   const auth = req.headers.get("Authorization") ?? "";
   if (!auth.startsWith("Bearer ")) {
-    return json({ error: "No autorizado" }, 401, origen);
+    return json({ error: "No autorizado" }, 401, req);
   }
 
   const uid = subDelJwt(auth);
   if (!uid) {
-    return json({ error: "No autorizado" }, 401, origen);
+    return json({ error: "No autorizado" }, 401, req);
   }
 
   const URL_SB = Deno.env.get("SUPABASE_URL")!;
@@ -151,10 +183,10 @@ Deno.serve(async (req) => {
       return json(
         { error: "Demasiadas solicitudes de código. Espera unos minutos.", code: "54000" },
         429,
-        origen,
+        req,
       );
     }
-    return json({ error: "No se pudo generar el código" }, 401, origen);
+    return json({ error: "No se pudo generar el código" }, 401, req);
   }
 
   // ---------------------------------------------------------------
@@ -184,7 +216,7 @@ Deno.serve(async (req) => {
   if (errLeer || !fila?.code || errUsuario || !usuario?.user?.email) {
     // No se revela CUÁL de las dos lecturas falló: para quien mira desde
     // fuera, es indistinguible de un fallo genérico de envío.
-    return json({ error: "No se pudo enviar el código de verificación" }, 500, origen);
+    return json({ error: "No se pudo enviar el código de verificación" }, 500, req);
   }
 
   // ---------------------------------------------------------------
@@ -192,7 +224,7 @@ Deno.serve(async (req) => {
   // ---------------------------------------------------------------
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   if (!RESEND_API_KEY) {
-    return json({ error: "El servicio de correo no está configurado" }, 500, origen);
+    return json({ error: "El servicio de correo no está configurado" }, 500, req);
   }
 
   const correo = generarCorreoMfa({
@@ -222,7 +254,7 @@ Deno.serve(async (req) => {
   } catch {
     // Fallo de red hacia Resend. Igual que un 4xx/5xx de Resend: el
     // contenedor decide, nunca el detalle de la excepción.
-    return json({ error: "No se pudo enviar el código de verificación" }, 502, origen);
+    return json({ error: "No se pudo enviar el código de verificación" }, 502, req);
   }
 
   if (!respuestaResend.ok) {
@@ -230,10 +262,10 @@ Deno.serve(async (req) => {
     // para cerrar la sesión a medio verificar en su `catch` (ver el
     // comentario "Y SI FALLA EL ENVÍO DEL CÓDIGO" en LoginPage.jsx). Un 200
     // aquí dejaría un JWT válido sin ninguna pantalla donde completarlo.
-    return json({ error: "No se pudo enviar el código de verificación" }, 502, origen);
+    return json({ error: "No se pudo enviar el código de verificación" }, 502, req);
   }
 
   // El navegador recibe ÚNICAMENTE la caducidad. Ni el código ni la
   // respuesta cruda de Resend salen de esta función.
-  return json({ expira_en: expiraEn }, 201, origen);
+  return json({ expira_en: expiraEn }, 201, req);
 });

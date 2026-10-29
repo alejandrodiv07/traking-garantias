@@ -13,7 +13,9 @@ export default defineConfig({
     // usa para desmontar el árbol entre tests (sin él, cada render queda vivo
     // y los queries duplican elementos).
     globals: true,
-    include: ["src/**/*.test.jsx"],
+    // Las Edge Functions (Deno) se prueban aquí con `Deno` y supabase-js
+    // simulados: no hay runtime Deno en esta máquina ni en CI.
+    include: ["src/**/*.test.jsx", "../supabase/functions/**/*.test.ts"],
     setupFiles: ["./src/test/setup.js"],
   },
 });

@@ -29,11 +29,24 @@ const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ?? "http://localhost:5173"
   .split(",")
   .map((o) => o.trim());
 
-function cabeceras(origen: string | null) {
+// Debe citar TODAS las que manda supabase-js: con una sola ausente el
+// navegador bloquea el POST real aunque el preflight devuelva 200 y la UI ve
+// un "CORS error" con 0 kB. Mismo bug que tuvo `mfa-enviar-codigo` (29/10/2026).
+const CABECERAS_PERMITIDAS =
+  "authorization, content-type, apikey, x-client-info, x-application-name";
+
+/**
+ * El preflight hace ECO de lo que el navegador pidió
+ * (`Access-Control-Request-Headers`): solo dice qué headers puede adjuntar el
+ * navegador, la autorización real sigue siendo `mi_rol()` en Postgres. Así
+ * ningún header futuro de supabase-js vuelve a romper el alta de usuarios. La
+ * lista estática queda de respaldo para respuestas sin preflight.
+ */
+function cabeceras(origen: string | null, pedidas: string | null = null) {
   const permitido = origen && ORIGENES.includes(origen) ? origen : ORIGENES[0];
   return {
     "Access-Control-Allow-Origin": permitido,
-    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Headers": pedidas?.trim() || CABECERAS_PERMITIDAS,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
@@ -45,7 +58,11 @@ const json = (cuerpo: unknown, status: number, origen: string | null) =>
 Deno.serve(async (req) => {
   const origen = req.headers.get("origin");
 
-  if (req.method === "OPTIONS") return new Response(null, { headers: cabeceras(origen) });
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: cabeceras(origen, req.headers.get("Access-Control-Request-Headers")),
+    });
+  }
   if (req.method !== "POST") return json({ error: "Método no permitido" }, 405, origen);
 
   const auth = req.headers.get("Authorization") ?? "";
