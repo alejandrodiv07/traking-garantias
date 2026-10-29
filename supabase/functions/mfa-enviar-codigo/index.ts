@@ -35,12 +35,15 @@
 //  desde donde saltarse el segundo factor.
 //
 //  ---------------------------------------------------------------------
-//  SANDBOX DE RESEND (hoy)
+//  SANDBOX DE RESEND (hoy) — CONFIRMADO CON PRUEBAS EL 29/10/2026
 //  ---------------------------------------------------------------------
-//  `from: onboarding@resend.dev` sin dominio verificado SOLO entrega al
-//  correo con el que se creó la cuenta de Resend, sea cual sea el `to` que
-//  se le pida. Sirve para validar el flujo de punta a punta; para que
-//  llegue a *cualquier* usuario hace falta un dominio propio verificado
+//  `from: onboarding@resend.dev` sin dominio verificado NO solo filtra la
+//  entrega: Resend RECHAZA el POST con 403 ("Testing domain restriction:
+//  The resend.dev domain is for testing and can only send to your own
+//  email address") cuando el `to` no es el correo con el que se creó la
+//  cuenta de Resend. Ese 403 es exactamente el 502 que devolvía esta
+//  función a todo usuario distinto del dueño. Para que llegue a
+//  *cualquier* usuario hace falta un dominio propio verificado
 //  (SPF/DKIM/DMARC, ya apuntado en la migración) y cambiar el `from`.
 //
 //  Despliegue:
@@ -54,6 +57,24 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { generarCorreoMfa } from "./plantilla-correo.ts";
 
 const REMITENTE = "Prime Telecom <onboarding@resend.dev>";
+
+// =====================================================================
+//  ⚠️ TEMPORAL (29/10/2026) — SOLO PRUEBAS. REVERTIR ANTES DE PRODUCCIÓN.
+// =====================================================================
+//  El sandbox de Resend (remitente `onboarding@resend.dev`) rechaza con
+//  403 cualquier destinatario distinto del dueño de la cuenta Resend
+//  (samuel.alejandronle66@gmail.com). Confirmado con el log de Resend:
+//  "Testing domain restriction: The resend.dev domain is for testing and
+//  can only send to your own email address." Eso devolvía 502 a TODO
+//  inicio de sesión (la UI lo mostraba como "Credenciales incorrectas").
+//
+//  Mientras `primetelecom.com` no esté verificado en Resend (SPF/DKIM) y
+//  el REMITENTE no apunte a ese dominio, se fuerza el destino al correo
+//  del dueño para poder probar el flujo de punta a punta con cualquier
+//  cuenta. Al revertir: borrar esta constante y volver a
+//  `to: [usuario.user.email]` más abajo.
+// =====================================================================
+const DESTINATARIO_TEMPORAL = "samuel.alejandronle66@gmail.com";
 const MINUTOS_VIGENCIA = 5; // debe coincidir con el default de email_mfa_codes.expires_at
 
 // Lista blanca de orígenes. Nunca "*" con credenciales.
@@ -189,8 +210,10 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        // TEMPORAL (ver const DESTINATARIO_TEMPORAL arriba): era
+        // `to: [usuario.user.email]`.
         from: REMITENTE,
-        to: [usuario.user.email],
+        to: [DESTINATARIO_TEMPORAL],
         subject: correo.asunto,
         html: correo.html,
         text: correo.texto,
