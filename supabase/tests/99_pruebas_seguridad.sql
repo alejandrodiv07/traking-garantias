@@ -1,3 +1,8 @@
+-- Pruebas de seguridad (roles y RLS) sobre los NOMBRES NUEVOS del hito
+-- "registro y control de garantía": registros, historial_registros,
+-- notas_internas. Portada de la versión anterior (que probaba garantías).
+-- Cambio de permisos del hito (spec §6): el TECNICO AHORA SÍ crea
+-- registros, pero por la función `registrar_ingreso`, no insertando directo.
 \set ON_ERROR_STOP off
 \pset pager off
 \set QUIET on
@@ -12,22 +17,8 @@ INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
  ('11111111-1111-1111-1111-111111111111','admin@primetelecom.com',   '{"full_name":"Ada Admin","role":"ADMIN"}'::jsonb),
  ('22222222-2222-2222-2222-222222222222','tecnico@primetelecom.com', '{"full_name":"Tito Tecnico","role":"ADMIN"}'::jsonb),
  ('33333333-3333-3333-3333-333333333333','recep@primetelecom.com',   '{"full_name":"Rosa Recepcion"}'::jsonb);
--- ---------------------------------------------------------------------
---  SEMILLA DEL SEGUNDO FACTOR  (migración ...0003_mfa_email)
--- ---------------------------------------------------------------------
--- Desde esa migración, `mi_rol()` exige `mfa_ok()`: un JWT sin código
--- verificado no tiene rol efectivo. Estas pruebas comprueban ROLES y RLS, no
--- el 2FA (eso es 96_pruebas_mfa), así que sus usuarios entran con el segundo
--- factor ya superado. Sin esta semilla, cada prueba que dependa de un rol
--- mediría el 2FA por accidente y fallaría por el motivo equivocado.
---
--- CONVENIO: el `session_id` de las pruebas ES el id del usuario. Un uuid vale
--- igual que otro para `mfa_sesiones`, y así cada transacción de abajo puede
--- fijar los dos claims con el mismo literal, sin una tabla de constantes.
---
--- El bloque se guarda con `to_regclass`: si estas pruebas se corren SOLO con
--- ...0001_auth_base (sin la migración del 2FA), no hay tabla, no hay puerta
--- que abrir, y el fichero sigue pasando igual.
+-- MFA ya superado (estas pruebas miden ROLES y RLS, no el 2FA: eso es 96).
+-- CONVENIO: el session_id de las pruebas ES el id del usuario.
 DO $$
 BEGIN
   IF to_regclass('public.mfa_sesiones') IS NULL THEN RETURN; END IF;
@@ -35,7 +26,6 @@ BEGIN
   SELECT p.id, p.id FROM public.profiles p
   ON CONFLICT (session_id) DO NOTHING;
 END $$;
-
 
 -- T1: METADATA MANIPULADO NO OTORGA ADMIN  (la vulnerabilidad original)
 SELECT pg_temp.chk('T1 metadata {"role":"ADMIN"} NO escala privilegios',
@@ -45,10 +35,17 @@ SELECT pg_temp.chk('T1 metadata {"role":"ADMIN"} NO escala privilegios',
 UPDATE public.profiles SET role='ADMIN'    WHERE email='admin@primetelecom.com';
 UPDATE public.profiles SET role='RECEPCION' WHERE email='recep@primetelecom.com';
 
-INSERT INTO public.productos (marca_id, modelo, categoria, meses_garantia)
-SELECT id,'HG8245','ONT',12 FROM public.marcas WHERE nombre='Huawei';
 INSERT INTO public.clientes (tipo_documento, documento, nombre, email)
 VALUES ('V','12345678','Juan Perez','juan@correo.com');
+INSERT INTO public.equipos (numero_serie, producto_id, cliente_id)
+SELECT 'RT5-8842-AA', p.id, c.id
+FROM public.productos p, public.clientes c
+WHERE p.modelo='HG8245' AND c.documento='12345678' LIMIT 1;
+-- El registro vive solo vía RPC (§16 del plan); la mesa se siembra como postgres.
+INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)
+SELECT e.id, 'No enciende, huele a quemado', 'EN_GARANTIA', '11111111-1111-1111-1111-111111111111',
+       extensions.digest('seguridad-1', 'sha256')
+FROM public.equipos e LIMIT 1;
 
 -- ============ T2: RECURSION RLS EN PROFILES ============
 BEGIN;
@@ -83,7 +80,7 @@ ROLLBACK;
 -- ============ T5: anon NO TOCA NINGUNA TABLA ============
 BEGIN;
 SET LOCAL ROLE anon;
-SELECT count(*) FROM public.garantias;  -- DEBE FALLAR: permiso denegado
+SELECT count(*) FROM public.registros;  -- DEBE FALLAR: permiso denegado
 ROLLBACK;
 BEGIN;
 SET LOCAL ROLE anon;
@@ -94,47 +91,31 @@ SET LOCAL ROLE anon;
 SELECT count(*) FROM public.clientes;   -- DEBE FALLAR
 ROLLBACK;
 
--- ============ T6: TECNICO NO PUEDE CREAR ORDENES ============
+-- ============ T6: TECNICO NO INSERTA REGISTROS DIRECTO ============
+-- La creación va por `registrar_ingreso` (Tarea 11 del plan), que asigna
+-- el equipo, el registro y su revisión de recepción en una transacción.
+-- No existe ni GRANT ni policy de INSERT sobre `registros`.
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-SELECT * FROM public.crear_garantia(
-  (SELECT id FROM public.clientes LIMIT 1), (SELECT id FROM public.productos LIMIT 1),
-  CURRENT_DATE - 30, 'No enciende');   -- DEBE FALLAR 42501
-ROLLBACK;
-
--- ============ T7: RECEPCION CREA LA ORDEN Y RECIBE EL TOKEN UNA VEZ ============
-SET request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
-SET request.jwt.claim.session_id = '33333333-3333-3333-3333-333333333333';
-SET ROLE authenticated;
-CREATE TEMP TABLE t7_src AS SELECT * FROM public.crear_garantia(
-  (SELECT id FROM public.clientes LIMIT 1), (SELECT id FROM public.productos LIMIT 1),
-  CURRENT_DATE - 30, 'No enciende, huele a quemado', 'SN-0001', 'F-889');
-RESET ROLE;
-CREATE TEMP TABLE t7 AS SELECT * FROM t7_src;
-SELECT pg_temp.chk('T7 numero_orden legible y secuencial',
-  (SELECT numero_orden LIKE 'ORD-____-000001' FROM t7));
-SELECT pg_temp.chk('T7b token de 128 bits devuelto en claro una vez',
-  (SELECT length(consulta_token)=32 FROM t7));
-SELECT pg_temp.chk('T7c cobertura calculada = EN_GARANTIA (compra hace 30d, 12 meses)',
-  (SELECT cobertura::text='EN_GARANTIA' FROM t7));
-SELECT pg_temp.chk('T7d el token NO se guarda en claro en la tabla',
-  NOT EXISTS (SELECT 1 FROM public.garantias g, t7 WHERE g.consulta_token_hash::text LIKE '%'||t7.consulta_token||'%'));
-SELECT pg_temp.chk('T7e historial escrito automaticamente al crear',
-  (SELECT count(*)=1 FROM public.historial_garantias h, t7 WHERE h.garantia_id=t7.garantia_id AND h.estado_anterior IS NULL AND h.estado_nuevo='RECIBIDO'));
+INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por)
+VALUES ((SELECT id FROM public.equipos LIMIT 1), 'Intento directo', 'EN_GARANTIA', auth.uid());
+ROLLBACK;  -- DEBE FALLAR (permiso denegado)
+SELECT pg_temp.chk('T6 un TECNICO no inserta registros directo (por la función)',
+  (SELECT count(*)=1 FROM public.registros));
 
 -- ============ T8: MAQUINA DE ESTADOS ============
-UPDATE public.garantias SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
+UPDATE public.registros SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
 BEGIN;
-UPDATE public.garantias SET estado='ENTREGADO';  -- RECIBIDO -> ENTREGADO: NO EXISTE
+UPDATE public.registros SET estado='ENTREGADO';  -- RECIBIDO -> ENTREGADO: NO EXISTE
 ROLLBACK;
 BEGIN;
-UPDATE public.garantias SET estado='EN_DIAGNOSTICO';
+UPDATE public.registros SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T8b transicion valida RECIBIDO -> EN_DIAGNOSTICO aceptada',
-  (SELECT estado='EN_DIAGNOSTICO' FROM public.garantias));
+  (SELECT estado='EN_DIAGNOSTICO' FROM public.registros));
 SELECT pg_temp.chk('T8c historial registra estado_anterior Y estado_nuevo',
-  (SELECT count(*)=1 FROM public.historial_garantias WHERE estado_anterior='RECIBIDO' AND estado_nuevo='EN_DIAGNOSTICO'));
+  (SELECT count(*)=1 FROM public.historial_registros WHERE estado_anterior='RECIBIDO' AND estado_nuevo='EN_DIAGNOSTICO'));
 ROLLBACK;
 
 -- ============ T9: TECNICO SOLO TOCA LO SUYO ============
@@ -142,63 +123,40 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-UPDATE public.garantias SET estado='EN_DIAGNOSTICO';
-SELECT pg_temp.chk('T9 TECNICO asignado SI puede avanzar su orden',
-  (SELECT estado='EN_DIAGNOSTICO' FROM public.garantias));
+UPDATE public.registros SET estado='EN_DIAGNOSTICO';
+SELECT pg_temp.chk('T9 TECNICO asignado SI puede avanzar su registro',
+  (SELECT estado='EN_DIAGNOSTICO' FROM public.registros));
 ROLLBACK;
 
-UPDATE public.garantias SET tecnico_asignado_id='11111111-1111-1111-1111-111111111111';
+UPDATE public.registros SET tecnico_asignado_id='11111111-1111-1111-1111-111111111111';
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-UPDATE public.garantias SET estado='EN_DIAGNOSTICO';
+UPDATE public.registros SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T9b TECNICO NO asignado no modifica (0 filas)',
-  (SELECT estado='RECIBIDO' FROM public.garantias));
+  (SELECT estado='RECIBIDO' FROM public.registros));
 ROLLBACK;
-UPDATE public.garantias SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
+UPDATE public.registros SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
 
 -- ============ T10: HISTORIAL INMUTABLE (incluso como superusuario) ============
 BEGIN;
-UPDATE public.historial_garantias SET comentario='falsificado';  -- DEBE FALLAR
+UPDATE public.historial_registros SET comentario='falsificado';  -- DEBE FALLAR
 ROLLBACK;
 BEGIN;
-DELETE FROM public.historial_garantias;  -- DEBE FALLAR
+DELETE FROM public.historial_registros;  -- DEBE FALLAR
 ROLLBACK;
 SELECT pg_temp.chk('T10 historial intacto tras intentos de UPDATE/DELETE',
-  (SELECT count(*)=1 FROM public.historial_garantias));
-
--- ============ T11: CONSULTA PUBLICA ============
-SET ROLE anon;
-SELECT pg_temp.chk('T11a token incorrecto devuelve CERO filas (no revela nada)',
-  (SELECT count(*)=0 FROM public.consultar_garantia('ORD-2026-000001','0000000000000000000000000000dead')));
-RESET ROLE;
-\gset
-SELECT numero_orden AS ord, consulta_token AS tok FROM t7 \gset
-SET ROLE anon;
-SELECT pg_temp.chk('T11b consulta con numero_orden + token correcto devuelve 1 fila',
-  (SELECT count(*)=1 FROM public.consultar_garantia(:'ord', :'tok')));
-RESET ROLE;
-
-SELECT pg_temp.chk('T11c la respuesta publica NO expone cedula/correo/costo/tecnico/notas',
-  NOT EXISTS (
-    SELECT 1 FROM information_schema.parameters
-     WHERE specific_schema='public' AND parameter_mode='OUT'
-       AND specific_name IN (SELECT specific_name FROM information_schema.routines
-                              WHERE routine_schema='public' AND routine_name='consultar_garantia')
-       AND parameter_name ~* 'documento|email|costo|tecnico|nota|cliente'));
-
-SELECT pg_temp.chk('T11d el intento fallido quedo registrado en la bitacora',
-  (SELECT count(*)>=1 FROM public.consulta_publica_intentos WHERE NOT exito));
+  (SELECT count(*)=1 FROM public.historial_registros));
 
 -- ============ T12: CHECKS DE COHERENCIA ============
 BEGIN;
-UPDATE public.garantias SET fecha_entrega = now() - interval '400 days'; -- entrega < ingreso: FALLA
+UPDATE public.registros SET fecha_entrega = now() - interval '400 days'; -- entrega < ingreso: FALLA
 ROLLBACK;
 BEGIN;
-UPDATE public.garantias SET cobertura='ANULADA_POR_USO';  -- sin motivo: FALLA
+UPDATE public.registros SET cobertura='ANULADA_POR_USO';  -- sin motivo: FALLA
 ROLLBACK;
 BEGIN;
-UPDATE public.garantias SET cobertura='EN_GARANTIA', costo_reparacion=50; -- cobrar lo cubierto: FALLA
+UPDATE public.registros SET cobertura='EN_GARANTIA', costo_reparacion=50; -- cobrar lo cubierto: FALLA
 ROLLBACK;
 SELECT pg_temp.chk('T12 los 3 CHECK de coherencia rechazaron los 3 intentos', TRUE);
