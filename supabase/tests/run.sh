@@ -47,7 +47,7 @@ CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN BYPASSRLS;
 SQL
 
-# Aplica el harness y las migraciones (en la base dada, con cortes estrictos).
+# Aplica el harness, las migraciones y el seed (en la base dada, con cortes estrictos).
 preparar_base() {
   psql_db "$1" -v ON_ERROR_STOP=1 -f - \
     < "$tests_dir/00_harness_supabase_local.sql" >/dev/null
@@ -55,6 +55,15 @@ preparar_base() {
     case "$(basename "$m")" in _*) continue ;; esac   # copias, nunca se aplican
     psql_db "$1" -v ON_ERROR_STOP=1 -f - < "$m" >/dev/null
   done
+  if [ -f "$tests_dir/../seed.sql" ]; then
+    psql_db "$1" -v ON_ERROR_STOP=1 -f - < "$tests_dir/../seed.sql" >/dev/null
+    # El seed deja el catálogo usable: una base sin productos es un error.
+    n_productos=$(psql_db "$1" -tA -c "SELECT count(*) FROM public.productos")
+    if [ "$n_productos" -eq 0 ]; then
+      echo ">> ERROR: el seed no dejó productos en la base" >&2
+      exit 1
+    fi
+  fi
 }
 
 if [ $# -gt 0 ]; then
