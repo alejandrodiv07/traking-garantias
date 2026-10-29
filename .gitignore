@@ -9,3 +9,4 @@ htmlcov/
 node_modules/
 dist/
 claude outputs/
+.superpowers/
