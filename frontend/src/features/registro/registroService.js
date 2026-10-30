@@ -18,7 +18,7 @@ function mapearError(err) {
 }
 
 /** Envuelve una llamada RPC: un throw de red se convierte en SIN_CONEXION. */
-async function rpc(nombre, params) {
+export async function rpc(nombre, params) {
   try {
     const { data, error } = await supabase.rpc(nombre, params);
     if (error) return mapearError(error);
