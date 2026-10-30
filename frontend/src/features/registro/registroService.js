@@ -35,6 +35,24 @@ export async function buscarEquipo(serial) {
   return rpc("buscar_equipo", { p_serial: serial });
 }
 
+/** Catálogo (marca → modelo) para el paso "serial nuevo". */
+export async function listarProductos() {
+  try {
+    const { data, error } = await supabase
+      .from("productos")
+      .select("id, marca(nombre), modelo, categoria, meses_garantia")
+      .eq("activo", true)
+      .order("modelo");
+    if (error) return mapearError(error);
+    return { ok: true, datos: data ?? [] };
+  } catch (err) {
+    if (err instanceof TypeError || String(err?.name ?? "").startsWith("Fetch")) {
+      return { ok: false, codigo: "SIN_CONEXION", mensaje: "Sin conexión" };
+    }
+    return { ok: false, codigo: "DESCONOCIDO", mensaje: err?.message ?? "Error inesperado" };
+  }
+}
+
 export async function guardarCliente(datos) {
   return rpc("guardar_cliente", {
     p_tipo: datos.tipo,

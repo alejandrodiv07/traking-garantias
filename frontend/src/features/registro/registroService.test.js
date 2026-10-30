@@ -28,7 +28,10 @@ const fakes = vi.hoisted(() => {
       upload.mockReset();
       insert.mockReset();
       storageFrom.mockClear();
-      from.mockClear();
+      // mockImplementation de un test anterior sobrevive: la impl por defecto
+      // (from → {insert}) va a restablecerse cada vez.
+      from.mockReset();
+      from.mockImplementation(() => ({ insert }));
     },
   };
 });
@@ -44,6 +47,7 @@ vi.mock("../../lib/supabaseClient.js", () => ({
 import {
   buscarEquipo,
   guardarCliente,
+  listarProductos,
   previsualizarCobertura,
   registrarIngreso,
   registrarRevision,
@@ -196,6 +200,31 @@ describe("subirAdjunto: validación ANTES de subir", () => {
     const r = await subirAdjunto("reg-1", pdf, { tipo: "FOTO", etiqueta: "x" });
     expect(fakes.upload).not.toHaveBeenCalled();
     expect(r).toMatchObject({ ok: false, codigo: "FORMATO_NO_ADMITIDO" });
+  });
+});
+
+describe("listarProductos (catálogo del paso serial nuevo)", () => {
+  it("lee productos activos con su marca, ordenados por marca y modelo", async () => {
+    const select = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        order: vi.fn().mockResolvedValue({ data: [{ id: "p1" }], error: null }),
+      }),
+    });
+    fakes.from.mockImplementation(() => ({ select }));
+    const r = await listarProductos();
+    expect(fakes.from).toHaveBeenCalledWith("productos");
+    expect(select).toHaveBeenCalledWith(
+      "id, marca(nombre), modelo, categoria, meses_garantia",
+    );
+    expect(r).toEqual({ ok: true, datos: [{ id: "p1" }] });
+  });
+
+  it("un fallo de red da SIN_CONEXION", async () => {
+    fakes.from.mockImplementation(() => ({
+      select: vi.fn(() => { throw new TypeError("Failed to fetch"); }),
+    }));
+    const r = await listarProductos();
+    expect(r).toMatchObject({ ok: false, codigo: "SIN_CONEXION" });
   });
 });
 
