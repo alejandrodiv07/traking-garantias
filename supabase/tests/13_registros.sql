@@ -62,6 +62,13 @@ VALUES (pg_temp.equipo_id(), 'No enciende, huele a quemado', 'EN_GARANTIA',
         '11111111-1111-1111-1111-111111111111',
         '22222222-2222-2222-2222-222222222222',
         extensions.digest('prueba-1', 'sha256'));
+-- La 0017 (spec §4.5) exige la foto de la auditoría de recepción para
+-- pasar a EN_DIAGNOSTICO: la orden de estas pruebas de máquina de estados
+-- ya la trae (con el patrón de ruta de 15_adjuntos.sql).
+INSERT INTO public.adjuntos (orden_id, tipo, etiqueta, ruta, mime, bytes)
+SELECT id, 'FOTO', 'recepcion', 'ordenes/' || id || '/archivo-foto-1.png', 'image/png', 1024
+  FROM public.ordenes_servicio
+ WHERE falla_reportada = 'No enciende, huele a quemado';
 
 -- ============ CORRELATIVO ============
 INSERT INTO public.ordenes_servicio (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)

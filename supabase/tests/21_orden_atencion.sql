@@ -159,8 +159,24 @@ SELECT pg_temp.chk('A6c el rechazo no dejó filas',
 -- ============ El trigger de eventos anota la cobertura (A7) ============
 -- Camino de la orden hasta EN_REPARACION (transiciones válidas) y luego un
 -- UPDATE de cobertura DIRECTO: el trigger debe dejar la fila BITACORA nueva.
+-- La 0017 (§4.5) obliga primero a darle lo que pide el avance: la FOTO de
+-- la auditoría de recepción para EN_DIAGNOSTICO y la cobertura EN_GARANTIA
+-- (solo GARANTIA repara desde EN_DIAGNOSTICO) con la revisión que la
+-- restaura — la orden quedó POR_DETERMINAR en A3.
+INSERT INTO public.adjuntos (orden_id, tipo, etiqueta, ruta, mime, bytes)
+SELECT id, 'FOTO', 'recepcion', 'ordenes/' || id || '/archivo-foto-1.png', 'image/png', 1024
+  FROM public.ordenes_servicio WHERE id = pg_temp.orden_id();
+INSERT INTO public.revisiones (orden_id, tipo, revisado_por, checklist)
+VALUES (pg_temp.orden_id(), 'TECNICA', '22222222-2222-2222-2222-222222222222', pg_temp.checklist_ok());
 UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO' WHERE id = pg_temp.orden_id();
 UPDATE public.ordenes_servicio SET estado='EN_REPARACION'  WHERE id = pg_temp.orden_id();
+-- Con la orden en reparación, la cobertura se anula primero (§4.5/§4.4:
+-- «si la cobertura cambia con la orden ya en reparación…») para que el
+-- UPDATE de abajo sea un cambio real a EN_GARANTIA que la bitácora anote.
+UPDATE public.ordenes_servicio
+   SET cobertura = 'ANULADA_POR_USO',
+       motivo_anulacion_cobertura = 'Senales de uso en la revisión técnica del titular'
+ WHERE id = pg_temp.orden_id();
 UPDATE public.ordenes_servicio
    SET cobertura = 'EN_GARANTIA', motivo_anulacion_cobertura = NULL
  WHERE id = pg_temp.orden_id();

@@ -112,9 +112,12 @@ BEGIN
     ('SLA14', 14, 'ALERTA'), ('SLA15', 15, 'CRITICO')) t(serie, dias, nivel)
   LOOP
     -- el taller le lleva `dias` días: ingresa `dias` días atrás (mediodía, para
-    -- fijar el día local exacto). Sin factura: cobertura POR_DETERMINAR (cuenta).
+    -- fijar el día local exacto). Con factura vigente: cobertura EN_GARANTIA —
+    -- la 0017 (spec §4.5) solo deja reparar a un servicio GARANTIA desde
+    -- EN_DIAGNOSTICO, y TAB-SLA15 se cierra al final de este archivo.
     PERFORM public.abrir_orden('TAB-' || caso.serie, pg_temp.producto_id(), pg_temp.cliente_id(),
-      'Falla del tablero en el equipo', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-' || caso.serie, hoy, 365,
+      NULL, NULL, NULL,
       ((((public.hoy_local() - caso.dias)::text) || ' 12:00')::timestamp AT TIME ZONE 'America/Caracas'));
     PERFORM pg_temp.chk('Nivel SLA ' || caso.serie || ' (' || caso.dias || ' días) → ' || caso.nivel,
       (SELECT nivel_sla = caso.nivel FROM public.v_tablero WHERE serial = 'TAB-' || caso.serie));
@@ -158,6 +161,13 @@ END $$;
 -- fecha_entrega >= fecha_ingreso no dependa de la hora de la corrida, se
 -- cierra el registro con 15 días en taller (ingresó el mediodía de hace
 -- 15 días: now() siempre le lleva horas de ventaja).
+-- La 0017 (spec §4.5) exige la foto de la auditoría de recepción para que
+-- la orden avance a EN_DIAGNOSTICO: se sube antes del cierre.
+INSERT INTO public.adjuntos (orden_id, tipo, etiqueta, ruta, mime, bytes)
+SELECT r.id, 'FOTO', 'recepcion', 'ordenes/' || r.id || '/archivo-foto-1.png', 'image/png', 1024
+  FROM public.ordenes_servicio r
+  JOIN public.equipos e ON e.id = r.equipo_id
+ WHERE e.numero_serie = 'TAB-SLA15';
 DO $$
 BEGIN
   EXECUTE 'SET LOCAL ROLE authenticated';

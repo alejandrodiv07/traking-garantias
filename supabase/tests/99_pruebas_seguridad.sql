@@ -46,6 +46,11 @@ INSERT INTO public.ordenes_servicio (equipo_id, falla_reportada, cobertura, crea
 SELECT e.id, 'No enciende, huele a quemado', 'EN_GARANTIA', '11111111-1111-1111-1111-111111111111',
        extensions.digest('seguridad-1', 'sha256')
 FROM public.equipos e LIMIT 1;
+-- La 0017 (spec §4.5) exige la foto de la auditoría de recepción para
+-- avanzar a EN_DIAGNOSTICO: las pruebas T8/T9 lo hacen y la orden la trae.
+INSERT INTO public.adjuntos (orden_id, tipo, etiqueta, ruta, mime, bytes)
+SELECT id, 'FOTO', 'recepcion', 'ordenes/' || id || '/archivo-foto-1.png', 'image/png', 1024
+  FROM public.ordenes_servicio LIMIT 1;
 
 -- ============ T2: RECURSION RLS EN PROFILES ============
 BEGIN;

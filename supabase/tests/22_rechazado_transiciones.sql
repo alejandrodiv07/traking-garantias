@@ -196,6 +196,21 @@ CREATE FUNCTION pg_temp.od() RETURNS uuid LANGUAGE sql AS
 CREATE FUNCTION pg_temp.oe() RETURNS uuid LANGUAGE sql AS
   $$ SELECT id FROM public.ordenes_servicio WHERE falla_reportada='Falla E: sin carga' $$;
 
+-- La 0017 (spec §4.5) impone las reglas de avance: las órdenes que estas
+-- pruebas avanzan a EN_DIAGNOSTICO (B y D, en R6 y R5) llevan ya su foto
+-- de la auditoría de recepción. La orden E (R7) se prepara además para el
+-- PRESUPUESTADO del §4.4: la regla (b) exige el monto y el CHECK
+-- ck_costo_solo_si_no_cubierta de la 0006 no admite un monto con la
+-- cobertura EN_GARANTIA, así que se la deja POR_DETERMINAR (sin motivo) y
+-- se siembra el costo antes de transitar.
+INSERT INTO public.adjuntos (orden_id, tipo, etiqueta, ruta, mime, bytes)
+SELECT id, 'FOTO', 'recepcion', 'ordenes/' || id || '/archivo-foto-1.png', 'image/png', 1024
+  FROM public.ordenes_servicio
+ WHERE falla_reportada IN ('Falla B: antena floja', 'Falla D: sin tarjeta', 'Falla E: sin carga');
+UPDATE public.ordenes_servicio
+   SET cobertura = 'POR_DETERMINAR', costo_reparacion = 40
+ WHERE falla_reportada = 'Falla E: sin carga';
+
 -- ============ R0: el catálogo ============
 SELECT pg_temp.chk('R0 RECHAZADO existe: nombre Rechazado, orden 85, es_final FALSE',
   (SELECT nombre = 'Rechazado' AND orden = 85 AND es_final = FALSE
