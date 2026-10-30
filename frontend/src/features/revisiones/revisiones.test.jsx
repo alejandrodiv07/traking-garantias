@@ -13,11 +13,13 @@ vi.mock("./revisionesService.js", () => fakes);
 import HistorialRevisiones from "./HistorialRevisiones.jsx";
 import RevisionForm from "./RevisionForm.jsx";
 
+// Forma real de lo que devuelve el embed por FK `revisado_por → profiles`:
+// el servicio pide `revisor:revisado_por(full_name)`, así que llega el nombre.
 const REVISIONES = [
   {
     id: "v2",
     tipo: "TECNICA",
-    revisado_por: "Tito Tecnico",
+    revisor: { full_name: "Tito Tecnico" },
     revisado_en: "2026-09-20T14:00:00+00:00",
     checklist: { senales: { golpes: true } },
     resultado: "EN_GARANTIA",
@@ -26,7 +28,7 @@ const REVISIONES = [
   {
     id: "v1",
     tipo: "RECEPCION",
-    revisado_por: "Ada Admin",
+    revisor: { full_name: "Ada Admin" },
     revisado_en: "2026-09-02T14:00:00+00:00",
     checklist: {},
     resultado: "POR_DETERMINAR",
@@ -55,10 +57,12 @@ describe("HistorialRevisiones", () => {
     expect(filas[1]).toHaveTextContent(/POR_DETERMINAR/);
   });
 
-  it("muestra revisor, fecha, resultado y observaciones", async () => {
+  it("muestra el nombre del revisor, fecha, resultado y observaciones", async () => {
     fakes.listarRevisiones.mockResolvedValue({ ok: true, datos: [REVISIONES[0]] });
     render(<HistorialRevisiones registroId="r1" />);
     await waitFor(() => expect(screen.getByText(/sin causa externa/)).toBeTruthy());
+    // el revisor se ve por su nombre, jamás como UUID
+    expect(screen.getByText(/Tito Tecnico/)).toBeTruthy();
   });
 
   it("NO hay botones de editar ni de borrar", async () => {

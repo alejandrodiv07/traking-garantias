@@ -14,7 +14,9 @@ export async function listarRevisiones(registroId) {
   try {
     const { data, error } = await supabase
       .from("revisiones")
-      .select("id, tipo, revisado_por, revisado_en, checklist, resultado, observaciones")
+      // Embed por FK `revisiones.revisado_por → profiles.id`: el revisor
+      // se ve por su nombre, no como UUID.
+      .select("id, tipo, revisado_en, checklist, resultado, observaciones, revisor:revisado_por(full_name)")
       .eq("registro_id", registroId)
       .order("revisado_en", { ascending: false });
     if (error) return mapearError(error);

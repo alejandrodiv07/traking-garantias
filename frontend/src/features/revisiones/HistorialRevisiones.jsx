@@ -36,7 +36,7 @@ export default function HistorialRevisiones({ registroId }) {
         <li key={v.id} data-testid="revision">
           <p>
             <strong>{v.tipo === "RECEPCION" ? "Recepción" : "Técnica"}</strong>{" "}
-            — {v.revisado_por ?? "—"}{" "}
+            — {v.revisor?.full_name ?? "—"}{" "}
             <time dateTime={v.revisado_en}>
               {new Date(v.revisado_en).toLocaleDateString("es-VE", {
                 day: "numeric", month: "short", year: "numeric",
