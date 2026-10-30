@@ -187,7 +187,7 @@ SELECT pg_temp.chk('TZ3 la fecha pasada del TECNICO se ignora: queda fecha_ingre
 
 -- ============ HISTORIAL EN BUSCAR_EQUIPO ============
 SELECT pg_temp.chk('B3 buscar_equipo incluye el historial de ordenes_servicio del equipo',
-  (SELECT jsonb_array_length(ordenes_servicio) >= 1
+  (SELECT jsonb_array_length(ordenes) >= 1
    FROM public.buscar_equipo('RT5-8842-AA')
    WHERE producto_id = pg_temp.producto_id() LIMIT 1));
 
