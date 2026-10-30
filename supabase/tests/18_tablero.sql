@@ -164,7 +164,12 @@ BEGIN
    WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
   UPDATE public.registros SET estado='REPARADO'
    WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
-  UPDATE public.registros SET estado='ENTREGADO'
+  -- La entrega lleva FECHA EXPLÍCITA: si la corrida ocurre antes del mediodía
+  -- local (el ingreso se sembró a las 12:00), un fecha_entrega=now() del
+  -- trigger quedaría ANTES del ingreso y volaría el
+  -- ck_entrega_posterior_al_ingreso. La fecha explícita hace la prueba
+  -- independiente de la hora de la corrida.
+  UPDATE public.registros SET estado='ENTREGADO', fecha_entrega = fecha_ingreso + interval '5 hours'
    WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
   EXECUTE 'RESET ROLE';
 END $$;
