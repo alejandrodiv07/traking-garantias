@@ -112,6 +112,58 @@ describe("PasoCompra", () => {
     expect(screen.getByLabelText(/fecha/i)).toBeDisabled();
     expect(screen.getByLabelText(/plazo/i)).toBeDisabled();
   });
+
+  // Corrección D1 (hallazgo 4): los valores tecleados se comprometen al
+  // cambiar cada campo (auto-commit), sin depender de "Guardar la compra".
+  it("cada campo se compromete al cambiar (auto-commit), sin pulsar el botón", async () => {
+    const actualizar = vi.fn();
+    render(<PasoCompra estado={{}} actualizar={actualizar} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/número/i), "F-50");
+    await waitFor(() =>
+      expect(actualizar).toHaveBeenLastCalledWith(
+        expect.objectContaining({ numeroSoporte: "F-50" }),
+      ),
+    );
+
+    await user.type(screen.getByLabelText(/fecha/i), "2026-09-01");
+    await waitFor(() =>
+      expect(actualizar).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fechaEmision: "2026-09-01", venceEl: null }),
+      ),
+    );
+
+    await user.selectOptions(screen.getByLabelText(/plazo/i), "7");
+    await waitFor(() =>
+      expect(actualizar).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          tipoSoporte: "FACTURA",
+          numeroSoporte: "F-50",
+          fechaEmision: "2026-09-01",
+          plazoDias: 7,
+          venceEl: "2026-09-08",
+          sinSoporte: false,
+        }),
+      ),
+    );
+  });
+
+  it('"no trae la factura" compromete el estado completo vacío al instante', async () => {
+    const actualizar = vi.fn();
+    render(<PasoCompra estado={{}} actualizar={actualizar} />);
+    await userEvent.setup().click(screen.getByRole("checkbox", { name: /no trae/i }));
+    expect(actualizar).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        sinSoporte: true,
+        tipoSoporte: null,
+        numeroSoporte: null,
+        fechaEmision: null,
+        plazoDias: null,
+        venceEl: null,
+      }),
+    );
+  });
 });
 
 describe("PasoVerificacion", () => {

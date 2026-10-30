@@ -18,14 +18,18 @@ export default function PasoCompra({ estado, actualizar }) {
   const [fecha, setFecha] = useState(estado?.fechaEmision ?? "");
   const [plazo, setPlazo] = useState(estado?.plazoDias ?? "");
 
-  function actualizarCompra() {
+  function comprometer(cambios = {}) {
+    const sin = "sinSoporte" in cambios ? cambios.sinSoporte : sinSoporte;
+    const num = "numero" in cambios ? cambios.numero : numero;
+    const fec = "fecha" in cambios ? cambios.fecha : fecha;
+    const pla = "plazo" in cambios ? cambios.plazo : plazo;
     actualizar({
-      tipoSoporte: sinSoporte ? null : "FACTURA",
-      numeroSoporte: sinSoporte ? null : numero.trim() || null,
-      fechaEmision: sinSoporte ? null : fecha || null,
-      plazoDias: sinSoporte ? null : plazo ? Number(plazo) : null,
-      venceEl: sinSoporte ? null : sumarDias(fecha, plazo),
-      sinSoporte,
+      sinSoporte: sin,
+      tipoSoporte: sin ? null : "FACTURA",
+      numeroSoporte: sin ? null : num.trim() || null,
+      fechaEmision: sin ? null : fec || null,
+      plazoDias: sin || !pla || pla === "otro" ? null : Number(pla),
+      venceEl: sin ? null : sumarDias(fec, pla === "otro" ? null : pla),
     });
   }
 
@@ -39,7 +43,7 @@ export default function PasoCompra({ estado, actualizar }) {
           checked={sinSoporte}
           onChange={(e) => {
             setSinSoporte(e.target.checked);
-            actualizar({ sinSoporte: e.target.checked, tipoSoporte: null, venceEl: null });
+            comprometer({ sinSoporte: e.target.checked });
           }}
         />
         No trae la factura ni la nota de entrega
@@ -53,6 +57,7 @@ export default function PasoCompra({ estado, actualizar }) {
           disabled={sinSoporte}
           onChange={(e) => {
             setNumero(e.target.value);
+            comprometer({ numero: e.target.value });
           }}
         />
       </label>
@@ -64,7 +69,10 @@ export default function PasoCompra({ estado, actualizar }) {
           type="date"
           value={fecha}
           disabled={sinSoporte}
-          onChange={(e) => setFecha(e.target.value)}
+          onChange={(e) => {
+            setFecha(e.target.value);
+            comprometer({ fecha: e.target.value });
+          }}
         />
       </label>
 
@@ -74,7 +82,10 @@ export default function PasoCompra({ estado, actualizar }) {
           id="plazo"
           value={plazo}
           disabled={sinSoporte}
-          onChange={(e) => setPlazo(e.target.value)}
+          onChange={(e) => {
+            setPlazo(e.target.value);
+            comprometer({ plazo: e.target.value });
+          }}
         >
           <option value="">—</option>
           <option value="7">7 días</option>
@@ -98,7 +109,10 @@ export default function PasoCompra({ estado, actualizar }) {
             max="365"
             value={plazo === "otro" ? "" : plazo}
             disabled={sinSoporte}
-            onChange={(e) => setPlazo(e.target.value)}
+            onChange={(e) => {
+              setPlazo(e.target.value);
+              comprometer({ plazo: e.target.value });
+            }}
           />
         </label>
       )}
@@ -112,7 +126,8 @@ export default function PasoCompra({ estado, actualizar }) {
         </p>
       )}
 
-      <button type="button" onClick={actualizarCompra}>
+      {/* El botón queda como reafirmación: el commit real ocurre al cambiar cada campo. */}
+      <button type="button" onClick={() => comprometer()}>
         Guardar la compra
       </button>
     </div>
