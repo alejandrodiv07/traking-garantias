@@ -17,7 +17,7 @@ Aplicación web para un taller de servicio técnico: el técnico **registra un e
 
 | Capa | Estado |
 |---|---|
-| Base de datos (equipos, registros, revisiones, adjuntos, vista del Tablero, permisos) | 🟢 Construida y probada: 10 scripts SQL, 210 aserciones en verde |
+| Base de datos (equipos, registros, revisiones, adjuntos, vista del Tablero, permisos) | 🟢 Construida y probada: 14 scripts SQL, 237 aserciones en verde |
 | Flujo "Nuevo registro" (asistente de 6 pasos con borrador y lector) | 🟢 Construido y probado (vitest + Testing Library) |
 | Tablero con datos reales + Revisiones | 🟢 Conectados a `v_tablero` y RPC reales |
 | Autenticación + 2FA por correo | 🟡 Funciona; pendiente dominio verificado en Resend (y pruebas del flujo completo de login) |
@@ -60,7 +60,7 @@ Aplicación web para un taller de servicio técnico: el técnico **registra un e
 
 ```
 ├─ supabase/
-│  ├─ migrations/        9 SQL activos (0004 ajustes → 0011 huérfanos)… ver §3
+│  ├─ migrations/        10 SQL activos (0004 ajustes → 0012 idempotencia del ingreso)… ver §3
 │  ├─ archivo/           el monolito duplicado 20260906000001 (+ su referencia)
 │  ├─ functions/         admin-crear-usuario · mfa-enviar-codigo · limpiar-huerfanos
 │  ├─ tests/             00 harness · 10–19 pruebas SQL del hito · 96–99 previos · run.sh (Docker)
@@ -172,13 +172,13 @@ cd frontend
 pnpm install
 # frontend/.env.local  →  VITE_SUPABASE_URL=...  VITE_SUPABASE_ANON_KEY=...
 pnpm dev          # Vite en :5173
-pnpm test         # vitest (104 pruebas: services, asistente, tablero, revisiones, edge fns)
+pnpm test         # vitest (154 pruebas: services, asistente, tablero, revisiones, edge fns)
 pnpm lint         # oxlint
 pnpm build
 ```
 
 - **Pruebas SQL (requieren Docker):** `bash supabase/tests/run.sh` — levanta Postgres 17, aplica harness + migraciones + seed y corre cada script contra una base limpia; imprime `PASA n · FALLA m` por archivo y sale 1 si algo falla. `bash scripts/e2e-registro.sh` corre la prueba de punta a punta del registro.
-- **Base de datos:** la cadena canónica es `0001_auth_base` → `0002_garantias` → `0003_mfa_email` → `0004`…`0011` (hito 1: ajustes/cobertura, equipos, registros, revisiones, adjuntos, RPC y vista, huérfanos). El monolito duplicado quedó archivado en `supabase/archivo/` (verificar en el SQL Editor del proyecto real: `select version from supabase_migrations.schema_migrations order by 1` debe listar exactamente esas 11 versiones). `bash scripts/verificar-migraciones.sh` lo chequea (está en CI).
+- **Base de datos:** la cadena canónica es `0001_auth_base` → `0002_garantias` → `0003_mfa_email` → `0004`…`0012` (hito 1: ajustes/cobertura, equipos, registros, revisiones, adjuntos, RPC y vista, huérfanos, idempotencia del ingreso). El monolito duplicado quedó archivado en `supabase/archivo/` (verificar en el SQL Editor del proyecto real: `select version from supabase_migrations.schema_migrations order by 1` debe listar exactamente esas 12 versiones). `bash scripts/verificar-migraciones.sh` lo chequea (está en CI).
 - **Edge Functions:** `supabase functions deploy mfa-enviar-codigo`, `admin-crear-usuario` y `limpiar-huerfanos`. Secretos: `RESEND_API_KEY`, `ORIGENES_PERMITIDOS`, y para la limpieza `LIMPIEZA_SECRET` + `ALTER DATABASE postgres SET app.limpieza_secret` y `app.proyecto_ref` (ver migración 0011).
 - **Correo:** Resend está en **sandbox** (`onboarding@resend.dev`): solo entrega al correo dueño de la cuenta de Resend. Para otros usuarios hace falta un dominio verificado (SPF/DKIM/DMARC) y cambiar el `from`.
 
@@ -190,7 +190,7 @@ pnpm build
 |---|---|---|---|
 | ~~D1~~ | ✅ Resuelta (hito 1) | Duplicado `20260906000001` y copia `_referencia_…` | Archivados en `supabase/archivo/` y protegidos por `verificar-migraciones.sh` (CI). Falta SOLO confirmar el historial remoto en el SQL Editor (ver §5) |
 | ~~D5~~ | ✅ Resuelta (hito 1) | Seed inexistente | `supabase/seed.sql` con 4 marcas y 8 productos; `run.sh` la valida |
-| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI y 210 aserciones SQL + 104 de frontend |
+| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI y 237 aserciones SQL + 154 de frontend |
 | D4 | 🟠 Media | 2FA sin cerrar: pruebas del inicio de sesión pendientes (palabras del commit `b81e632`) | Probar: código correcto, vencido, reuso, 6.º código en 15 min, refresco de página a mitad del flujo, logout |
 | D7 | 🟡 Baja | Comentarios de código mencionan archivos ya inexistentes (`authApi.js`, `src/api/client.js`) | Solo ruido; limpiar al tocar esos archivos |
 | D8 | 🟡 Baja | Mensaje de error del cliente Supabase dice `npm run dev`, el proyecto usa pnpm | `supabaseClient.js` |
