@@ -1,5 +1,8 @@
 -- =====================================================================
---  20261030000015_orden_atencion_fix_bitacora.sql
+--  20261030000022_orden_atencion_fix_bitacora.sql
+--  (El encabezado citaba su nombre viejo 20261030000015_: el archivo se
+--  renombró por colisión de número con `0015_orden_atencion.sql` y para
+--  dejar la cadena 0013–0022 ordenada para la CI y `verificar-migraciones.sh`.)
 --  CORRECCIÓN de la revisión (fase 2a, tarea 5, ronda 1): la bitácora
 --  de eventos se escribía bajo la identidad de quien ejecuta el UPDATE
 --  (SECURITY INVOKER), y `authenticated` NO tiene INSERT en

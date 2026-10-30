@@ -18,7 +18,7 @@ Aplicación web para un taller de servicio técnico, en tres módulos unidos por
 | Capa | Estado |
 |---|---|
 | Base de datos (garantías, órdenes, revisiones, adjuntos, reglas de avance, permisos) | 🟢 Construida y probada: 23 scripts SQL, 436 aserciones en verde; e2e de 12 comprobaciones |
-| Registrar garantía, Consulta, Abrir orden, Detalle de la orden, lista del Taller y tablero de garantías | 🟢 Construidos y probados (287 pruebas de vitest), conectados a las RPC reales |
+| Registrar garantía, Consulta, Abrir orden, Detalle de la orden, lista del Taller y tablero de garantías | 🟢 Construidos y probados (312 pruebas de vitest), conectados a las RPC reales |
 | Layout con barra lateral y rutas `/garantias` y `/taller` | 🟢 |
 | Autenticación + 2FA por correo | 🟡 Funciona; pendiente dominio verificado en Resend (la función desplegada sigue con destinatario fijo) |
 | Entregas, Inventario, Reportes, Clientes y Notificaciones (pantallas 05 a 08 del diseño) | ❌ Con maqueta en `docs/diseno-ui/`, sin backend (ver su README §4) |
@@ -75,8 +75,8 @@ Aplicación web para un taller de servicio técnico, en tres módulos unidos por
 ├─ frontend/src/features/
 │  ├─ layout/             Layout con barra lateral (NavLink)
 │  ├─ garantias/          Garantias (tablero) · NuevaGarantia · Consulta · garantiasService
-│  ├─ taller/             Taller (lista) · AbrirOrden · OrdenDetalle · BarraEstados · tallerService
-│  ├─ registro/           pasos reutilizados (cliente, compra, verificación, adjuntos) · borrador · normalizar
+│  ├─ taller/             Taller (lista) · AbrirOrden · OrdenDetalle · BarraEstados · tallerService · borrador (24 h, módulo 'orden')
+│  ├─ registro/           pasos reutilizados (cliente, compra, verificación, adjuntos) · normalizar
 │  ├─ tablero/            dominio (espejo de estados) · Tablero y paneles del hito 1
 │  └─ revisiones/         HistorialRevisiones · RevisionForm · revisionesService
 └─ .github/workflows/ci.yml
@@ -133,11 +133,11 @@ Leyenda: ✅ real y conectado · 🟡 parcial / maqueta / sin UI · ❌ no exist
 |---|---|---|---|
 | Login | `/login` | ✅ | |
 | Tablero de garantías | `/garantias` | ✅ | Sobre `v_garantias`: chips Vigente / Por vencer / Vencida / Por confirmar, búsqueda |
-| Registrar garantía | `/garantias/nueva` | ✅ | Asistente de 4 pasos con borrador de 24 h; sin falla ni checklist |
+| Registrar garantía | `/garantias/nueva` | ✅ | Asistente de 3 pasos (cliente, equipo, compra); sin borrador ni checklist — recorte documentado en la fase 2a |
 | Consulta | `/garantias/consulta` | ✅ | Cuatro criterios, cobertura con color, historial de órdenes, aviso previo y "Registrar ahora"; Confirmar/Desestimar compra solo para jefatura |
 | Lista del Taller | `/taller` | ✅ | Filtro por estado |
-| Abrir orden | `/taller/nueva?equipo=…` | ✅ | Falla, accesorios, auditoría de recepción, fotos y documentos |
-| Detalle de la orden | `/taller/:id` | ✅ | Barra de estados y cinco pestañas; acciones por rol (avanzar, rechazar con motivo, asignar técnico, presupuesto) por las RPC |
+| Abrir orden | `/taller/nueva?equipo=…` | ✅ | Falla, accesorios, auditoría de recepción, fotos y documentos; borrador de 24 h (módulo 'orden') con restauración ofrecida: la clave de envío se reutiliza, el éxito total lo limpia |
+| Detalle de la orden | `/taller/:id` | ✅ | Barra de estados y cinco pestañas; acciones por rol vía RPC (avanzar filtrado por la matriz, rechazar con motivo, asignar técnico, presupuesto solo en PAGO), revisión técnica, diagnóstico por UPDATE directo de la columna abierta y notas internas |
 | Tablero y paneles del hito 1 (`/tablero`, `/jefe`, …) | — | 🟡 | Siguen montados; el aterrizaje tras iniciar sesión es `/garantias` |
 | Entregas, Inventario, Reportes, Clientes, Notificaciones | — | ❌ | Maquetas 05–08 listas; falta backend y la pantalla de Notificaciones |
 | Administración de usuarios | — | ❌ | Servicios listos, falta UI |
@@ -175,7 +175,7 @@ cd frontend
 pnpm install
 # frontend/.env.local  →  VITE_SUPABASE_URL=...  VITE_SUPABASE_ANON_KEY=...
 pnpm dev          # Vite en :5173
-pnpm test         # vitest (287 pruebas)
+pnpm test         # vitest (312 pruebas)
 pnpm lint         # oxlint
 pnpm build
 ```
@@ -194,7 +194,7 @@ pnpm build
 |---|---|---|---|
 | ~~D1~~ | ✅ Resuelta (hito 1) | Duplicado `20260906000001` y copia `_referencia_…` | Archivados en `supabase/archivo/` y protegidos por `verificar-migraciones.sh` (CI). Falta SOLO confirmar el historial remoto en el SQL Editor (ver §5) |
 | ~~D5~~ | ✅ Resuelta (hito 1) | Seed inexistente | `supabase/seed.sql` con 4 marcas y 8 productos; `run.sh` la valida |
-| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 436 aserciones SQL + 287 pruebas de frontend |
+| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 436 aserciones SQL + 312 pruebas de frontend |
 | D11 | 🟠 Media | `mfa-enviar-codigo` DESPLEGADA sigue con destinatario fijo (hotfix del sandbox de Resend); el código del repo ya envía al correo del usuario | Verificar el dominio en Resend y redesplegar; hasta entonces no redesplegar la función |
 | D12 | 🟡 Baja | Tablero y paneles del hito 1 (`/tablero`, `/jefe`, `/tecnico`, `/recepcion`) siguen montados junto a la app nueva | Retirarlos cuando se acepte la navegación de la fase 2a |
 | D13 | 🟡 Baja | La suite SQL completa necesita memoria (un contenedor por corrida) | Correr por tandas; limpiar contenedores `postgres:17` huérfanos |

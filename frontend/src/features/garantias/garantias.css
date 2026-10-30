@@ -46,8 +46,8 @@
 }
 
 .ng-principal {
-  background: var(--c-accent);
-  color: #fff;
+  background: var(--c-cta);
+  color: var(--c-cta-fg);
   border: 0;
   border-radius: 10px;
   padding: 0 20px;
@@ -108,8 +108,8 @@
 
 .cs-principal {
   justify-self: start;
-  background: var(--c-accent);
-  color: #fff;
+  background: var(--c-cta);
+  color: var(--c-cta-fg);
   border: 0;
   border-radius: 10px;
   padding: 0 20px;

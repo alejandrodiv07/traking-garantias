@@ -28,7 +28,7 @@ pnpm install
 pnpm dev          # Vite en :5173
 
 # Pruebas
-pnpm test                             # vitest (287 pruebas)
+pnpm test                             # vitest (312 pruebas)
 bash supabase/tests/run.sh            # SQL: 23 archivos, 436 aserciones, Postgres 17 en Docker
 bash scripts/e2e-registro.sh          # punta a punta: garantía → consulta → orden → rechazo → entrega
 bash scripts/verificar-migraciones.sh # historial de migraciones sin duplicados

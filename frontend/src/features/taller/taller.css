@@ -37,11 +37,22 @@
 
 .ao-principal {
   justify-self: start;
-  background: var(--c-accent);
-  color: #fff;
+  background: var(--c-cta);
+  color: var(--c-cta-fg);
   border: 0;
   border-radius: 10px;
   padding: 0 20px;
+}
+
+/* Oferta de restaurar el borrador de 24 h (restauración ofrecida, no impuesta). */
+.ao-borrador {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--c-radio);
+  background: var(--c-surface);
 }
 
 .tl {

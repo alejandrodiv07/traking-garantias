@@ -10,9 +10,17 @@ const fakes = vi.hoisted(() => ({
   abrirOrden: vi.fn(),
   subirAdjuntos: vi.fn(),
   previsualizarCobertura: vi.fn(),
+  guardarBorrador: vi.fn(),
+  leerBorrador: vi.fn(),
+  limpiarBorrador: vi.fn(),
+  perfilId: "u7",
 }));
 vi.mock("./tallerService.js", () => fakes);
 vi.mock("../registro/registroService.js", () => fakes);
+vi.mock("./borrador.js", () => fakes);
+vi.mock("../auth/AuthContext.jsx", () => ({
+  useAuth: () => ({ perfil: { id: fakes.perfilId } }),
+}));
 
 import AbrirOrden from "./AbrirOrden.jsx";
 
@@ -54,6 +62,7 @@ async function completar(usuario, { documento = false } = {}) {
 }
 
 beforeEach(() => {
+  fakes.perfilId = "u7";
   fakes.leerEquipo.mockReset().mockResolvedValue({ ok: true, datos: EQUIPO() });
   fakes.abrirOrden.mockReset().mockResolvedValue({
     ok: true,
@@ -64,6 +73,9 @@ beforeEach(() => {
     ok: true,
     datos: { cobertura: "ANULADA_POR_USO", motivo: "golpes" },
   });
+  fakes.guardarBorrador.mockReset();
+  fakes.leerBorrador.mockReset().mockReturnValue(null);
+  fakes.limpiarBorrador.mockReset();
 });
 
 describe("AbrirOrden: el equipo", () => {
@@ -174,5 +186,105 @@ describe("AbrirOrden: el envío", () => {
     expect(await screen.findByText("/taller/o1")).toBeTruthy();
     expect(fakes.abrirOrden).toHaveBeenCalledTimes(1);
     expect(fakes.subirAdjuntos).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Borrador de 24 h (I3 de la revisión; spec §8): la clave de envío y el estado
+// viajan en el borrador del módulo 'orden' — cerrar la pestaña NO genera una
+// segunda orden al reintentar: la clave se reutiliza y los pendientes apuntan
+// a la MISMA orden. Restauración OFRECIDA, no impuesta (patrón del Hito 1).
+describe("AbrirOrden: borrador de 24 h", () => {
+  const BORRADOR = () => ({
+    equipoId: "e1",
+    serial: "RT5-8842-AA",
+    falla: "pantalla rota",
+    accesorios: "cargador",
+    checklist: { equipo: { golpes: true } },
+    observaciones: null,
+    diagnostico: null,
+    claveEnvio: "0bfe6b8c-1111-4222-8333-444455556666",
+    ordenId: null,
+    numero_orden: null,
+    pendientes: [],
+  });
+
+  it("lo escribe en el borrador del módulo 'orden' (con la clave de envío) en cada cambio", async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await completar(usuario);
+    expect(fakes.guardarBorrador).toHaveBeenCalledWith(
+      "u7",
+      expect.objectContaining({
+        equipoId: "e1",
+        serial: "RT5-8842-AA",
+        falla: "no enciende",
+        claveEnvio: expect.any(String),
+      }),
+      "orden",
+    );
+  });
+
+  it("OFRECE restaurar un borrador del mismo equipo; al restaurar, la clave de envío es LA MISMA", async () => {
+    fakes.leerBorrador.mockReturnValue(BORRADOR());
+    const usuario = userEvent.setup();
+    montar();
+    expect(await screen.findByText(/¿Lo restauras\?/)).toBeTruthy();
+    expect(fakes.leerBorrador).toHaveBeenCalledWith("u7", "orden");
+    await usuario.click(screen.getByRole("button", { name: "Restaurar" }));
+    await screen.findByText("Huawei HG8245");
+    expect(screen.getByLabelText("Falla reportada")).toHaveValue("pantalla rota");
+    expect(screen.getByLabelText("Accesorios")).toHaveValue("cargador");
+
+    await usuario.upload(screen.getByLabelText(/Fotos/), FOTO);
+    await usuario.click(abrir());
+    await waitFor(() => expect(fakes.abrirOrden).toHaveBeenCalledTimes(1));
+    // LA MISMA clave: la idempotencia de la 0012 devuelve LA orden; no hay segunda.
+    expect(fakes.abrirOrden).toHaveBeenCalledWith(expect.objectContaining({ claveEnvio: "0bfe6b8c-1111-4222-8333-444455556666" }));
+    expect(await screen.findByText("/taller/o1")).toBeTruthy();
+    // Éxito completo: el borrador muere.
+    expect(fakes.limpiarBorrador).toHaveBeenCalledWith("u7", "orden");
+  });
+
+  it("un borrador de OTRO equipo no se ofrece y genera su propia clave", async () => {
+    fakes.leerBorrador.mockReturnValue({ ...BORRADOR(), equipoId: "otro-equipo" });
+    const usuario = userEvent.setup();
+    montar();
+    await screen.findByText("Huawei HG8245");
+    expect(screen.queryByText(/¿Lo restauras\?/)).toBeNull();
+    await usuario.type(screen.getByLabelText("Falla reportada"), "no enciende");
+    const guardado = fakes.guardarBorrador.mock.calls.at(-1)?.[1] ?? {};
+    // El guardado propio sí ocurre (con SU clave nueva), aunque el borrador ajeno exista.
+    expect(Object.keys(guardado).length).toBeGreaterThan(0);
+    expect(guardado.claveEnvio).not.toBe("0bfe6b8c-1111-4222-8333-444455556666");
+  });
+
+  it("'Empezar de cero' descarta el borrador", async () => {
+    fakes.leerBorrador.mockReturnValue(BORRADOR());
+    const usuario = userEvent.setup();
+    montar();
+    await screen.findByText(/¿Lo restauras\?/);
+    await usuario.click(screen.getByRole("button", { name: "Empezar de cero" }));
+    expect(fakes.limpiarBorrador).toHaveBeenCalledWith("u7", "orden");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("con la orden abierta PENDIENTES en el borrador, se reintentan contra la MISMA orden", async () => {
+    fakes.leerBorrador.mockReturnValue({
+      ...BORRADOR(),
+      ordenId: "o1",
+      numero_orden: "OS-2026-0007",
+      pendientes: [{ tipo: "FOTO", etiqueta: "frente" }],
+    });
+    const usuario = userEvent.setup();
+    montar();
+    await screen.findByText(/¿Lo restauras\?/);
+    await usuario.click(screen.getByRole("button", { name: "Restaurar" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/La orden OS-2026-0007 ya existe/);
+    await usuario.click(screen.getByRole("button", { name: "Reintentar adjuntos" }));
+    // La MISMA orden: no se llama abrirOrden (no habría segunda) y la subida va a `o1`.
+    expect(fakes.abrirOrden).not.toHaveBeenCalled();
+    expect(fakes.subirAdjuntos).toHaveBeenCalledWith("o1", [expect.objectContaining({ tipo: "FOTO", etiqueta: "frente" })]);
+    expect(await screen.findByText("/taller/o1")).toBeTruthy();
+    expect(fakes.limpiarBorrador).toHaveBeenCalledWith("u7", "orden");
   });
 });

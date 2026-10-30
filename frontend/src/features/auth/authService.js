@@ -21,7 +21,7 @@
  * - **Perfil ausente = sesión revocada.** Ver `obtenerPerfil`.
  */
 import { supabase, recordarSesion } from "../../lib/supabaseClient.js";
-import { limpiarBorradores } from "../registro/borrador.js";
+import { limpiarBorradores } from "../taller/borrador.js";
 
 export const Resultado = Object.freeze({
   OK: "OK",

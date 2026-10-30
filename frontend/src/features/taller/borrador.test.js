@@ -1,10 +1,13 @@
 // Pruebas del borrador local con caducidad de 24 h (Tarea 16 del plan).
+// Clave por módulo (Tarea 15): 'orden' por defecto; NuevaGarantia usará
+// 'garantia' — módulos distintos, borradores distintos en el mismo navegador.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { guardarBorrador, leerBorrador, limpiarBorrador, limpiarBorradores } from "./borrador.js";
 
 const USUARIO = "user-1";
 const OTRO = "user-2";
+const CLAVE_ORDEN = "pt.borrador." + USUARIO + ".orden";
 
 beforeEach(() => {
   localStorage.clear();
@@ -31,7 +34,7 @@ describe("guardar y leer", () => {
     const archivo = new File([new Uint8Array(3)], "foto.jpg", { type: "image/jpeg" });
     guardarBorrador(USUARIO, { serial: "x", archivo });
     const borrador = leerBorrador(USUARIO);
-    expect(JSON.parse(localStorage.getItem("pt.borrador." + USUARIO))).not.toContain("Foto");
+    expect(JSON.parse(localStorage.getItem(CLAVE_ORDEN))).not.toContain("Foto");
     expect(borrador).toEqual({ serial: "x" });
   });
 
@@ -47,7 +50,7 @@ describe("guardar y leer", () => {
       archivosAdjuntos: [{ id: "1", archivo, tipo: "FOTO", etiqueta: null, error: null }],
     });
     expect(leerBorrador(USUARIO)).toEqual({ serial: "x" });
-    expect(localStorage.getItem("pt.borrador." + USUARIO)).not.toContain("archivosAdjuntos");
+    expect(localStorage.getItem(CLAVE_ORDEN)).not.toContain("archivosAdjuntos");
   });
 
   it("un objeto sin archivos se guarda íntegro (el filtro es por profundidad)", () => {
@@ -73,7 +76,7 @@ describe("caducidad a las 24 horas", () => {
     guardarBorrador(USUARIO, { serial: "x" });
     vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 60 * 1000);
     expect(leerBorrador(USUARIO)).toBeNull();
-    expect(localStorage.getItem("pt.borrador." + USUARIO)).toBeNull();
+    expect(localStorage.getItem(CLAVE_ORDEN)).toBeNull();
   });
 });
 
@@ -110,7 +113,39 @@ describe("almacenamiento roto", () => {
   });
 
   it("leer con datos no JSON no rompe (devuelve null)", () => {
-    localStorage.setItem("pt.borrador." + USUARIO, "{corrupto");
+    localStorage.setItem(CLAVE_ORDEN, "{corrupto");
     expect(leerBorrador(USUARIO)).toBeNull();
+  });
+});
+
+describe("clave por módulo", () => {
+  it("sin clave usa 'orden' (el módulo del taller)", () => {
+    guardarBorrador(USUARIO, { serial: "x" });
+    expect(localStorage.getItem(CLAVE_ORDEN)).toBeTruthy();
+    expect(leerBorrador(USUARIO)).toEqual({ serial: "x" });
+  });
+
+  it("la clave del módulo separa borradores en el mismo navegador", () => {
+    guardarBorrador(USUARIO, { serial: "x" }, "garantia");
+    expect(leerBorrador(USUARIO)).toBeNull();
+    expect(leerBorrador(USUARIO, "garantia")).toEqual({ serial: "x" });
+  });
+
+  it("limpiarBorrador del módulo deja a los otros módulos intactos", () => {
+    guardarBorrador(USUARIO, { a: 1 }, "orden");
+    guardarBorrador(USUARIO, { a: 2 }, "garantia");
+    limpiarBorrador(USUARIO, "orden");
+    expect(leerBorrador(USUARIO)).toBeNull();
+    expect(leerBorrador(USUARIO, "garantia")).toEqual({ a: 2 });
+  });
+
+  it("limpiarBorradores borra TODOS los módulos (cierre de sesión en PC compartido)", () => {
+    guardarBorrador(USUARIO, { a: 1 }, "orden");
+    guardarBorrador(USUARIO, { a: 2 }, "garantia");
+    guardarBorrador(OTRO, { a: 3 }, "orden");
+    limpiarBorradores();
+    expect(leerBorrador(USUARIO)).toBeNull();
+    expect(leerBorrador(USUARIO, "garantia")).toBeNull();
+    expect(leerBorrador(OTRO)).toBeNull();
   });
 });

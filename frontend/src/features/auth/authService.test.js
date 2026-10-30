@@ -14,7 +14,7 @@ vi.mock("../../lib/supabaseClient.js", () => ({
   },
   recordarSesion: () => {},   // cerrarSesion la llama en el finally
 }));
-vi.mock("../registro/borrador.js", () => ({
+vi.mock("../taller/borrador.js", () => ({
   limpiarBorradores: fakes.limpiarBorradores,
 }));
 
