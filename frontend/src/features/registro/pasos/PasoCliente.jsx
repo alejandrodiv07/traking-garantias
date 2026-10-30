@@ -18,11 +18,13 @@ export default function PasoCliente({ estado, actualizar }) {
     const { tipo: t, documento: d } = normalizarDocumento(e.target.value);
     setDocumento(d);
     setError(d.length < 5 && d.length > 0 ? "El documento necesita al menos 5 dígitos" : "");
+    // Teclear un documento nuevo invalida el titular hallado antes: si no se
+    // limpia, el registro se crearía con el clienteId del documento ANTERIOR.
     if (t) {
       setTipo(t);
-      actualizar({ tipo: t, documento: d });
+      actualizar({ tipo: t, documento: d, clienteId: null, clienteNombre: null });
     } else {
-      actualizar({ documento: d });
+      actualizar({ documento: d, clienteId: null, clienteNombre: null });
     }
     // Si ya existe, el titular se trae de la base.
     if (d.length >= 5) {

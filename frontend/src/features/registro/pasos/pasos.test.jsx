@@ -51,6 +51,41 @@ describe("PasoCliente", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: /nuevo/i }));
     expect(screen.getByLabelText(/nombre/i)).toBeTruthy();
   });
+
+});
+
+// Corrección D1 (hallazgo 3): si se encontró un cliente y luego se teclea otro
+// documento inexistente, el clienteId no queda huérfano (el registro no se
+// crea con el titular ANTERIOR).
+describe("PasoCliente: al cambiar el documento se limpia el titular hallado", () => {
+  it("encontrar el titular y luego teclear OTRO documento (que no existe) limpia clienteId y clienteNombre", async () => {
+    fakes.buscarCliente.mockImplementation((doc) =>
+      doc === "30589214"
+        ? Promise.resolve({
+            ok: true,
+            datos: { id: "c1", tipo_documento: "V", nombre: "Ana Perez", telefono: null },
+          })
+        : Promise.resolve({ ok: true, datos: null }),
+    );
+    const actualizar = vi.fn();
+    render(<PasoCliente estado={{}} actualizar={actualizar} />);
+    const user = userEvent.setup();
+    const campo = screen.getByLabelText(/documento/i);
+    await user.type(campo, "30589214");
+    await waitFor(() =>
+      expect(actualizar).toHaveBeenCalledWith(expect.objectContaining({ clienteId: "c1" })),
+    );
+    await user.type(campo, "789");
+    await waitFor(() =>
+      expect(actualizar).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          clienteId: null,
+          clienteNombre: null,
+          documento: "30589214789",
+        }),
+      ),
+    );
+  });
 });
 
 describe("PasoCompra", () => {
