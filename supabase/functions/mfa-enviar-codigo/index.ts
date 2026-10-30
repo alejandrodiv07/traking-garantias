@@ -58,23 +58,6 @@ import { generarCorreoMfa } from "./plantilla-correo.ts";
 
 const REMITENTE = "Prime Telecom <onboarding@resend.dev>";
 
-// =====================================================================
-//  ⚠️ TEMPORAL (29/10/2026) — SOLO PRUEBAS. REVERTIR ANTES DE PRODUCCIÓN.
-// =====================================================================
-//  El sandbox de Resend (remitente `onboarding@resend.dev`) rechaza con
-//  403 cualquier destinatario distinto del dueño de la cuenta Resend
-//  (samuel.alejandronle66@gmail.com). Confirmado con el log de Resend:
-//  "Testing domain restriction: The resend.dev domain is for testing and
-//  can only send to your own email address." Eso devolvía 502 a TODO
-//  inicio de sesión (la UI lo mostraba como "Credenciales incorrectas").
-//
-//  Mientras `primetelecom.com` no esté verificado en Resend (SPF/DKIM) y
-//  el REMITENTE no apunte a ese dominio, se fuerza el destino al correo
-//  del dueño para poder probar el flujo de punta a punta con cualquier
-//  cuenta. Al revertir: borrar esta constante y volver a
-//  `to: [usuario.user.email]` más abajo.
-// =====================================================================
-const DESTINATARIO_TEMPORAL = "samuel.alejandronle66@gmail.com";
 const MINUTOS_VIGENCIA = 5; // debe coincidir con el default de email_mfa_codes.expires_at
 
 // Lista blanca de orígenes. Nunca "*" con credenciales.
@@ -242,10 +225,8 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // TEMPORAL (ver const DESTINATARIO_TEMPORAL arriba): era
-        // `to: [usuario.user.email]`.
         from: REMITENTE,
-        to: [DESTINATARIO_TEMPORAL],
+        to: [usuario.user.email],
         subject: correo.asunto,
         html: correo.html,
         text: correo.texto,

@@ -187,6 +187,19 @@ describe("el POST real: TODA respuesta lleva CORS (si no, el navegador ve 'CORS 
     expect(texto).not.toContain(CODIGO_SECRETO);
   });
 
+  it("el correo va al usuario que inicia sesión (sin destinatario fijo)", async () => {
+    const handler = await cargar({
+      usuario: { data: { user: { email: "otra.persona@primetelecom.com" } }, error: null },
+    });
+    const res = await handler(post());
+
+    expect(res.status).toBe(201);
+    const llamada = vi.mocked(fetch).mock.calls[0];
+    expect(llamada[0]).toBe("https://api.resend.com/emails");
+    const cuerpo = JSON.parse(String((llamada[1] as RequestInit).body));
+    expect(cuerpo.to).toEqual(["otra.persona@primetelecom.com"]);
+  });
+
   it("sin cabecera Authorization: 401 con CORS", async () => {
     const handler = await cargar();
     const res = await handler(post({ authorization: "" }));
