@@ -39,7 +39,10 @@ import "./login.css";
  *      resuelve { mfa: true, expiraEn }  -> contraseña OK, pasa al paso 2
  *      resuelve { scope: false }         -> "Sesion valida, sin alcance"
  *      resuelve cualquier otra cosa      -> acceso concedido (sin 2FA)
- *      rechaza                           -> "Credenciales incorrectas"
+ *      rechaza                           -> muestra el mensaje del rechazo tal
+ *                                           cual (ya colapsado por authService
+ *                                           / LoginPage); sin texto, recurre
+ *                                           a "Credenciales incorrectas"
  *
  *   onVerify(codigo) -> Promise
  *      resuelve { scope: false }         -> mismo estado de alcance
@@ -144,6 +147,12 @@ export default function Login({
   const [restante, setRestante] = useState(0);
   const [espera, setEspera] = useState(0);
 
+  // Mensaje YA colapsado por `authService` para rechazar el paso 1. No hay
+  // que endurecerlo aquí: repetir "Credenciales incorrectas" ante un rechazo
+  // con mensaje propio convierte un fallo de entrega (Resend caido) en
+  // "contraseña mala" y manda al usuario a resetear una clave que esta bien.
+  const [mensajeError, setMensajeError] = useState(null);
+
   const userRef = useRef(null);
   const codeRef = useRef(null);
   const stateRef = useRef(null);
@@ -199,14 +208,21 @@ export default function Login({
     }
 
     setStatus(null);
+    setMensajeError(null);
     setPending(true);
     try {
       const result = await onSubmit?.({ email: email.trim(), password, remember });
       if (result && result.scope === false) setStatus("scope");
       else if (result && result.mfa) abrirPaso2(result.expiraEn);
-    } catch {
-      // Mensaje generico a proposito: no revelamos cual de los dos fallo.
+    } catch (err) {
+      // Mensaje generico SOLO como red de seguridad si el rechazo llega sin
+      // texto. El rechazo ya viene traducido por `authService` / `LoginPage`:
+      // "Credenciales incorrectas" para una clave mala, el texto del fallo de
+      // envio (p. ej. 502 de `mfa-enviar-codigo`) para un correo que no salio.
       setStatus("credentials");
+      setMensajeError(
+        typeof err?.message === "string" && err.message.trim() ? err.message.trim() : null
+      );
       setPassword("");
     } finally {
       setPending(false);
@@ -502,15 +518,26 @@ export default function Login({
                     ? "Faltan datos"
                     : status === "code"
                       ? "Código incorrecto o vencido"
-                      : "Credenciales incorrectas"}
+                      : (mensajeError ?? "Credenciales incorrectas")}
                 </div>
-                <div className="pt-sbody">
-                  {status === "form"
-                    ? `Escribe tu correo corporativo y una contraseña de al menos ${MIN_PASSWORD} caracteres.`
-                    : status === "code"
-                      ? "Revisa el último correo o pide un código nuevo."
-                      : "No indicamos cuál de los dos falló."}
-                </div>
+                {/* El cuerpo genérico solo describe el rechazo colapsado:
+                    un mensaje propio ya explica lo que pasó. */}
+                {status === "credentials" &&
+                  (!mensajeError || mensajeError === "Credenciales incorrectas") && (
+                    <div className="pt-sbody">
+                      No indicamos cuál de los dos falló.
+                    </div>
+                  )}
+                {status === "form" && (
+                  <div className="pt-sbody">
+                    Escribe tu correo corporativo y una contraseña de al menos {MIN_PASSWORD} caracteres.
+                  </div>
+                )}
+                {status === "code" && (
+                  <div className="pt-sbody">
+                    Revisa el último correo o pide un código nuevo.
+                  </div>
+                )}
               </div>
             )}
 

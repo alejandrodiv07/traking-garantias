@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  base-de-datos:
+    name: Base de datos (migraciones y pruebas SQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar historial de migraciones
+        run: bash scripts/verificar-migraciones.sh
+      - name: Pruebas SQL (Postgres 17 en Docker)
+        run: bash supabase/tests/run.sh
+      - name: Prueba de punta a punta del registro
+        run: bash scripts/e2e-registro.sh
+
+  frontend:
+    name: Frontend (vitest, lint y build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+      - name: Pruebas (vitest)
+        run: pnpm test
+      - name: Lint (oxlint)
+        run: pnpm lint
+      - name: Build (vite)
+        run: pnpm build

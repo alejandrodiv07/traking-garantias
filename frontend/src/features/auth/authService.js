@@ -21,6 +21,7 @@
  * - **Perfil ausente = sesión revocada.** Ver `obtenerPerfil`.
  */
 import { supabase, recordarSesion } from "../../lib/supabaseClient.js";
+import { limpiarBorradores } from "../registro/borrador.js";
 
 export const Resultado = Object.freeze({
   OK: "OK",
@@ -32,10 +33,10 @@ export const Resultado = Object.freeze({
 const MENSAJE_GENERICO = "Credenciales incorrectas";
 
 export const RUTA_POR_ROL = Object.freeze({
-  ADMIN: "/admin",
-  JEFE_SERVICIO: "/jefe",
-  TECNICO: "/tecnico",
-  RECEPCION: "/recepcion",
+  ADMIN: "/tablero",
+  JEFE_SERVICIO: "/tablero",
+  TECNICO: "/tablero",
+  RECEPCION: "/tablero",
 });
 
 /** Ruta de aterrizaje del rol. `/sin-acceso` si el rol es desconocido. */
@@ -232,6 +233,9 @@ export async function cerrarSesion() {
     /* silencio deliberado */
   } finally {
     recordarSesion(false);
+    // El borrador del asistente guarda datos personales del CLIENTE y las
+    // laptops del taller son compartidas: al cerrar sesión se va TODO.
+    limpiarBorradores();
   }
 }
 
