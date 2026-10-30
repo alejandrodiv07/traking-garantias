@@ -18,7 +18,19 @@ vi.mock("../registro/borrador.js", () => ({
   limpiarBorradores: fakes.limpiarBorradores,
 }));
 
-import { cerrarSesion } from "./authService.js";
+import { cerrarSesion, rutaDeInicio } from "./authService.js";
+
+describe("RUTA_POR_ROL (Tarea 20 del plan)", () => {
+  it("los CUATRO roles aterrizan en /tablero", () => {
+    for (const rol of ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"]) {
+      expect(rutaDeInicio(rol)).toBe("/tablero");
+    }
+  });
+
+  it("un rol desconocido sigue yendo a /sin-acceso", () => {
+    expect(rutaDeInicio("OTRO")).toBe("/sin-acceso");
+  });
+});
 
 beforeEach(() => {
   fakes.signOut.mockReset();

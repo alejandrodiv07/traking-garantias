@@ -9,7 +9,6 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./features/auth/AuthContext.jsx";
 import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.jsx";
 import LoginPage from "./features/auth/LoginPage.jsx";
-import Panel from "./features/paneles/Panel.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./App.css";
@@ -30,6 +29,17 @@ function Rutas() {
     <Routes>
       <Route path="/login" element={<SoloInvitados />} />
 
+      {/* Hito 1: TODOS los roles aterrizan en el mismo Tablero (spec §7.3);
+          lo que difiere por rol lo decide la base (RLS) y los componentes. */}
+      <Route
+        path="/tablero"
+        element={
+          <RutaProtegida rolesPermitidos={["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"]}>
+            <Tablero />
+          </RutaProtegida>
+        }
+      />
+      {/* Rutas antiguas, por si hay algún enlace guardado: van al Tablero. */}
       <Route
         path="/admin"
         element={
@@ -42,7 +52,7 @@ function Rutas() {
         path="/jefe"
         element={
           <RutaProtegida rolesPermitidos={["JEFE_SERVICIO", "ADMIN"]}>
-            <Panel titulo="Jefatura de servicio" />
+            <Tablero />
           </RutaProtegida>
         }
       />
@@ -50,7 +60,7 @@ function Rutas() {
         path="/tecnico"
         element={
           <RutaProtegida rolesPermitidos={["TECNICO"]}>
-            <Panel titulo="Taller" />
+            <Tablero />
           </RutaProtegida>
         }
       />
@@ -58,7 +68,7 @@ function Rutas() {
         path="/recepcion"
         element={
           <RutaProtegida rolesPermitidos={["RECEPCION", "ADMIN"]}>
-            <Panel titulo="Recepción" />
+            <Tablero />
           </RutaProtegida>
         }
       />

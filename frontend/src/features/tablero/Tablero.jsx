@@ -1,31 +1,17 @@
 /**
- * Tablero del taller — pantalla de aterrizaje de ADMIN.
- *
- * ===========================================================================
- * ESTADO ACTUAL: SOLO INTERFAZ. NINGÚN DATO SALE DE LA BASE.
- * ===========================================================================
- * Todo lo que se ve viene de `datosDemo.js`. Es deliberado: primero se decide
- * qué información quiere ver quien abre esta pantalla y cómo se ordena, y
- * después se escriben las consultas. Al revés se acaba con una pantalla que
- * enseña lo que la consulta devolvía y no lo que hacía falta.
- *
- * Cuando se conecte:
- *   - `ORDENES`, `KPIS` y `POR_VENCER` se cambian por hooks de datos.
- *   - El filtrado y la búsqueda pasan a la consulta (§8 de la migración tiene
- *     los índices parciales exactos que necesitan); aquí se hacen en memoria
- *     porque sobre ocho filas es gratis y hace la pantalla revisable.
- *   - Los tres botones sin acción (`avisar(...)`) reciben su destino.
- * Ningún componente hijo cambia: todos reciben datos por props.
- * ===========================================================================
+ * Tablero del taller — pantalla de aterrizaje de TODOS los roles internos
+ * (Tarea 20 del plan; spec §7.3). Los datos vienen de la vista `v_tablero`
+ * (urgencia combinada de vigencia y SLA); ya no hay datos de demostración.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, LogOut, Plus, Search, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import BarraLateral from "./componentes/BarraLateral.jsx";
-import TablaOrdenes from "./componentes/TablaOrdenes.jsx";
+import TablaRegistros from "./componentes/TablaRegistros.jsx";
 import PanelVencimientos from "./componentes/PanelVencimientos.jsx";
-import { estaAbierta, FILTROS } from "./dominio.js";
-import { HOY, KPIS, ORDENES, POR_VENCER, USUARIO_DEMO } from "./datosDemo.js";
+import NuevoRegistro from "../registro/NuevoRegistro.jsx";
+import { estaAbierta } from "./dominio.js";
+import { listarTablero } from "./tableroService.js";
 import "./Tablero.css";
 
 /** Iniciales para el avatar. "María Pérez" -> "MP"; un solo nombre -> "MA". */
@@ -36,78 +22,64 @@ function iniciales(nombre) {
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
-/**
- * Búsqueda multicriterio. El mismo cuadro busca por número de orden, nombre,
- * cédula/RIF, equipo o serial, porque quien atiende el mostrador tiene UNA
- * cosa en la mano —un papel, un equipo, una cédula— y no sabe en qué columna
- * cae. Obligarle a elegir el campo antes de escribir es trabajo de más.
- */
-function coincide(orden, termino) {
-  if (!termino) return true;
-  const t = termino.trim().toLowerCase();
-  if (!t) return true;
-  return [orden.numero, orden.cliente, orden.documento, orden.equipo, orden.serie]
-    .filter(Boolean)
-    .some((campo) => campo.toLowerCase().includes(t));
-}
+const NIVELES = ["", "VENCIDA", "HOY", "CRITICA", "PRONTO", "NORMAL"];
 
 export default function Tablero() {
-  const { perfil, salir } = useAuth();
-  const [filtro, setFiltro] = useState("TODAS");
+  const { perfil, rol, salir } = useAuth();
   const [busqueda, setBusqueda] = useState("");
-  const [aviso, setAviso] = useState(null);
+  const [estadoFiltro, setEstadoFiltro] = useState("");
+  const [urgenciaFiltro, setUrgenciaFiltro] = useState("");
+  const [filas, setFilas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
+  const [asistenteAbierto, setAsistenteAbierto] = useState(false);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+    const r = await listarTablero({
+      busqueda,
+      estado: estadoFiltro || undefined,
+      urgencia: urgenciaFiltro || undefined,
+    });
+    if (r.ok) setFilas(r.filas);
+    else setError(r);
+    setCargando(false);
+  }, [busqueda, estadoFiltro, urgenciaFiltro]);
+
+  // La búsqueda de la vista es del lado de la base: con 250 ms de pausa,
+  // como el serial del asistente. Enter también dispara.
+  useEffect(() => {
+    const t = setTimeout(cargar, 250);
+    return () => clearTimeout(t);
+  }, [cargar]);
 
   const usuario = {
-    nombre: perfil?.full_name ?? USUARIO_DEMO.nombre,
-    iniciales: iniciales(perfil?.full_name ?? USUARIO_DEMO.nombre),
+    nombre: perfil?.full_name ?? "…",
+    iniciales: iniciales(perfil?.full_name ?? ""),
     rol: "Administración",
   };
 
-  /* Los avisos se van solos a los 3,5 s (regla: un toast que hay que cerrar a
-     mano interrumpe dos veces). El temporizador se limpia al desmontar y al
-     llegar un aviso nuevo, o se acumulan. */
-  useEffect(() => {
-    if (!aviso) return undefined;
-    const id = setTimeout(() => setAviso(null), 3500);
-    return () => clearTimeout(id);
-  }, [aviso]);
-
-  const avisar = (texto) => setAviso({ texto, en: Date.now() });
-
-  const cuentas = useMemo(() => {
-    const mapa = {};
-    for (const f of FILTROS) {
-      mapa[f.clave] = f.estados
-        ? ORDENES.filter((o) => f.estados.includes(o.estado)).length
-        : ORDENES.length;
-    }
-    return mapa;
-  }, []);
-
-  const visibles = useMemo(() => {
-    const def = FILTROS.find((f) => f.clave === filtro);
-    return ORDENES.filter(
-      (o) => (!def?.estados || def.estados.includes(o.estado)) && coincide(o, busqueda)
-    );
-  }, [filtro, busqueda]);
-
-  const hayFiltro = filtro !== "TODAS" || busqueda.trim() !== "";
-  const abiertas = ORDENES.filter((o) => estaAbierta(o.estado)).length;
-
-  const fechaHoy = HOY.toLocaleDateString("es-VE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const abiertas = filas.filter((f) => estaAbierta(f.estado)).length;
+  const porVencer = useMemo(
+    () =>
+      filas
+        .filter((f) => f.abierto && f.vence_el && f.dias_restantes !== null && f.dias_restantes <= 30)
+        .sort((a, b) => a.dias_restantes - b.dias_restantes)
+        .slice(0, 5)
+        .map((f) => ({
+          id: f.registro_id,
+          venceEl: f.vence_el,
+          cliente: f.cliente,
+          serie: f.serial,
+          equipo: f.producto,
+        })),
+    [filas],
+  );
 
   return (
     <div className="tg">
-      <BarraLateral
-        actual="tablero"
-        usuario={usuario}
-        onIr={(_, etiqueta) => avisar(`«${etiqueta}» todavía no está construida.`)}
-      />
+      <BarraLateral actual="tablero" usuario={usuario} onIr={() => {}} />
 
       <div className="tg-main">
         <header className="tg-topbar">
@@ -115,15 +87,6 @@ export default function Tablero() {
             Taller / <strong>Tablero</strong>
           </p>
           <div className="tg-topbar-acciones">
-            <button
-              type="button"
-              className="tg-btn tg-btn--suave tg-btn--icono"
-              aria-label="Notificaciones: hay avisos sin leer"
-              onClick={() => avisar("El centro de notificaciones todavía no está construido.")}
-            >
-              <Bell size={18} strokeWidth={1.8} aria-hidden="true" />
-              <span className="tg-punto" aria-hidden="true" />
-            </button>
             <button
               type="button"
               className="tg-btn tg-btn--suave"
@@ -146,37 +109,24 @@ export default function Tablero() {
             <div>
               <h1 className="tg-titulo">Tablero del taller</h1>
               <p className="tg-subtitulo">
-                {fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1)} · {abiertas} órdenes
-                abiertas
+                {abiertas} registros abiertos, ordenados por urgencia
               </p>
             </div>
             <button
               type="button"
               className="tg-btn tg-btn--principal"
-              onClick={() => avisar("El alta de órdenes todavía no está construida.")}
+              onClick={() => setAsistenteAbierto(true)}
             >
               <Plus size={17} strokeWidth={2.4} aria-hidden="true" />
-              Nueva orden
+              Nuevo registro
             </button>
           </div>
 
-          <ul className="tg-kpis">
-            {KPIS.map((k) => (
-              <li className="tg-card tg-kpi" key={k.clave}>
-                <p className="tg-kpi-etiqueta">{k.etiqueta}</p>
-                <p className="tg-kpi-valor">{k.valor}</p>
-                <p className="tg-kpi-nota" data-tendencia={k.tendencia ?? undefined}>
-                  {k.nota}
-                </p>
-              </li>
-            ))}
-          </ul>
-
           <div className="tg-cuerpo">
-            <section aria-label="Órdenes de servicio">
+            <section aria-label="Registros del taller">
               <div className="tg-buscador">
                 <label className="tg-sr" htmlFor="tg-busqueda">
-                  Buscar órdenes por número, cliente, cédula o RIF, equipo o serial
+                  Buscar por serial, titular, cédula, factura o número de registro
                 </label>
                 <Search
                   className="tg-buscador-icono"
@@ -191,7 +141,7 @@ export default function Tablero() {
                   autoComplete="off"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  placeholder="Buscar por serial, cédula/RIF, cliente o nº de orden…"
+                  placeholder="Buscar por serial, cédula/RIF, titular, factura o REG-…"
                 />
                 {busqueda ? (
                   <button
@@ -206,54 +156,68 @@ export default function Tablero() {
               </div>
 
               <div className="tg-chips" role="group" aria-label="Filtrar por estado">
-                {FILTROS.map((f) => (
-                  <button
-                    key={f.clave}
-                    type="button"
-                    className="tg-chip"
-                    aria-pressed={filtro === f.clave}
-                    onClick={() => setFiltro(f.clave)}
-                  >
-                    {f.etiqueta}
-                    <span className="tg-chip-cuenta">{cuentas[f.clave]}</span>
-                  </button>
-                ))}
+                <label htmlFor="tg-estado">Estado</label>
+                <select
+                  id="tg-estado"
+                  value={estadoFiltro}
+                  onChange={(e) => setEstadoFiltro(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {["RECIBIDO", "EN_DIAGNOSTICO", "EN_REPARACION", "REPARADO", "ENTREGADO", "ANULADO"].map(
+                    (e) => (
+                      <option key={e} value={e}>{e}</option>
+                    ),
+                  )}
+                </select>
+                <label htmlFor="tg-urgencia">Urgencia</label>
+                <select
+                  id="tg-urgencia"
+                  value={urgenciaFiltro}
+                  onChange={(e) => setUrgenciaFiltro(e.target.value)}
+                >
+                  <option value="">Cualquiera</option>
+                  {NIVELES.filter(Boolean).map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
               </div>
 
-              {/* El recuento se anuncia al filtrar; sin esto, quien usa lector
-                  de pantalla pulsa un chip y no recibe ninguna señal. */}
               <p className="tg-sr" role="status" aria-live="polite">
-                {visibles.length} de {ORDENES.length} órdenes visibles
+                {cargando ? "Cargando registros…" : `${filas.length} registros visibles`}
               </p>
 
-              <TablaOrdenes
-                ordenes={visibles}
-                total={ORDENES.length}
-                hayFiltro={hayFiltro}
-                onLimpiar={() => {
-                  setFiltro("TODAS");
-                  setBusqueda("");
-                }}
-                onVerTodas={() => avisar("El listado completo todavía no está construido.")}
-              />
+              {cargando ? (
+                <p role="status">Cargando registros…</p>
+              ) : error ? (
+                <div role="alert">
+                  <p>{error.mensaje ?? "No se pudo cargar el Tablero."}</p>
+                  <button type="button" onClick={cargar}>
+                    Reintentar
+                  </button>
+                </div>
+              ) : (
+                <TablaRegistros
+                  filas={filas}
+                  rol={rol}
+                />
+              )}
             </section>
 
-            <PanelVencimientos
-              items={POR_VENCER}
-              hoy={HOY}
-              onRecordatorios={() =>
-                avisar("El envío de recordatorios todavía no está construido.")
-              }
-            />
+            <PanelVencimientos items={porVencer} hoy={new Date()} onRecordatorios={() => {}} />
           </div>
         </main>
       </div>
 
-      {aviso ? (
-        <p className="tg-aviso" role="status" aria-live="polite">
-          {aviso.texto}
-        </p>
-      ) : null}
+      {asistenteAbierto && (
+        <NuevoRegistro
+          userId={perfil?.id}
+          onCerrar={() => setAsistenteAbierto(false)}
+          onCreado={() => {
+            setAsistenteAbierto(false);
+            cargar();
+          }}
+        />
+      )}
     </div>
   );
 }

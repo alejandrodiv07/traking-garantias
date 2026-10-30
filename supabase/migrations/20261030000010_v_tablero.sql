@@ -16,6 +16,8 @@ SELECT r.id AS registro_id,
        (m.nombre || ' ' || pr.modelo) AS producto,
        c.nombre AS cliente,
        c.documento AS documento,
+       -- Para la búsqueda del Tablero por número de factura (spec §7.3).
+       eq.numero_soporte AS numero_soporte,
        r.fecha_ingreso,
        eq.vence_el,
        CASE WHEN eq.vence_el IS NULL THEN NULL

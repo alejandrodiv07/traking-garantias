@@ -183,10 +183,10 @@ SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 SELECT pg_temp.chk('X2 un TECNICO ve los 14 registros del taller',
   (SELECT count(*) = 14 FROM public.v_tablero));
 COMMIT;
-SELECT pg_temp.chk('X3 la vista tiene las columnas del tablero',
-  (SELECT count(*) = 17 FROM information_schema.columns
+SELECT pg_temp.chk('X3 la vista tiene las columnas del tablero (18, con numero_soporte)',
+  (SELECT count(*) = 18 FROM information_schema.columns
    WHERE table_schema='public' AND table_name='v_tablero'
      AND column_name IN ('registro_id','numero_registro','estado','estado_nombre','cobertura',
                          'serial','producto','cliente','documento','fecha_ingreso','vence_el',
                          'dias_restantes','nivel_vigencia','dias_en_taller','nivel_sla',
-                         'urgencia_rank','abierto')));
+                         'numero_soporte','urgencia_rank','abierto')));
