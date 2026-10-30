@@ -4,6 +4,11 @@
 import { useState } from "react";
 import { useAsistente } from "./useAsistente.js";
 import PasoEquipo from "./pasos/PasoEquipo.jsx";
+import PasoCliente from "./pasos/PasoCliente.jsx";
+import PasoCompra from "./pasos/PasoCompra.jsx";
+import PasoVerificacion from "./pasos/PasoVerificacion.jsx";
+import PasoAdjuntos from "./pasos/PasoAdjuntos.jsx";
+import PasoResumen from "./pasos/PasoResumen.jsx";
 
 export default function NuevoRegistro({ userId, onCerrar, onCreado }) {
   const a = useAsistente(userId);
@@ -32,7 +37,24 @@ export default function NuevoRegistro({ userId, onCerrar, onCreado }) {
     );
   }
 
-  const nombres = { equipo: "Equipo", cliente: "Cliente", compra: "Compra" };
+  const nombres = {
+    equipo: "Equipo",
+    cliente: "Cliente",
+    compra: "Compra",
+    verificacion: "Verificación",
+    adjuntos: "Adjuntos",
+    resumen: "Resumen",
+  };
+
+  // Editar <sección> en el resumen regresa al paso correspondiente. La sección
+  // "falla" vive en el paso del equipo (no hay paso propio de la falla).
+  function pasoDeSeccion(clave) {
+    const indice = a.pasos.indexOf(clave);
+    return a.ir(indice === -1 ? 0 : indice);
+  }
+
+  const pasoActual = a.pasos[a.paso];
+  const props = { estado: a.estado, actualizar: a.actualizar };
   return (
     <div role="dialog" aria-label="Nuevo registro">
       <header>
@@ -52,7 +74,19 @@ export default function NuevoRegistro({ userId, onCerrar, onCreado }) {
         ))}
       </ol>
 
-      {a.pasos[a.paso] === "equipo" && <PasoEquipo estado={a.estado} actualizar={a.actualizar} />}
+      {pasoActual === "equipo" && <PasoEquipo {...props} />}
+      {pasoActual === "cliente" && <PasoCliente {...props} />}
+      {pasoActual === "compra" && <PasoCompra {...props} />}
+      {pasoActual === "verificacion" && <PasoVerificacion {...props} />}
+      {pasoActual === "adjuntos" && <PasoAdjuntos {...props} />}
+      {pasoActual === "resumen" && (
+        <PasoResumen
+          estado={a.estado}
+          irPara={pasoDeSeccion}
+          onCreado={onCreado}
+          userId={userId}
+        />
+      )}
 
       <footer>
         <button type="button" onClick={a.atras} disabled={a.paso === 0}>
