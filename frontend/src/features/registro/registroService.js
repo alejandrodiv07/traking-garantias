@@ -78,6 +78,8 @@ export async function registrarIngreso(payload) {
     p_vendedor: payload.vendedor ?? null,
     p_checklist: payload.checklist ?? null,
     p_observaciones: payload.observaciones ?? null,
+    // Idempotencia: la misma clave devuelve el registro original (sin token).
+    p_clave_envio: payload.claveEnvio ?? null,
   });
 }
 

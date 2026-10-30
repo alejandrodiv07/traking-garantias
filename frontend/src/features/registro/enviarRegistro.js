@@ -36,6 +36,7 @@ export async function enviarRegistro(estado, archivos, opciones = {}) {
     vendedor: estado.vendedor,
     checklist: estado.checklist,
     observaciones: estado.observaciones,
+    claveEnvio: estado.claveEnvio,
   });
   if (!r.ok) {
     // El borrador NO se limpia: el técnico restaura y reenvía al volver a entrar.

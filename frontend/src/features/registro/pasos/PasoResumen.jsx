@@ -13,7 +13,7 @@ const SECCIONES = [
   ["verificacion", "Verificación", (e) => e.cobertura ?? "Se calculará al guardar"],
 ];
 
-export default function PasoResumen({ estado, irPara, onCreado, userId }) {
+export default function PasoResumen({ estado, irPara, onCreado, userId, actualizar }) {
   const [resultado, setResultado] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const archivos = (estado?.archivosAdjuntos ?? [])
@@ -22,7 +22,11 @@ export default function PasoResumen({ estado, irPara, onCreado, userId }) {
 
   async function confirmar(reintentar = false) {
     setEnviando(true);
-    const r = await enviarRegistro(estado, archivos, {
+    // Una clave por registro: nace en el primer intento y viaja en el borrador,
+    // así un reintento (o reenviar tras cerrar la pestaña) no crea un duplicado.
+    const claveEnvio = estado?.claveEnvio ?? crypto.randomUUID();
+    if (!estado?.claveEnvio) actualizar?.({ claveEnvio });
+    const r = await enviarRegistro({ ...estado, claveEnvio }, archivos, {
       userId,
       registroIdExistente: resultado?.registro?.registro_id,
       pendientesIniciales: reintentar ? (resultado?.pendientes ?? []) : [],

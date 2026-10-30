@@ -120,7 +120,13 @@ describe("llamadas a la base (nombres exactos de la RPC)", () => {
       p_vendedor: "Tienda",
       p_checklist: { a: true },
       p_observaciones: "obs",
+      p_clave_envio: null,
     });
+  });
+
+  it("registrarIngreso manda la clave de envío (idempotencia)", async () => {
+    await registrarIngreso({ serial: "S-1", falla: "No enciende", claveEnvio: "clave-1" });
+    expect(fakes.rpc).toHaveBeenCalledWith("registrar_ingreso", expect.objectContaining({ p_clave_envio: "clave-1" }));
   });
 
   it("registrarRevision llama a registrar_revision", async () => {

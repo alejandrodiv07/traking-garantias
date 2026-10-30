@@ -47,6 +47,11 @@ beforeEach(() => {
 });
 
 describe("enviarRegistro", () => {
+  it("manda la clave de envío del estado a registrarIngreso", async () => {
+    await enviarRegistro({ ...ESTADO, claveEnvio: "clave-9" }, [], { userId: "u1" });
+    expect(fakes.registrarIngreso).toHaveBeenCalledWith(expect.objectContaining({ claveEnvio: "clave-9" }));
+  });
+
   it("registrarIngreso primero; sube cada archivo; limpia el borrador si todo sale", async () => {
     const archivos = [
       { archivo: ARCHIVO("a.jpg"), tipo: "FOTO", etiqueta: "a" },

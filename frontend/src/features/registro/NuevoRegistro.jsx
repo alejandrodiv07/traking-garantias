@@ -82,6 +82,7 @@ export default function NuevoRegistro({ userId, onCerrar, onCreado }) {
       {pasoActual === "resumen" && (
         <PasoResumen
           estado={a.estado}
+          actualizar={a.actualizar}
           irPara={pasoDeSeccion}
           onCreado={onCreado}
           userId={userId}
