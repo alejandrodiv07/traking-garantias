@@ -170,7 +170,7 @@ SELECT pg_temp.chk('A7 el UPDATE de cobertura con la orden en EN_REPARACION deja
      AND comentario = 'La cobertura cambió a EN_GARANTIA con la orden en EN_REPARACION'
      AND estado_anterior IS NULL AND estado_nuevo = 'EN_REPARACION'));
 
--- El disparo en seco no anota: UPDATE sin cambio de valor NO deja BITACORA
+-- UPDATE que no cambia el valor no anota: UPDATE sin cambio de valor NO deja BITACORA
 -- (la apertura por RPC ya dejó una con 'a EN_GARANTIA'; se cuenta por el
 -- comentario COMPLETO para que solo la fila de A7 matchee).
 UPDATE public.ordenes_servicio SET cobertura = 'EN_GARANTIA' WHERE id = pg_temp.orden_id();
@@ -178,3 +178,39 @@ SELECT pg_temp.chk('A8 UPDATE que no cambia el valor no anota BITACORA',
   (SELECT count(*) = 1 FROM public.historial_ordenes
    WHERE orden_id = pg_temp.orden_id()
      AND comentario = 'La cobertura cambió a EN_GARANTIA con la orden en EN_REPARACION'));
+
+-- ============ El UPDATE legítimo de un TÉCNICO no cae entero (A9) ============
+-- La orden quedó asignada al técnico que la creó vía abrir_orden (la RPC
+-- asigna al TECNICO del claim). Con el GRANT por columna de ordenes_servicio,
+-- él puede fijar el costo de SU orden; el trigger debe anotar sin que el
+-- UPDATE muera por permisos, y firmar la BITACORA con SU identidad.
+CREATE FUNCTION pg_temp.como_tecnico(sql text) RETURNS boolean
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', TRUE);
+  PERFORM set_config('request.jwt.claim.session_id', '22222222-2222-2222-2222-222222222222', TRUE);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    EXECUTE sql;
+    EXECUTE 'RESET ROLE';
+    RETURN TRUE;
+  EXCEPTION WHEN OTHERS THEN
+    EXECUTE 'RESET ROLE';
+    RETURN FALSE;
+  END;
+END $$;
+
+-- Setup (superuser): un servicio con costo exige cobertura fuera de
+-- garantía (ck_costo_solo_si_no_cubierta de la 0006).
+UPDATE public.ordenes_servicio
+   SET cobertura = 'ANULADA_POR_USO',
+       motivo_anulacion_cobertura = 'Senales de uso en la revisión técnica del titular'
+ WHERE id = pg_temp.orden_id();
+SELECT pg_temp.chk('A9a un TECNICO asignado fija el costo de SU orden sin que muera el UPDATE',
+  pg_temp.como_tecnico($$UPDATE public.ordenes_servicio SET costo_reparacion = 85
+     WHERE id = pg_temp.orden_id()$$));
+SELECT pg_temp.chk('A9b la BITACORA del costo quedó firmada por el técnico (modificado_por = su uid)',
+  (SELECT count(*) = 1 FROM public.historial_ordenes
+   WHERE orden_id = pg_temp.orden_id() AND evento = 'BITACORA'
+     AND comentario = 'Presupuesto: 85.00'
+     AND modificado_por = '22222222-2222-2222-2222-222222222222'));
