@@ -3,12 +3,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpcFalso = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/supabaseClient.js", () => ({ supabase: { rpc: rpcFalso } }));
+const supabaseFalso = vi.hoisted(() => ({ rpc: undefined }));
+vi.mock("../../lib/supabaseClient.js", () => ({ supabase: supabaseFalso }));
 
-import { buscarGarantia, registrarGarantia } from "./garantiasService.js";
+import { buscarGarantia, listarGarantias, registrarGarantia } from "./garantiasService.js";
 
 beforeEach(() => {
   rpcFalso.mockReset();
+  supabaseFalso.rpc = rpcFalso;
 });
 
 const DATOS = {
@@ -84,6 +86,25 @@ describe("buscarGarantia", () => {
       p_factura: null,
       p_orden: null,
     });
+    expect(r).toEqual({ ok: true, datos: [{ equipo_id: "e1" }] });
+  });
+});
+
+describe("listarGarantias", () => {
+  it("lee v_garantias ordenada por vencimiento y busca en serial, titular, cédula y factura", async () => {
+    const consulta = { order: vi.fn(), limit: vi.fn(), or: vi.fn() };
+    consulta.order.mockReturnValue(consulta);
+    consulta.limit.mockReturnValue(consulta);
+    consulta.or.mockResolvedValue({ data: [{ equipo_id: "e1" }], error: null });
+    const desdeFalso = vi.fn(() => ({ select: vi.fn(() => consulta) }));
+    supabaseFalso.from = desdeFalso;
+
+    const r = await listarGarantias({ busqueda: " RT5 " });
+    expect(desdeFalso).toHaveBeenCalledWith("v_garantias");
+    expect(consulta.order).toHaveBeenCalledWith("vence_el", { ascending: true });
+    expect(consulta.or).toHaveBeenCalledWith(
+      "numero_serie.ilike.*RT5*,titular.ilike.*RT5*,documento.ilike.*RT5*,numero_soporte.ilike.*RT5*",
+    );
     expect(r).toEqual({ ok: true, datos: [{ equipo_id: "e1" }] });
   });
 });

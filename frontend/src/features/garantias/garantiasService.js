@@ -1,5 +1,6 @@
 // Servicio de Ventas & Garantías (Tareas 8, 13 y 14 del plan). Reutiliza el
 // envoltorio de RPC de registroService: mismos códigos de error del repo.
+import { supabase } from "../../lib/supabaseClient.js";
 import { rpc } from "../registro/registroService.js";
 
 /** Crea la garantía (el equipo) sin abrir orden. Devuelve la fila creada. */
@@ -34,4 +35,22 @@ export async function buscarGarantia({ serial, documento, factura, orden } = {})
     p_factura: factura ?? null,
     p_orden: orden ?? null,
   });
+}
+
+/** Una fila por equipo (v_garantias), la que vence antes primero. */
+export async function listarGarantias({ busqueda } = {}) {
+  try {
+    let q = supabase.from("v_garantias").select("*").order("vence_el", { ascending: true }).limit(200);
+    const b = String(busqueda ?? "").trim().replace(/[*%,()]/g, "");
+    if (b) {
+      q = q.or(
+        ["numero_serie", "titular", "documento", "numero_soporte"].map((c) => `${c}.ilike.*${b}*`).join(","),
+      );
+    }
+    const { data, error } = await q;
+    if (error) return { ok: false, codigo: error.code === "42501" ? "SIN_PERMISO" : "DESCONOCIDO", mensaje: error.message ?? "" };
+    return { ok: true, datos: data ?? [] };
+  } catch {
+    return { ok: false, codigo: "SIN_CONEXION", mensaje: "Sin conexión" };
+  }
 }

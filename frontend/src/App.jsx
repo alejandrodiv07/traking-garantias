@@ -14,6 +14,7 @@ import NuevaGarantia from "./features/garantias/NuevaGarantia.jsx";
 import Consulta from "./features/garantias/Consulta.jsx";
 import AbrirOrden from "./features/taller/AbrirOrden.jsx";
 import Taller from "./features/taller/Taller.jsx";
+import Garantias from "./features/garantias/Garantias.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./features/auth/estado.css";
@@ -87,7 +88,7 @@ function Rutas() {
           </RutaProtegida>
         }
       >
-        <Route path="/garantias" element={<div>Tablero de garantías</div>} />
+        <Route path="/garantias" element={<Garantias />} />
         <Route path="/garantias/nueva" element={<NuevaGarantia />} />
         <Route path="/garantias/consulta" element={<Consulta />} />
         <Route path="/taller" element={<Taller />} />

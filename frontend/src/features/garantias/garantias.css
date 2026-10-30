@@ -114,3 +114,71 @@
   border-radius: 10px;
   padding: 0 20px;
 }
+
+.gr {
+  display: grid;
+  gap: 16px;
+}
+
+.gr-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gr label {
+  display: grid;
+  gap: 4px;
+}
+
+.gr input,
+.gr-chips button {
+  min-height: 44px;
+}
+
+.gr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gr-chips button {
+  padding: 0 16px;
+  border: 1px solid var(--c-border-soft);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+.gr-chips button[aria-pressed="true"] {
+  background: var(--c-accent-bg);
+  color: var(--c-accent-text);
+  font-weight: 600;
+}
+
+.gr-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--c-surface);
+  border-radius: var(--c-radio);
+}
+
+.gr-tabla th,
+.gr-tabla td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--c-border-soft);
+}
+
+.gr-tabla tbody tr {
+  cursor: pointer;
+}
+
+.gr-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
