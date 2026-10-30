@@ -5,8 +5,14 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const fakes = vi.hoisted(() => ({ buscarGarantia: vi.fn() }));
+const fakes = vi.hoisted(() => ({
+  buscarGarantia: vi.fn(),
+  confirmarCompra: vi.fn(),
+  desestimarCompra: vi.fn(),
+  rol: "JEFE_SERVICIO",
+}));
 vi.mock("./garantiasService.js", () => fakes);
+vi.mock("../auth/AuthContext.jsx", () => ({ useAuth: () => ({ rol: fakes.rol }) }));
 
 import Consulta from "./Consulta.jsx";
 
@@ -51,6 +57,9 @@ async function buscar(usuario, criterio, texto) {
 }
 
 beforeEach(() => {
+  fakes.rol = "JEFE_SERVICIO";
+  fakes.confirmarCompra.mockReset().mockResolvedValue({ ok: true, datos: null });
+  fakes.desestimarCompra.mockReset().mockResolvedValue({ ok: true, datos: null });
   fakes.buscarGarantia.mockReset().mockResolvedValue({ ok: true, datos: [EQUIPO()] });
 });
 
@@ -189,5 +198,81 @@ describe("Consulta: acciones", () => {
     });
     montar("/garantias/consulta?serial=RT5");
     expect(await screen.findByText(/ya tiene una orden abierta/)).toBeTruthy();
+  });
+});
+
+describe("Consulta: confirmar y desestimar la compra (solo jefatura)", () => {
+  const PENDIENTE = () =>
+    fakes.buscarGarantia.mockResolvedValue({
+      ok: true,
+      datos: [EQUIPO({ estado_compra: "PENDIENTE", vigencia: "POR_DETERMINAR", origen: "TALLER" })],
+    });
+
+  it("el jefe confirma con el soporte y la ficha se recarga", async () => {
+    PENDIENTE();
+    const usuario = userEvent.setup();
+    montar("/garantias/consulta?serial=RT5");
+    await usuario.click(await screen.findByRole("button", { name: "Confirmar compra" }));
+    await usuario.clear(screen.getByLabelText("Número de factura"));
+    await usuario.type(screen.getByLabelText("Número de factura"), "F-9");
+    await usuario.clear(screen.getByLabelText("Fecha de emisión"));
+    await usuario.type(screen.getByLabelText("Fecha de emisión"), "2026-10-20");
+    await usuario.clear(screen.getByLabelText("Plazo (días)"));
+    await usuario.type(screen.getByLabelText("Plazo (días)"), "15");
+    await usuario.click(screen.getByRole("button", { name: "Confirmar" }));
+
+    await waitFor(() =>
+      expect(fakes.confirmarCompra).toHaveBeenCalledWith({
+        equipoId: "e1",
+        tipoSoporte: "FACTURA",
+        numeroSoporte: "F-9",
+        fechaEmision: "2026-10-20",
+        plazoDias: 15,
+      }),
+    );
+    await waitFor(() => expect(fakes.buscarGarantia).toHaveBeenCalledTimes(2));
+  });
+
+  it("desestimar exige un motivo de 10 caracteres", async () => {
+    PENDIENTE();
+    const usuario = userEvent.setup();
+    montar("/garantias/consulta?serial=RT5");
+    await usuario.click(await screen.findByRole("button", { name: "Desestimar compra" }));
+    await usuario.type(screen.getByLabelText("Motivo"), "corto");
+    expect(screen.getByRole("button", { name: "Desestimar" })).toBeDisabled();
+    await usuario.type(screen.getByLabelText("Motivo"), " pero ahora largo");
+    await usuario.click(screen.getByRole("button", { name: "Desestimar" }));
+    await waitFor(() =>
+      expect(fakes.desestimarCompra).toHaveBeenCalledWith({
+        equipoId: "e1",
+        motivo: "corto pero ahora largo",
+      }),
+    );
+  });
+
+  it("muestra el rechazo de la base", async () => {
+    PENDIENTE();
+    fakes.desestimarCompra.mockResolvedValue({ ok: false, codigo: "SIN_PERMISO", mensaje: "solo jefatura" });
+    const usuario = userEvent.setup();
+    montar("/garantias/consulta?serial=RT5");
+    await usuario.click(await screen.findByRole("button", { name: "Desestimar compra" }));
+    await usuario.type(screen.getByLabelText("Motivo"), "la factura no corresponde");
+    await usuario.click(screen.getByRole("button", { name: "Desestimar" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/solo jefatura/);
+  });
+
+  it.each(["TECNICO", "RECEPCION"])("a %s no se le ofrecen", async (rol) => {
+    fakes.rol = rol;
+    PENDIENTE();
+    montar("/garantias/consulta?serial=RT5");
+    await screen.findByText("Huawei HG8245");
+    expect(screen.queryByRole("button", { name: "Confirmar compra" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Desestimar compra" })).toBeNull();
+  });
+
+  it("una compra ya confirmada no ofrece confirmar ni desestimar", async () => {
+    montar("/garantias/consulta?serial=RT5");
+    await screen.findByText("Huawei HG8245");
+    expect(screen.queryByRole("button", { name: "Confirmar compra" })).toBeNull();
   });
 });

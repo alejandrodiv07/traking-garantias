@@ -54,3 +54,19 @@ export async function listarGarantias({ busqueda } = {}) {
     return { ok: false, codigo: "SIN_CONEXION", mensaje: "Sin conexión" };
   }
 }
+
+/** Solo ADMIN/JEFE_SERVICIO (lo impone la base): ratifica o completa el soporte de compra. */
+export async function confirmarCompra({ equipoId, tipoSoporte, numeroSoporte, fechaEmision, plazoDias }) {
+  return rpc("confirmar_compra", {
+    p_equipo_id: equipoId,
+    p_tipo_soporte: tipoSoporte,
+    p_numero_soporte: numeroSoporte,
+    p_fecha_emision: fechaEmision,
+    p_plazo_dias: plazoDias,
+  });
+}
+
+/** Solo ADMIN/JEFE_SERVICIO: la compra no vale; las órdenes abiertas pasan a PAGO. */
+export async function desestimarCompra({ equipoId, motivo }) {
+  return rpc("desestimar_compra", { p_equipo_id: equipoId, p_motivo: motivo });
+}

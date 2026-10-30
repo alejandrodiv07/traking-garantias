@@ -6,7 +6,7 @@ const rpcFalso = vi.hoisted(() => vi.fn());
 const supabaseFalso = vi.hoisted(() => ({ rpc: undefined }));
 vi.mock("../../lib/supabaseClient.js", () => ({ supabase: supabaseFalso }));
 
-import { buscarGarantia, listarGarantias, registrarGarantia } from "./garantiasService.js";
+import { buscarGarantia, confirmarCompra, desestimarCompra, listarGarantias, registrarGarantia } from "./garantiasService.js";
 
 beforeEach(() => {
   rpcFalso.mockReset();
@@ -106,5 +106,36 @@ describe("listarGarantias", () => {
       "numero_serie.ilike.*RT5*,titular.ilike.*RT5*,documento.ilike.*RT5*,numero_soporte.ilike.*RT5*",
     );
     expect(r).toEqual({ ok: true, datos: [{ equipo_id: "e1" }] });
+  });
+});
+
+describe("confirmar y desestimar compra", () => {
+  it("confirmarCompra manda el soporte completo", async () => {
+    rpcFalso.mockResolvedValue({ data: null, error: null });
+    const r = await confirmarCompra({
+      equipoId: "e1",
+      tipoSoporte: "FACTURA",
+      numeroSoporte: "F-9",
+      fechaEmision: "2026-10-20",
+      plazoDias: 15,
+    });
+    expect(rpcFalso).toHaveBeenCalledWith("confirmar_compra", {
+      p_equipo_id: "e1",
+      p_tipo_soporte: "FACTURA",
+      p_numero_soporte: "F-9",
+      p_fecha_emision: "2026-10-20",
+      p_plazo_dias: 15,
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("desestimarCompra manda el motivo y mapea 42501 a SIN_PERMISO", async () => {
+    rpcFalso.mockResolvedValue({ data: null, error: { code: "42501", message: "solo jefatura" } });
+    const r = await desestimarCompra({ equipoId: "e1", motivo: "la factura no corresponde" });
+    expect(rpcFalso).toHaveBeenCalledWith("desestimar_compra", {
+      p_equipo_id: "e1",
+      p_motivo: "la factura no corresponde",
+    });
+    expect(r).toMatchObject({ ok: false, codigo: "SIN_PERMISO" });
   });
 });

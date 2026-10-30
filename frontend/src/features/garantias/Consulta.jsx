@@ -7,8 +7,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cobertura } from "../tablero/dominio.js";
+import { useAuth } from "../auth/AuthContext.jsx";
 import { AVISO_ATENCION } from "./avisos.js";
-import { buscarGarantia } from "./garantiasService.js";
+import { buscarGarantia, confirmarCompra, desestimarCompra } from "./garantiasService.js";
 import "./garantias.css";
 
 const CRITERIOS = [
@@ -25,7 +26,95 @@ function diasTexto(dias) {
   return dias >= 0 ? `${dias} días restantes` : "Vencida";
 }
 
-function Ficha({ e, navigate }) {
+const MOTIVO_MIN = 10;
+
+/** Confirmar / desestimar la compra de un equipo registrado desde el taller (jefatura). */
+function AccionesCompra({ e, onListo }) {
+  const [modo, setModo] = useState(null);
+  const [numero, setNumero] = useState(e.numero_soporte ?? "");
+  const [fecha, setFecha] = useState(e.fecha_emision ?? "");
+  const [plazo, setPlazo] = useState(e.plazo_dias ?? "");
+  const [motivo, setMotivo] = useState("");
+  const [error, setError] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function enviar(llamada) {
+    setEnviando(true);
+    setError(null);
+    const r = await llamada();
+    setEnviando(false);
+    if (r.ok) onListo();
+    else setError(r.mensaje || "No se pudo guardar");
+  }
+
+  return (
+    <div className="cs-compra">
+      {!modo && (
+        <>
+          <button type="button" onClick={() => setModo("confirmar")}>
+            Confirmar compra
+          </button>
+          <button type="button" onClick={() => setModo("desestimar")}>
+            Desestimar compra
+          </button>
+        </>
+      )}
+      {modo === "confirmar" && (
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            enviar(() =>
+              confirmarCompra({
+                equipoId: e.equipo_id,
+                tipoSoporte: "FACTURA",
+                numeroSoporte: numero.trim(),
+                fechaEmision: fecha,
+                plazoDias: Number(plazo),
+              }),
+            );
+          }}
+        >
+          <label htmlFor={`num-${e.equipo_id}`}>
+            Número de factura
+            <input id={`num-${e.equipo_id}`} value={numero} onChange={(ev) => setNumero(ev.target.value)} />
+          </label>
+          <label htmlFor={`fec-${e.equipo_id}`}>
+            Fecha de emisión
+            <input id={`fec-${e.equipo_id}`} type="date" value={fecha} onChange={(ev) => setFecha(ev.target.value)} />
+          </label>
+          <label htmlFor={`pla-${e.equipo_id}`}>
+            Plazo (días)
+            <input id={`pla-${e.equipo_id}`} type="number" min="1" value={plazo} onChange={(ev) => setPlazo(ev.target.value)} />
+          </label>
+          <button type="submit" disabled={enviando || !numero.trim() || !fecha || !plazo}>
+            Confirmar
+          </button>
+        </form>
+      )}
+      {modo === "desestimar" && (
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            enviar(() => desestimarCompra({ equipoId: e.equipo_id, motivo: motivo.trim() }));
+          }}
+        >
+          <label htmlFor={`mot-${e.equipo_id}`}>
+            Motivo
+            <textarea id={`mot-${e.equipo_id}`} value={motivo} onChange={(ev) => setMotivo(ev.target.value)} />
+          </label>
+          <button type="submit" disabled={enviando || motivo.trim().length < MOTIVO_MIN}>
+            Desestimar
+          </button>
+        </form>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
+const ROLES_JEFATURA = ["ADMIN", "JEFE_SERVICIO"];
+
+function Ficha({ e, navigate, rol, onCambio }) {
   const c = cobertura(e.vigencia);
   const ordenes = e.ordenes ?? [];
   return (
@@ -62,6 +151,9 @@ function Ficha({ e, navigate }) {
 
       {AVISO_ATENCION[e.vigencia] && <p role="note">{AVISO_ATENCION[e.vigencia]}</p>}
       {ordenes.some(ordenAbierta) && <p role="note">Este equipo ya tiene una orden abierta.</p>}
+      {e.estado_compra === "PENDIENTE" && ROLES_JEFATURA.includes(rol) && (
+        <AccionesCompra e={e} onListo={onCambio} />
+      )}
       <button type="button" className="cs-principal" onClick={() => navigate(`/taller/nueva?equipo=${e.equipo_id}`)}>
         Abrir orden de servicio
       </button>
@@ -71,6 +163,7 @@ function Ficha({ e, navigate }) {
 
 export default function Consulta() {
   const navigate = useNavigate();
+  const { rol } = useAuth();
   const [params] = useSearchParams();
   const serialInicial = params.get("serial") ?? "";
   const [criterio, setCriterio] = useState("serial");
@@ -82,7 +175,7 @@ export default function Consulta() {
     if (!t) return;
     setEstado({ fase: "buscando" });
     const r = await buscarGarantia({ [clave]: t });
-    setEstado(r.ok ? { fase: "listo", filas: r.datos, buscado: t } : { fase: "error", mensaje: r.mensaje });
+    setEstado(r.ok ? { fase: "listo", filas: r.datos, buscado: t, clave } : { fase: "error", mensaje: r.mensaje });
   }
 
   // Llegar con ?serial= (tras registrar la garantía) busca sin pulsar nada.
@@ -135,7 +228,15 @@ export default function Consulta() {
       )}
 
       {estado.fase === "listo" &&
-        estado.filas.map((e) => <Ficha key={e.equipo_id} e={e} navigate={navigate} />)}
+        estado.filas.map((e) => (
+          <Ficha
+            key={e.equipo_id}
+            e={e}
+            navigate={navigate}
+            rol={rol}
+            onCambio={() => ejecutar(estado.clave, estado.buscado)}
+          />
+        ))}
     </section>
   );
 }
