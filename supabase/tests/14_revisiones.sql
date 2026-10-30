@@ -42,13 +42,13 @@ INSERT INTO public.equipos (numero_serie, producto_id, cliente_id, tipo_soporte,
 SELECT 'RT5-8842-AA', p.id, c.id, 'FACTURA', 'F-1', DATE '2026-09-01', 7
 FROM public.productos p, public.clientes c
 WHERE p.modelo='HG8245' AND c.documento='12345678' LIMIT 1;
-INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash, fecha_ingreso)
+INSERT INTO public.ordenes_servicio (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash, fecha_ingreso)
 VALUES ((SELECT id FROM public.equipos LIMIT 1), 'No enciende, huele a quemado',
         'POR_DETERMINAR', '11111111-1111-1111-1111-111111111111',
         extensions.digest('rev-test','sha256'), '2026-09-02 14:00+00');
 
-CREATE FUNCTION pg_temp.registro_id() RETURNS uuid LANGUAGE sql AS
-  $$ SELECT id FROM public.registros ORDER BY fecha_ingreso LIMIT 1 $$;
+CREATE FUNCTION pg_temp.orden_id() RETURNS uuid LANGUAGE sql AS
+  $$ SELECT id FROM public.ordenes_servicio ORDER BY fecha_ingreso LIMIT 1 $$;
 CREATE FUNCTION pg_temp.checklist_ok() RETURNS jsonb LANGUAGE sql AS $$
   SELECT '{"condiciones":{"factura_presentada":true,"titular_coincide":true},
            "equipo":{"serial_legible":true,"caja_original":true,"precintos_intactos":true,"contenido_completo":true},
@@ -57,8 +57,8 @@ CREATE FUNCTION pg_temp.checklist_golpes() RETURNS jsonb LANGUAGE sql AS $$
   SELECT jsonb_set(pg_temp.checklist_ok(), '{senales,golpes}', 'true') $$;
 
 -- ============ R1: el cliente NO decide el resultado ============
-INSERT INTO public.revisiones (registro_id, tipo, revisado_por, checklist, observaciones, resultado)
-VALUES (pg_temp.registro_id(), 'RECEPCION', '22222222-2222-2222-2222-222222222222',
+INSERT INTO public.revisiones (orden_id, tipo, revisado_por, checklist, observaciones, resultado)
+VALUES (pg_temp.orden_id(), 'RECEPCION', '22222222-2222-2222-2222-222222222222',
         pg_temp.checklist_golpes(), 'Equipo con golpes visibles',
         'EN_GARANTIA');  -- EL CLIENTE DICE EN_GARANTIA...
 SELECT pg_temp.chk('R1 la base guarda ANULADA_POR_USO aunque el cliente haya enviado EN_GARANTIA',
@@ -66,17 +66,17 @@ SELECT pg_temp.chk('R1 la base guarda ANULADA_POR_USO aunque el cliente haya env
    WHERE resultado::text = 'ANULADA_POR_USO'));
 
 -- ============ R2: la cobertura del registro sigue a la revisión ============
-SELECT pg_temp.chk('R2 registros.cobertura quedó en el resultado de la revisión',
-  (SELECT cobertura::text = 'ANULADA_POR_USO' FROM public.registros
-   WHERE id = pg_temp.registro_id()));
+SELECT pg_temp.chk('R2 ordenes_servicio.cobertura quedó en el resultado de la revisión',
+  (SELECT cobertura::text = 'ANULADA_POR_USO' FROM public.ordenes_servicio
+   WHERE id = pg_temp.orden_id()));
 SELECT pg_temp.chk('R3 el motivo de anulación se llenó solo y menciona golpes',
-  (SELECT motivo_anulacion_cobertura ~ 'golpes' FROM public.registros
-   WHERE id = pg_temp.registro_id()));
+  (SELECT motivo_anulacion_cobertura ~ 'golpes' FROM public.ordenes_servicio
+   WHERE id = pg_temp.orden_id()));
 
 -- ============ R4: checklist inválido rechazado ============
 BEGIN;
-INSERT INTO public.revisiones (registro_id, tipo, revisado_por, checklist)
-VALUES (pg_temp.registro_id(), 'TECNICA', '22222222-2222-2222-2222-222222222222',
+INSERT INTO public.revisiones (orden_id, tipo, revisado_por, checklist)
+VALUES (pg_temp.orden_id(), 'TECNICA', '22222222-2222-2222-2222-222222222222',
         '{"condiciones":{"factura_presentada":true,"titular_coincide":true},"equipo":{"serial_legible":true,"caja_original":true,"precintos_intactos":true},"senales":{"descarga_electrica":false,"liquidos":false,"altas_temperaturas":false,"golpes":false,"manipulacion_terceros":false}}'::jsonb);
 ROLLBACK;  -- falta contenido_completo: DEBE FALLAR
 SELECT pg_temp.chk('R4 checklist con clave faltante rechazado',

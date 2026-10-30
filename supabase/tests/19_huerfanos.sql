@@ -28,9 +28,9 @@ END $$;
 \pset pager off
 
 -- Escenario en el bucket: 4 objetos con edades y referencias distintas.
--- El bucket `registros` ya lo creó la migración ...0008; solo importa el otro.
+-- El bucket `ordenes` ya lo creó la migración ...0008; solo importa el otro.
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('registros','registros',false), ('otro','otro',false)
+VALUES ('ordenes','ordenes',false), ('otro','otro',false)
 ON CONFLICT (id) DO NOTHING;
 
 -- El usuario que se sembrará como propietario del registro de referencia.
@@ -49,24 +49,24 @@ INSERT INTO public.clientes (tipo_documento, documento, nombre) VALUES ('V','123
 INSERT INTO public.equipos (numero_serie, producto_id, cliente_id)
 SELECT 'RT5-8842-AA', p.id, c.id FROM public.productos p, public.clientes c
 WHERE p.modelo='HG8245' AND c.documento='12345678' LIMIT 1;
-INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)
+INSERT INTO public.ordenes_servicio (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)
 VALUES ((SELECT id FROM public.equipos LIMIT 1), 'No enciende, huele a quemado',
         'EN_GARANTIA', '11111111-1111-1111-1111-111111111111', extensions.digest('hu-test','sha256'));
 
-CREATE FUNCTION pg_temp.registro_id() RETURNS uuid LANGUAGE sql AS
-  $$ SELECT id FROM public.registros ORDER BY fecha_ingreso LIMIT 1 $$;
+CREATE FUNCTION pg_temp.orden_id() RETURNS uuid LANGUAGE sql AS
+  $$ SELECT id FROM public.ordenes_servicio ORDER BY fecha_ingreso LIMIT 1 $$;
 CREATE FUNCTION pg_temp.ruta_refer() RETURNS text LANGUAGE sql AS
-  $$ SELECT 'registros/' || pg_temp.registro_id() || '/refer.jpg' $$;
+  $$ SELECT 'ordenes/' || pg_temp.orden_id() || '/refer.jpg' $$;
 
 INSERT INTO storage.objects (bucket_id, name, created_at) VALUES
-  ('registros', 'hu25.jpg', now() - interval '25 hours'),   -- sin fila, 25 h  → SÍ
-  ('registros', 'hu23.jpg', now() - interval '23 hours'),   -- sin fila, 23 h  → NO (subida en curso)
-  ('registros', pg_temp.ruta_refer(), now() - interval '48 hours'),  -- CON fila → NO
+  ('ordenes', 'hu25.jpg', now() - interval '25 hours'),   -- sin fila, 25 h  → SÍ
+  ('ordenes', 'hu23.jpg', now() - interval '23 hours'),   -- sin fila, 23 h  → NO (subida en curso)
+  ('ordenes', pg_temp.ruta_refer(), now() - interval '48 hours'),  -- CON fila → NO
   ('otro',    'otrobucket.jpg', now() - interval '48 hours');-- otro bucket   → NO
 
 -- El objeto referenciado tiene su fila en adjuntos (la misma ruta)
-INSERT INTO public.adjuntos (registro_id, tipo, etiqueta, ruta, mime, bytes, subido_por)
-VALUES (pg_temp.registro_id(), 'FOTO','ref',
+INSERT INTO public.adjuntos (orden_id, tipo, etiqueta, ruta, mime, bytes, subido_por)
+VALUES (pg_temp.orden_id(), 'FOTO','ref',
         pg_temp.ruta_refer(), 'image/jpeg', 10, '11111111-1111-1111-1111-111111111111');
 
 SELECT pg_temp.chk('H1 lista el objeto sin fila de 25 h',

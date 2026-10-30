@@ -1,8 +1,8 @@
 -- Pruebas de seguridad (roles y RLS) sobre los NOMBRES NUEVOS del hito
--- "registro y control de garantía": registros, historial_registros,
+-- "registro y control de garantía": ordenes_servicio, historial_ordenes,
 -- notas_internas. Portada de la versión anterior (que probaba garantías).
 -- Cambio de permisos del hito (spec §6): el TECNICO AHORA SÍ crea
--- registros, pero por la función `registrar_ingreso`, no insertando directo.
+-- ordenes_servicio, pero por la función `abrir_orden`, no insertando directo.
 \set ON_ERROR_STOP off
 \pset pager off
 \set QUIET on
@@ -42,7 +42,7 @@ SELECT 'RT5-8842-AA', p.id, c.id
 FROM public.productos p, public.clientes c
 WHERE p.modelo='HG8245' AND c.documento='12345678' LIMIT 1;
 -- El registro vive solo vía RPC (§16 del plan); la mesa se siembra como postgres.
-INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)
+INSERT INTO public.ordenes_servicio (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)
 SELECT e.id, 'No enciende, huele a quemado', 'EN_GARANTIA', '11111111-1111-1111-1111-111111111111',
        extensions.digest('seguridad-1', 'sha256')
 FROM public.equipos e LIMIT 1;
@@ -80,7 +80,7 @@ ROLLBACK;
 -- ============ T5: anon NO TOCA NINGUNA TABLA ============
 BEGIN;
 SET LOCAL ROLE anon;
-SELECT count(*) FROM public.registros;  -- DEBE FALLAR: permiso denegado
+SELECT count(*) FROM public.ordenes_servicio;  -- DEBE FALLAR: permiso denegado
 ROLLBACK;
 BEGIN;
 SET LOCAL ROLE anon;
@@ -92,30 +92,30 @@ SELECT count(*) FROM public.clientes;   -- DEBE FALLAR
 ROLLBACK;
 
 -- ============ T6: TECNICO NO INSERTA REGISTROS DIRECTO ============
--- La creación va por `registrar_ingreso` (Tarea 11 del plan), que asigna
+-- La creación va por `abrir_orden` (Tarea 11 del plan), que asigna
 -- el equipo, el registro y su revisión de recepción en una transacción.
--- No existe ni GRANT ni policy de INSERT sobre `registros`.
+-- No existe ni GRANT ni policy de INSERT sobre `ordenes_servicio`.
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por)
+INSERT INTO public.ordenes_servicio (equipo_id, falla_reportada, cobertura, creado_por)
 VALUES ((SELECT id FROM public.equipos LIMIT 1), 'Intento directo', 'EN_GARANTIA', auth.uid());
 ROLLBACK;  -- DEBE FALLAR (permiso denegado)
-SELECT pg_temp.chk('T6 un TECNICO no inserta registros directo (por la función)',
-  (SELECT count(*)=1 FROM public.registros));
+SELECT pg_temp.chk('T6 un TECNICO no inserta ordenes_servicio directo (por la función)',
+  (SELECT count(*)=1 FROM public.ordenes_servicio));
 
 -- ============ T8: MAQUINA DE ESTADOS ============
-UPDATE public.registros SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
+UPDATE public.ordenes_servicio SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
 BEGIN;
-UPDATE public.registros SET estado='ENTREGADO';  -- RECIBIDO -> ENTREGADO: NO EXISTE
+UPDATE public.ordenes_servicio SET estado='ENTREGADO';  -- RECIBIDO -> ENTREGADO: NO EXISTE
 ROLLBACK;
 BEGIN;
-UPDATE public.registros SET estado='EN_DIAGNOSTICO';
+UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T8b transicion valida RECIBIDO -> EN_DIAGNOSTICO aceptada',
-  (SELECT estado='EN_DIAGNOSTICO' FROM public.registros));
+  (SELECT estado='EN_DIAGNOSTICO' FROM public.ordenes_servicio));
 SELECT pg_temp.chk('T8c historial registra estado_anterior Y estado_nuevo',
-  (SELECT count(*)=1 FROM public.historial_registros WHERE estado_anterior='RECIBIDO' AND estado_nuevo='EN_DIAGNOSTICO'));
+  (SELECT count(*)=1 FROM public.historial_ordenes WHERE estado_anterior='RECIBIDO' AND estado_nuevo='EN_DIAGNOSTICO'));
 ROLLBACK;
 
 -- ============ T9: TECNICO SOLO TOCA LO SUYO ============
@@ -123,49 +123,49 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-UPDATE public.registros SET estado='EN_DIAGNOSTICO';
+UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T9 TECNICO asignado SI puede avanzar su registro',
-  (SELECT estado='EN_DIAGNOSTICO' FROM public.registros));
+  (SELECT estado='EN_DIAGNOSTICO' FROM public.ordenes_servicio));
 ROLLBACK;
 
-UPDATE public.registros SET tecnico_asignado_id='11111111-1111-1111-1111-111111111111';
+UPDATE public.ordenes_servicio SET tecnico_asignado_id='11111111-1111-1111-1111-111111111111';
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-UPDATE public.registros SET estado='EN_DIAGNOSTICO';
+UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO';
 SELECT pg_temp.chk('T9b TECNICO NO asignado no modifica (0 filas)',
-  (SELECT estado='RECIBIDO' FROM public.registros));
+  (SELECT estado='RECIBIDO' FROM public.ordenes_servicio));
 ROLLBACK;
-UPDATE public.registros SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
+UPDATE public.ordenes_servicio SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
 
 -- ============ T10: HISTORIAL INMUTABLE (incluso como superusuario) ============
 BEGIN;
-UPDATE public.historial_registros SET comentario='falsificado';  -- DEBE FALLAR
+UPDATE public.historial_ordenes SET comentario='falsificado';  -- DEBE FALLAR
 ROLLBACK;
 BEGIN;
-DELETE FROM public.historial_registros;  -- DEBE FALLAR
+DELETE FROM public.historial_ordenes;  -- DEBE FALLAR
 ROLLBACK;
 SELECT pg_temp.chk('T10 historial intacto tras intentos de UPDATE/DELETE',
-  (SELECT count(*)=1 FROM public.historial_registros));
+  (SELECT count(*)=1 FROM public.historial_ordenes));
 
 -- ============ T12: CHECKS DE COHERENCIA ============
 BEGIN;
-UPDATE public.registros SET fecha_entrega = now() - interval '400 days'; -- entrega < ingreso: FALLA
+UPDATE public.ordenes_servicio SET fecha_entrega = now() - interval '400 days'; -- entrega < ingreso: FALLA
 ROLLBACK;
 BEGIN;
-UPDATE public.registros SET cobertura='ANULADA_POR_USO';  -- sin motivo: FALLA
+UPDATE public.ordenes_servicio SET cobertura='ANULADA_POR_USO';  -- sin motivo: FALLA
 ROLLBACK;
 BEGIN;
-UPDATE public.registros SET cobertura='EN_GARANTIA', costo_reparacion=50; -- cobrar lo cubierto: FALLA
+UPDATE public.ordenes_servicio SET cobertura='EN_GARANTIA', costo_reparacion=50; -- cobrar lo cubierto: FALLA
 ROLLBACK;
 -- Las tres aserciones miden el ESTADO tras los intentos: los CHECK los
 -- rechazaron si y solo si ningún registro quedó incoherente.
 SELECT pg_temp.chk('T12 0 filas con fecha_entrega < fecha_ingreso',
-  (SELECT count(*)=0 FROM public.registros WHERE fecha_entrega < fecha_ingreso));
+  (SELECT count(*)=0 FROM public.ordenes_servicio WHERE fecha_entrega < fecha_ingreso));
 SELECT pg_temp.chk('T12 0 filas con cobertura ANULADA sin motivo',
-  (SELECT count(*)=0 FROM public.registros
+  (SELECT count(*)=0 FROM public.ordenes_servicio
    WHERE cobertura='ANULADA_POR_USO' AND motivo_anulacion_cobertura IS NULL));
 SELECT pg_temp.chk('T12 0 filas con costo_reparacion y cobertura EN_GARANTIA',
-  (SELECT count(*)=0 FROM public.registros
+  (SELECT count(*)=0 FROM public.ordenes_servicio
    WHERE costo_reparacion IS NOT NULL AND cobertura='EN_GARANTIA'));
