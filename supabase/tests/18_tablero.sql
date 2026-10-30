@@ -173,14 +173,10 @@ BEGIN
   EXECUTE 'SET LOCAL ROLE authenticated';
   PERFORM set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', TRUE);
   PERFORM set_config('request.jwt.claim.session_id', '11111111-1111-1111-1111-111111111111', TRUE);
-  UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO'
-   WHERE id = (SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
-  UPDATE public.ordenes_servicio SET estado='EN_REPARACION'
-   WHERE id = (SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
-  UPDATE public.ordenes_servicio SET estado='REPARADO'
-   WHERE id = (SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
-  UPDATE public.ordenes_servicio SET estado='ENTREGADO'
-   WHERE id = (SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
+  PERFORM public.cambiar_estado((SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15'), 'EN_DIAGNOSTICO');
+  PERFORM public.cambiar_estado((SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15'), 'EN_REPARACION');
+  PERFORM public.cambiar_estado((SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15'), 'REPARADO');
+  PERFORM public.cambiar_estado((SELECT r.id FROM public.ordenes_servicio r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15'), 'ENTREGADO');
   EXECUTE 'RESET ROLE';
 END $$;
 SELECT pg_temp.chk('el cierre sin fecha a mano respeta entrega >= ingreso',

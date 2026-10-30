@@ -250,8 +250,7 @@ SELECT pg_temp.chk('R1e el motivo quedó en la fila',
 BEGIN;
 SELECT pg_temp.chk('R2a RECEPCION pasa RECHAZADO→ENTREGADO',
   pg_temp.como('33333333-3333-3333-3333-333333333333',
-    $q$UPDATE public.ordenes_servicio SET estado='ENTREGADO'
-        WHERE id=pg_temp.oa()$q$));
+    $q$SELECT public.cambiar_estado(pg_temp.oa(), 'ENTREGADO')$q$));
 SELECT pg_temp.chk('R2b tras ENTREGADO el motivo SIGUE en la fila y la fecha quedó llena',
   (SELECT estado='ENTREGADO'
        AND motivo_rechazo = 'Sin repuestos disponibles y el cliente no espera: se rechaza'
@@ -262,8 +261,7 @@ ROLLBACK;
 BEGIN;
 SELECT pg_temp.chk('R2c JEFE_SERVICIO pasa RECHAZADO→ENTREGADO',
   pg_temp.como('44444444-4444-4444-4444-444444444444',
-    $q$UPDATE public.ordenes_servicio SET estado='ENTREGADO'
-        WHERE id=pg_temp.oa()$q$));
+    $q$SELECT public.cambiar_estado(pg_temp.oa(), 'ENTREGADO')$q$));
 ROLLBACK;
 
 BEGIN;
@@ -281,12 +279,10 @@ SELECT pg_temp.chk('R2e tras los tres intentos la orden sigue RECHAZADO con su m
 -- el 42501 sale del trigger validar_transicion_estado por roles_permitidos.
 SELECT pg_temp.chk('R3 TECNICO intenta RECIBIDO→RECHAZADO y recibe 42501',
   pg_temp.estado_de('22222222-2222-2222-2222-222222222222',
-    $q$UPDATE public.ordenes_servicio SET estado='RECHAZADO'
-        WHERE id=pg_temp.ob()$q$) = '42501');
+    $q$SELECT public.cambiar_estado(pg_temp.ob(), 'RECHAZADO', NULL, 'Motivo suficientemente largo')$q$) = '42501');
 SELECT pg_temp.chk('R3b el mensaje nombra la transición cerrada',
   pg_temp.mensaje_de('22222222-2222-2222-2222-222222222222',
-    $q$UPDATE public.ordenes_servicio SET estado='RECHAZADO'
-        WHERE id=pg_temp.ob()$q$) ~ 'no puede ejecutar la transición RECIBIDO -> RECHAZADO');
+    $q$SELECT public.cambiar_estado(pg_temp.ob(), 'RECHAZADO', NULL, 'Motivo suficientemente largo')$q$) ~ 'no puede ejecutar la transición RECIBIDO -> RECHAZADO');
 
 -- ============ R4: RECEPCION ya no tiene "cualquier rol" ============
 -- Aislado del permiso de la transición (claims + superuser): antes de la
@@ -307,16 +303,14 @@ UPDATE public.ordenes_servicio SET estado='REPARADO'       WHERE id=pg_temp.od()
 BEGIN;
 SELECT pg_temp.chk('R5 RECEPCION sí pasa REPARADO→ENTREGADO',
   pg_temp.como('33333333-3333-3333-3333-333333333333',
-    $q$UPDATE public.ordenes_servicio SET estado='ENTREGADO'
-        WHERE id=pg_temp.od()$q$));
+    $q$SELECT public.cambiar_estado(pg_temp.od(), 'ENTREGADO')$q$));
 ROLLBACK;
 
 -- ============ R6: el TÉCNICO sigue avanzando su orden (regresión) ============
 BEGIN;
 SELECT pg_temp.chk('R6 TECNICO pasa RECIBIDO→EN_DIAGNOSTICO',
   pg_temp.como('22222222-2222-2222-2222-222222222222',
-    $q$UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO'
-        WHERE id=pg_temp.ob()$q$));
+    $q$SELECT public.cambiar_estado(pg_temp.ob(), 'EN_DIAGNOSTICO')$q$));
 ROLLBACK;
 
 -- ============ R7: la decisión del cliente la recepciona RECEPCION ============

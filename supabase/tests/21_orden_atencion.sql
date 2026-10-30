@@ -223,8 +223,7 @@ UPDATE public.ordenes_servicio
        motivo_anulacion_cobertura = 'Senales de uso en la revisión técnica del titular'
  WHERE id = pg_temp.orden_id();
 SELECT pg_temp.chk('A9a un TECNICO asignado fija el costo de SU orden sin que muera el UPDATE',
-  pg_temp.como_tecnico($$UPDATE public.ordenes_servicio SET costo_reparacion = 85
-     WHERE id = pg_temp.orden_id()$$));
+  pg_temp.como_tecnico($$SELECT public.registrar_presupuesto(pg_temp.orden_id(), 85)$$));
 SELECT pg_temp.chk('A9b la BITACORA del costo quedó firmada por el técnico (modificado_por = su uid)',
   (SELECT count(*) = 1 FROM public.historial_ordenes
    WHERE orden_id = pg_temp.orden_id() AND evento = 'BITACORA'

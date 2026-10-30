@@ -140,7 +140,7 @@ SELECT pg_temp.chk('G2 no se cobra reparación con cobertura en garantía',
 -- ============ TECNICO: solo lo suyo y abierto ============
 SELECT pg_temp.chk('T1 TECNICO asignado SI avanza su registro',
   NOT pg_temp.rechazado('22222222-2222-2222-2222-222222222222',
-    $q$UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO'
+    $q$SELECT public.cambiar_estado(id, 'EN_DIAGNOSTICO') FROM public.ordenes_servicio
         WHERE tecnico_asignado_id='22222222-2222-2222-2222-222222222222'$q$));
 UPDATE public.ordenes_servicio SET tecnico_asignado_id='11111111-1111-1111-1111-111111111111';
 SELECT pg_temp.chk('T2 TECNICO NO asignado no modifica (0 filas)',

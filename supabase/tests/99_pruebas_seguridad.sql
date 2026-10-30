@@ -128,7 +128,7 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO';
+SELECT public.cambiar_estado(id, 'EN_DIAGNOSTICO') FROM public.ordenes_servicio;
 SELECT pg_temp.chk('T9 TECNICO asignado SI puede avanzar su registro',
   (SELECT estado='EN_DIAGNOSTICO' FROM public.ordenes_servicio));
 ROLLBACK;
@@ -138,9 +138,13 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
-UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO';
-SELECT pg_temp.chk('T9b TECNICO NO asignado no modifica (0 filas)',
-  (SELECT estado='RECIBIDO' FROM public.ordenes_servicio));
+DO $$
+BEGIN
+  PERFORM public.cambiar_estado(id, 'EN_DIAGNOSTICO') FROM public.ordenes_servicio;
+  PERFORM pg_temp.chk('T9b TECNICO NO asignado no cambia el estado', false);
+EXCEPTION WHEN insufficient_privilege THEN
+  PERFORM pg_temp.chk('T9b TECNICO NO asignado no cambia el estado', true);
+END $$;
 ROLLBACK;
 UPDATE public.ordenes_servicio SET tecnico_asignado_id='22222222-2222-2222-2222-222222222222';
 
