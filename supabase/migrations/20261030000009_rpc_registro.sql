@@ -221,3 +221,123 @@ REVOKE ALL ON FUNCTION public.registrar_ingreso(text, uuid, uuid, text, text, te
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.registrar_ingreso(text, uuid, uuid, text, text, text, text, date, integer, text, jsonb, text, timestamptz)
   TO authenticated;
+-- ---------------------------------------------------------------------
+--  4. REGISTRAR_REVISION — añade una revisión a un registro existente
+--     (spec §6: ADMIN, JEFE_SERVICIO y TECNICO; RECEPCION no)
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.registrar_revision(
+    p_registro_id   uuid,
+    p_tipo          text,
+    p_checklist     jsonb,
+    p_observaciones text DEFAULT NULL)
+RETURNS TABLE (revision_id uuid, cobertura public.cobertura_garantia)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_rol   public.app_role := public.mi_rol();
+    v_id    uuid;
+BEGIN
+    IF v_rol IS NULL OR NOT public.tiene_rol('ADMIN', 'JEFE_SERVICIO', 'TECNICO') THEN
+        RAISE EXCEPTION 'Su rol no puede registrar revisiones' USING ERRCODE = '42501';
+    END IF;
+    IF p_tipo NOT IN ('RECEPCION', 'TECNICA') THEN
+        RAISE EXCEPTION 'El tipo de revisión es RECEPCION o TECNICA' USING ERRCODE = '22P02';
+    END IF;
+    IF p_checklist IS NOT NULL AND NOT public.checklist_es_valido(p_checklist) THEN
+        RAISE EXCEPTION 'La lista de verificación no está completa' USING ERRCODE = '22P02';
+    END IF;
+
+    INSERT INTO public.revisiones (registro_id, tipo, revisado_por, checklist, observaciones)
+    VALUES (p_registro_id, p_tipo, auth.uid(), p_checklist,
+            nullif(btrim(coalesce(p_observaciones, '')), ''))
+    RETURNING id INTO v_id;
+
+    RETURN QUERY
+    SELECT v_id, r.cobertura
+      FROM public.registros r
+     WHERE r.id = p_registro_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.registrar_revision(uuid, text, jsonb, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.registrar_revision(uuid, text, jsonb, text) TO authenticated;
+
+-- ---------------------------------------------------------------------
+--  5. CONFIRMAR_COMPRA — solo ADMIN y JEFE_SERVICIO (spec §4.4 y §6)
+-- ---------------------------------------------------------------------
+-- Completa los datos de factura que confirmó Ventas, deja registrado quién
+-- y cuándo (el gancho para la consulta de ventas del hito siguiente) y
+-- recalcula la cobertura de los registros ABIERTOS del equipo, que salen
+-- de POR_DETERMINAR gracias al checklist de su última revisión.
+CREATE OR REPLACE FUNCTION public.confirmar_compra(
+    p_equipo_id      uuid,
+    p_tipo_soporte   text,
+    p_numero_soporte text,
+    p_fecha_emision  date,
+    p_plazo_dias     integer)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_rol   public.app_role := public.mi_rol();
+    v_tiene_soporte boolean;
+BEGIN
+    IF v_rol IS NULL OR NOT public.tiene_rol('ADMIN', 'JEFE_SERVICIO') THEN
+        RAISE EXCEPTION 'Solo ADMIN o JEFE_SERVICIO confirman la compra' USING ERRCODE = '42501';
+    END IF;
+
+    IF coalesce(p_tipo_soporte, '') NOT IN ('FACTURA', 'NOTA_ENTREGA')
+       OR coalesce(p_numero_soporte, '') = ''
+       OR p_fecha_emision IS NULL OR p_plazo_dias IS NULL THEN
+        RAISE EXCEPTION 'Faltan datos del soporte: tipo, número, fecha de emisión y plazo'
+            USING ERRCODE = '22P02';
+    END IF;
+
+    SELECT (numero_soporte IS NOT NULL) INTO v_tiene_soporte
+      FROM public.equipos WHERE id = p_equipo_id;
+    IF v_tiene_soporte IS NULL THEN
+        RAISE EXCEPTION 'Equipo inexistente' USING ERRCODE = 'P0002';
+    END IF;
+    IF v_tiene_soporte THEN
+        RAISE EXCEPTION 'El equipo ya tiene soporte de compras registrado'
+            USING ERRCODE = '23505';
+    END IF;
+
+    UPDATE public.equipos
+       SET tipo_soporte   = p_tipo_soporte,
+           numero_soporte = btrim(p_numero_soporte),
+           fecha_emision  = p_fecha_emision,
+           plazo_dias     = p_plazo_dias,
+           compra_confirmada_por = auth.uid(),
+           compra_confirmada_en  = now()
+     WHERE id = p_equipo_id;
+
+    -- Recalcular la cobertura de los registros abiertos con su última revisión.
+    UPDATE public.registros r
+       SET cobertura = c_resultado.nueva,
+           motivo_anulacion_cobertura = c_resultado.motivo
+      FROM (
+        SELECT r2.id AS registro,
+               public.calcular_cobertura(f.vence_el, public.hoy_local(r2.fecha_ingreso), v2.checklist) AS nueva,
+               CASE WHEN public.calcular_cobertura(f.vence_el, public.hoy_local(r2.fecha_ingreso), v2.checklist) = 'ANULADA_POR_USO'
+                    THEN public.motivo_anulacion(v2.checklist) END AS motivo
+          FROM public.registros r2
+          JOIN public.equipos f   ON f.id = r2.equipo_id
+          CROSS JOIN LATERAL (
+            SELECT checklist
+              FROM public.revisiones vr
+             WHERE vr.registro_id = r2.id
+             ORDER BY revisado_en DESC, id DESC LIMIT 1) v2
+         WHERE r2.equipo_id = p_equipo_id
+           AND r2.estado NOT IN ('ENTREGADO', 'ANULADO')
+      ) c_resultado
+     WHERE r.id = c_resultado.registro;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.confirmar_compra(uuid, text, text, date, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.confirmar_compra(uuid, text, text, date, integer) TO authenticated;
