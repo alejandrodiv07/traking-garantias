@@ -173,6 +173,45 @@ DELETE FROM public.historial_registros;  -- DEBE FALLAR
 ROLLBACK;
 SELECT pg_temp.chk('P3 historial intacto tras UPDATE/DELETE (5 de reg1 + 1 de reg2)',
   (SELECT count(*)=6 FROM public.historial_registros));
+
+-- ============ P5: UPDATE POR COLUMNA ============
+-- El GRANT de UPDATE es por columna: un TECNICO solo toca estado,
+-- diagnostico, accesorios, costo_reparacion y recibido_por. La cobertura y
+-- su motivo la escriben los triggers de revisiones; el técnico asignado lo
+-- fija registrar_ingreso; la fecha de entrega la llena el trigger de
+-- ENTREGADO; creado_por es trazabilidad y no se toca.
+-- (Postgres 17 redacta este rechazo como "permission denied for table
+-- registros", sin nombrar la columna: el nombre solo llega al mensaje en
+-- el SELECT de una columna sin GRANT. La aserción exige el 42501.)
+-- Devuelve el SQLERRM de una sentencia bajo una identidad (NULL si pasó).
+CREATE FUNCTION pg_temp.error_msg(uid text, sql text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', uid, TRUE);
+  PERFORM set_config('request.jwt.claim.session_id', uid, TRUE);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    EXECUTE sql;
+    EXECUTE 'RESET ROLE';
+    RETURN NULL;
+  EXCEPTION WHEN OTHERS THEN
+    EXECUTE 'RESET ROLE';
+    RETURN SQLERRM;
+  END;
+END $$;
+
+CREATE TEMP TABLE p5 AS
+SELECT t.col, pg_temp.error_msg('22222222-2222-2222-2222-222222222222',
+         format('UPDATE public.registros SET %I = %s WHERE id = pg_temp.registro_id()', t.col, t.nuevo)) AS err
+  FROM (VALUES ('cobertura',                 '''EN_GARANTIA'''),
+               ('motivo_anulacion_cobertura', '''uso indebido del equipo'''),
+               ('creado_por',               'auth.uid()'),
+               ('tecnico_asignado_id',      'auth.uid()'),
+               ('fecha_entrega',            'now()')) AS t(col, nuevo);
+SELECT pg_temp.chk('P5 las columnas criticas rechazan el UPDATE del TECNICO (permission denied)',
+  (SELECT bool_and(err ~* 'permission denied') FROM p5));
+
 -- ============ CONSULTA PÚBLICA: consultar_registro (Tarea 8) ============
 -- Portados de los casos T11 del 99 anterior (consultar_garantia).
 -- Las aserciones van envueltas en helpers que CONSERVAN el estado del

@@ -205,7 +205,14 @@ REVOKE ALL ON public.historial_registros FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON public.notas_internas    FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON SEQUENCE public.registros_numero_seq FROM PUBLIC, anon, authenticated;
 
-GRANT SELECT, UPDATE ON public.registros TO authenticated;
+GRANT SELECT ON public.registros TO authenticated;
+-- UPDATE solo por columna: la cobertura y su motivo la escriben los
+-- triggers de revisiones; el técnico asignado lo fija registrar_ingreso;
+-- la fecha de entrega la llena el trigger de ENTREGADO; creado_por es
+-- trazabilidad. El resto (estado, diagnostico, accesorios,
+-- costo_reparacion, recibido_por) sí lo toca un TECNICO asignado.
+GRANT UPDATE (estado, diagnostico, accesorios, costo_reparacion, recibido_por)
+  ON public.registros TO authenticated;
 GRANT SELECT ON public.historial_registros TO authenticated;
 GRANT SELECT, INSERT ON public.notas_internas TO authenticated;
 -- Sin DELETE en ninguna tabla, para ningún rol de aplicación.
