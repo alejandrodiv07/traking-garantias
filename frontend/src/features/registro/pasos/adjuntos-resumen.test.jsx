@@ -53,6 +53,41 @@ describe("PasoAdjuntos", () => {
     expect(await screen.findByText(/máximo 8/i)).toBeTruthy();
     expect(actualizar).not.toHaveBeenCalled();
   });
+
+  // Corrección D1 (hallazgo 5): de N archivos elegidos juntos, TODOS sobreviven
+  // (cada agregar ve la lista ya actualizada, no la del viejo render).
+  it("3 fotos elegidas juntas quedan las 3 (la lista no queda stale)", () => {
+    const foto = (nombre) =>
+      new File([new Uint8Array(4)], nombre, { type: "image/jpeg" });
+    render(<PasoAdjuntos estado={ESTADO_ADJ} actualizar={actualizar} />);
+    fireEvent.change(screen.getByLabelText(/foto/i), {
+      target: { files: [foto("f1.jpg"), foto("f2.jpg"), foto("f3.jpg")] },
+    });
+    expect(screen.getByText(/f1\.jpg/)).toBeTruthy();
+    expect(screen.getByText(/f2\.jpg/)).toBeTruthy();
+    expect(screen.getByText(/f3\.jpg/)).toBeTruthy();
+    const ultima = actualizar.mock.calls.at(-1)[0];
+    expect(ultima.archivosAdjuntos).toHaveLength(3);
+  });
+
+  // Con 7 ya agregadas y un lote de 2 juntas: entra UNA (8) y la otra se
+  // rechaza — los conteos NO usan el conteo viejo dos veces (antirrepetir 9).
+  it("7 ya agregadas + lote de 2: entra solo la primera y avisa el máximo de 8", () => {
+    const foto = (nombre) =>
+      new File([new Uint8Array(4)], nombre, { type: "image/jpeg" });
+    const siete = Array.from({ length: 7 }, (_, i) => ({
+      id: String(i),
+      archivo: foto(`x${i}.jpg`), tipo: "FOTO", etiqueta: null, error: null,
+    }));
+    render(<PasoAdjuntos estado={{ archivosAdjuntos: siete }} actualizar={actualizar} />);
+    fireEvent.change(screen.getByLabelText(/foto/i), {
+      target: { files: [foto("f8.jpg"), foto("f9.jpg")] },
+    });
+    expect(screen.getByText(/máximo 8/i)).toBeTruthy();
+    expect(screen.getByText(/f8\.jpg/)).toBeTruthy();
+    expect(screen.queryByText(/f9\.jpg/)).toBeNull();
+    expect(actualizar.mock.calls.at(-1)[0].archivosAdjuntos).toHaveLength(8);
+  });
 });
 
 describe("PasoResumen", () => {

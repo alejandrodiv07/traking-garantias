@@ -1,7 +1,7 @@
 // Paso 5 del asistente: fotos y documentos (opcional). Cámara o archivo;
 // validación temprana de formato/tamaño/límite — con mensaje CLARO y SIN
 // perder los adjuntos que sí entraron (spec §5.4 y §7.1).
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const MAX_FOTOS = 8;
 const MAX_DOCS = 6;
@@ -36,10 +36,16 @@ export default function PasoAdjuntos({ estado, actualizar }) {
   const [aviso, setAviso] = useState("");
   // Lista local: si la conexión o el padre se van, lo ya agregado sigue en pantalla.
   const [lista, setLista] = useState(estado?.archivosAdjuntos ?? []);
+  // Espejo SIEMPRE fresco de la lista: en un lote de N archivos elegidos
+  // juntos, cada agregar ya ve lo agregado por el anterior (con la lista del
+  // render, todos leerían la misma y solo sobreviviría el último).
+  const listaFresca = useRef(null);
+  if (listaFresca.current === null) listaFresca.current = estado?.archivosAdjuntos ?? [];
 
   function agregar(archivo, tipo) {
-    const fotos = lista.filter((a) => a.tipo === "FOTO").length;
-    const docs = lista.filter((a) => a.tipo === "DOCUMENTO").length;
+    const anterior = listaFresca.current;
+    const fotos = anterior.filter((a) => a.tipo === "FOTO").length;
+    const docs = anterior.filter((a) => a.tipo === "DOCUMENTO").length;
     const error = validar(archivo, tipo, fotos, docs);
     if (error) {
       // Se rechaza con el mensaje CLARO; los ya agregados no se tocan.
@@ -48,13 +54,15 @@ export default function PasoAdjuntos({ estado, actualizar }) {
     }
     setAviso("");
     const id = `adj-${contadorAdjuntos++}`;
-    const nueva = [...lista, { id, archivo, tipo, etiqueta: null, error: null }];
+    const nueva = [...anterior, { id, archivo, tipo, etiqueta: null, error: null }];
+    listaFresca.current = nueva;
     setLista(nueva);
     actualizar({ archivosAdjuntos: nueva });
   }
 
   function quitar(id) {
-    const nueva = lista.filter((a) => a.id !== id);
+    const nueva = listaFresca.current.filter((a) => a.id !== id);
+    listaFresca.current = nueva;
     setLista(nueva);
     actualizar({ archivosAdjuntos: nueva });
   }
