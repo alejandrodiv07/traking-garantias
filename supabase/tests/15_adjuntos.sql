@@ -159,10 +159,13 @@ INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por,
 VALUES ((SELECT id FROM public.equipos LIMIT 1), 'Equipo para adjuntos sin subido_por',
         'EN_GARANTIA', '11111111-1111-1111-1111-111111111111',
         extensions.digest('adj-test-2','sha256'));
-SELECT pg_temp.chk('A16 INSERT sin subido_por queda atribuido al usuario de la sesión',
-  pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
+-- INSERT y comprobación van en sentencias distintas: dentro de una misma
+-- sentencia la subconsulta usaría una instantánea anterior y no vería la fila.
+CREATE TEMP TABLE a16 AS SELECT pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
     $q$INSERT INTO public.adjuntos (registro_id, tipo, etiqueta, ruta, mime, bytes)
        VALUES (pg_temp.registro_id2(), 'DOCUMENTO', 'de-la-sesion',
-               'registros/' || pg_temp.registro_id2() || '/auto.pdf', 'application/pdf', 10)$q$) IS NULL
+               'registros/' || pg_temp.registro_id2() || '/auto.pdf', 'application/pdf', 10)$q$) AS msg;
+SELECT pg_temp.chk('A16 INSERT sin subido_por queda atribuido al usuario de la sesión',
+  (SELECT msg IS NULL FROM a16)
   AND (SELECT subido_por = '22222222-2222-2222-2222-222222222222'
        FROM public.adjuntos WHERE etiqueta='de-la-sesion'));
