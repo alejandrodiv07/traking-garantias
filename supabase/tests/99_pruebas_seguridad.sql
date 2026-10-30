@@ -159,4 +159,13 @@ ROLLBACK;
 BEGIN;
 UPDATE public.registros SET cobertura='EN_GARANTIA', costo_reparacion=50; -- cobrar lo cubierto: FALLA
 ROLLBACK;
-SELECT pg_temp.chk('T12 los 3 CHECK de coherencia rechazaron los 3 intentos', TRUE);
+-- Las tres aserciones miden el ESTADO tras los intentos: los CHECK los
+-- rechazaron si y solo si ningún registro quedó incoherente.
+SELECT pg_temp.chk('T12 0 filas con fecha_entrega < fecha_ingreso',
+  (SELECT count(*)=0 FROM public.registros WHERE fecha_entrega < fecha_ingreso));
+SELECT pg_temp.chk('T12 0 filas con cobertura ANULADA sin motivo',
+  (SELECT count(*)=0 FROM public.registros
+   WHERE cobertura='ANULADA_POR_USO' AND motivo_anulacion_cobertura IS NULL));
+SELECT pg_temp.chk('T12 0 filas con costo_reparacion y cobertura EN_GARANTIA',
+  (SELECT count(*)=0 FROM public.registros
+   WHERE costo_reparacion IS NOT NULL AND cobertura='EN_GARANTIA'));
