@@ -147,7 +147,10 @@ BEGIN;
 DELETE FROM public.historial_ordenes;  -- DEBE FALLAR
 ROLLBACK;
 SELECT pg_temp.chk('T10 historial intacto tras intentos de UPDATE/DELETE',
-  (SELECT count(*)=1 FROM public.historial_ordenes));
+  -- Con la 0015 el trigger de eventos añade filas BITACORA por las
+  -- asignaciones de técnico de T8/T9; el conteo mide el historial de
+  -- ESTADOS de la orden (su única fila: la de alta).
+  (SELECT count(*)=1 FROM public.historial_ordenes WHERE evento='ESTADO'));
 
 -- ============ T12: CHECKS DE COHERENCIA ============
 BEGIN;

@@ -177,8 +177,11 @@ ROLLBACK;
 BEGIN;
 DELETE FROM public.historial_ordenes;  -- DEBE FALLAR
 ROLLBACK;
-SELECT pg_temp.chk('P3 historial intacto tras UPDATE/DELETE (5 de reg1 + 1 de reg2)',
-  (SELECT count(*)=6 FROM public.historial_ordenes));
+SELECT pg_temp.chk('P3 historial intacto tras UPDATE/DELETE (5 de ESTADO de reg1 + 1 de reg2)',
+  -- Con la 0015 el trigger de eventos añade filas BITACORA (las
+  -- asignaciones de técnico de T1/T2); el conteo mide el historial de
+  -- ESTADOS, que es lo que los intentos de UPDATE/DELETE no deben mover.
+  (SELECT count(*)=6 FROM public.historial_ordenes WHERE evento='ESTADO'));
 
 -- ============ P5: UPDATE POR COLUMNA ============
 -- El GRANT de UPDATE es por columna: un TECNICO solo toca estado,
