@@ -152,6 +152,14 @@ describe("la falla reportada (en el paso equipo, corregida en D5)", () => {
     expect(screen.getByText("La falla va de 5 a 2000 caracteres")).toBeTruthy();
   });
 
+  it("' hola ' (espacios de más) no engaña el mínimo: pide el rango de 5 a 2000", async () => {
+    // La base mide length(btrim(...)): 5 caracteres de relleno NO deben pasar.
+    const user = userEvent.setup();
+    renderPaso();
+    await user.type(screen.getByLabelText(/falla reportada/i), " hola ");
+    expect(screen.getByText("La falla va de 5 a 2000 caracteres")).toBeTruthy();
+  });
+
   it("borra la falla y avisa que es obligatoria", async () => {
     const user = userEvent.setup();
     renderPaso();

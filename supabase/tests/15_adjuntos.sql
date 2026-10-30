@@ -50,6 +50,8 @@ VALUES ((SELECT id FROM public.equipos LIMIT 1), 'No enciende, huele a quemado',
 
 CREATE FUNCTION pg_temp.registro_id() RETURNS uuid LANGUAGE sql AS
   $$ SELECT id FROM public.registros ORDER BY fecha_ingreso LIMIT 1 $$;
+CREATE FUNCTION pg_temp.registro_id2() RETURNS uuid LANGUAGE sql AS
+  $$ SELECT id FROM public.registros ORDER BY fecha_ingreso DESC LIMIT 1 $$;
 
 -- ============ FOTOS: MIMES ADMITIDOS ============
 INSERT INTO public.adjuntos (registro_id, tipo, etiqueta, ruta, mime, bytes, subido_por)
@@ -130,14 +132,37 @@ SELECT pg_temp.chk('A13 usuario sin rol no sube a storage',
     $q$INSERT INTO storage.objects (bucket_id, name)
        VALUES ('registros', 'sin-permiso/foto.jpg')$q$) ~ 'row-level security');
 
--- Un rol interno sube a una ruta que empieza por un registro_id existente...
-SELECT pg_temp.chk('A14 rol interno sube a la ruta de un registro existente',
+-- La ruta REAL del sistema es registros/{registro_id}/… (spec §5.4): la
+-- app sube dentro de la carpeta "registros" del bucket, con el id del
+-- registro como SEGUNDO segmento.
+SELECT pg_temp.chk('A14 rol interno sube a registros/<registro_id>/…',
   pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
     $q$INSERT INTO storage.objects (bucket_id, name)
-       VALUES ('registros', pg_temp.registro_id()::text || '/fotos/ok.jpg')$q$) IS NULL);
+       VALUES ('registros', 'registros/' || pg_temp.registro_id()::text || '/fotos/ok.jpg')$q$) IS NULL);
 
--- ...y NO a otra ruta del mismo bucket
+-- ...y NO fuera del patrón registros/{registro_id}/…: ni otra carpeta raíz,
+-- ni un segundo segmento que no sea el id de un registro existente.
 SELECT pg_temp.chk('A15 rol interno NO sube fuera de la ruta de un registro',
   pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
     $q$INSERT INTO storage.objects (bucket_id, name)
        VALUES ('registros', 'otra-cosa/foto.jpg')$q$) ~ 'row-level security');
+
+SELECT pg_temp.chk('A15b segundo segmento no-uuid de la ruta rechazado',
+  pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
+    $q$INSERT INTO storage.objects (bucket_id, name)
+       VALUES ('registros', 'registros/otra-cosa/foto.jpg')$q$) ~ 'row-level security');
+
+-- El INSERT de la app omite subido_por: la columna se llena con el usuario
+-- de la sesión (DEFAULT auth.uid()) y la política lo acepta. Va en un
+-- registro aparte (el primero ya agotó sus 8 fotos y 6 documentos).
+INSERT INTO public.registros (equipo_id, falla_reportada, cobertura, creado_por, consulta_token_hash)
+VALUES ((SELECT id FROM public.equipos LIMIT 1), 'Equipo para adjuntos sin subido_por',
+        'EN_GARANTIA', '11111111-1111-1111-1111-111111111111',
+        extensions.digest('adj-test-2','sha256'));
+SELECT pg_temp.chk('A16 INSERT sin subido_por queda atribuido al usuario de la sesión',
+  pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
+    $q$INSERT INTO public.adjuntos (registro_id, tipo, etiqueta, ruta, mime, bytes)
+       VALUES (pg_temp.registro_id2(), 'DOCUMENTO', 'de-la-sesion',
+               'registros/' || pg_temp.registro_id2() || '/auto.pdf', 'application/pdf', 10)$q$) IS NULL
+  AND (SELECT subido_por = '22222222-2222-2222-2222-222222222222'
+       FROM public.adjuntos WHERE etiqueta='de-la-sesion'));

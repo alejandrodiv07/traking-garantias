@@ -19,7 +19,10 @@ CREATE TABLE public.adjuntos (
     ruta        TEXT NOT NULL UNIQUE CHECK (ruta ~ '^registros/.+/.+'),
     mime        TEXT NOT NULL,
     bytes       BIGINT NOT NULL CHECK (bytes > 0),
-    subido_por  UUID REFERENCES public.profiles(id) ON DELETE RESTRICT,
+    -- La app no lo manda: el usuario de la sesión lo llena el DEFAULT
+    -- (la política adj_insert exige que sea exactamente quien sube).
+    subido_por  UUID REFERENCES public.profiles(id) ON DELETE RESTRICT
+                DEFAULT auth.uid(),
     subido_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -128,11 +131,13 @@ CREATE POLICY adj_insert ON public.adjuntos
 -- ---------------------------------------------------------------------
 --  4. BUCKET PRIVADO Y POLÍTICAS POR RUTA
 -- ---------------------------------------------------------------------
--- Ruta obligatoria: registros/{registro_id}/… . El primer segmento debe
--- ser el id de un registro existente; nadie escribe fuera de ese patrón
--- (en este hito, fuera de "un registro existente", sin cuotas por usuario).
+-- Ruta obligatoria: registros/{registro_id}/… (así sube la app; spec §5.4).
+-- El SEGUNDO segmento debe ser el id de un registro existente: el primero
+-- es literal "registros" y nadie escribe fuera de ese patrón (en este hito,
+-- fuera de "un registro existente", sin cuotas por usuario).
 -- El guardia de formato primero: sin él, un segmento no-uuid (p. ej.
--- "otra-cosa") fallaría con "invalid input syntax" en vez de RLS.
+-- "otra-cosa" en el segundo) fallaría con "invalid input syntax" en vez
+-- de RLS.
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('registros', 'registros', false)
 ON CONFLICT (id) DO UPDATE SET public = false;
@@ -142,8 +147,9 @@ CREATE POLICY storage_subir_adjunto ON storage.objects
     WITH CHECK (
         bucket_id = 'registros'
         AND public.mi_rol() IS NOT NULL
-        AND split_part(name, '/', 1) ~ '^[0-9a-f-]{36}$'
-        AND split_part(name, '/', 1)::uuid IN (SELECT r.id FROM public.registros r)
+        AND split_part(name, '/', 1) = 'registros'
+        AND split_part(name, '/', 2) ~ '^[0-9a-f-]{36}$'
+        AND split_part(name, '/', 2)::uuid IN (SELECT r.id FROM public.registros r)
     );
 
 CREATE POLICY storage_ver_adjunto ON storage.objects
@@ -151,8 +157,9 @@ CREATE POLICY storage_ver_adjunto ON storage.objects
     USING (
         bucket_id = 'registros'
         AND public.mi_rol() IS NOT NULL
-        AND split_part(name, '/', 1) ~ '^[0-9a-f-]{36}$'
-        AND split_part(name, '/', 1)::uuid IN (SELECT r.id FROM public.registros r)
+        AND split_part(name, '/', 1) = 'registros'
+        AND split_part(name, '/', 2) ~ '^[0-9a-f-]{36}$'
+        AND split_part(name, '/', 2)::uuid IN (SELECT r.id FROM public.registros r)
     );
 
 -- anon no queda con ningún acceso al bucket: no se escriben políticas
