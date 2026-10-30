@@ -8,12 +8,28 @@ import { buscarEquipo, listarProductos } from "../registroService.js";
 
 const PAUSA_MS = 400;   // spec §7.2 (plan): pausa sin teclear para buscar
 
+// Límites de "falla" (corrección D5): los mismos de la base — CHECK de 5 a
+// 2000 caracteres en la tabla registros, y p_falla es OBLIGATORIO.
+const FALLA_MIN = 5;
+const FALLA_MAX = 2000;
+
+function errorDeFalla(texto) {
+  if (texto.trim() === "") return "La falla reportada es obligatoria";
+  if (texto.length < FALLA_MIN || texto.length > FALLA_MAX) {
+    return "La falla va de 5 a 2000 caracteres";
+  }
+  return null;
+}
+
 export default function PasoEquipo({ estado, actualizar }) {
   const [serial, setSerial] = useState(estado?.serial ?? "");
+  const [falla, setFalla] = useState(estado?.falla ?? "");
   const [resultados, setResultados] = useState(estado?.equipoEncontrado ?? []);
   const [sinCoincidencias, setSinCoincidencias] = useState(false);
   const [productos, setProductos] = useState(estado?.productos?? []);
   const [marcado, setMarcado] = useState(Boolean(estado?.equipoReutilizado));
+  const [fallaTocada, setFallaTocada] = useState(false);
+  const errorFalla = fallaTocada ? errorDeFalla(falla) : null;
   const campo = useRef(null);
   const temporizador = useRef(null);
 
@@ -77,6 +93,17 @@ export default function PasoEquipo({ estado, actualizar }) {
     }
   }
 
+  // La falla se compromete al cambiar cada campo (auto-commit, el mismo patrón
+  // de la compra): el estado lleva `falla` siempre al día para el borrador y
+  // para el envío. El recorte de longitud va aquí también, porque el cambio
+  // puede llegar por vía programática, que ignora maxLength.
+  function alEscribirFalla(e) {
+    const v = e.target.value.slice(0, FALLA_MAX);
+    setFalla(v);
+    setFallaTocada(true);
+    actualizar({ falla: v });
+  }
+
   async function alPulsar(e) {
     if (e.key === "Enter") {
       // Enter NO envía el formulario: en un asistente avanzaría el paso.
@@ -98,6 +125,24 @@ export default function PasoEquipo({ estado, actualizar }) {
           placeholder="Escanea el código de barras o escribe el serial"
         />
       </label>
+
+      {/* La falla reportada (corrección D5): obligatoria, de 5 a 2000 caracteres.
+          Va en este paso para equipos nuevos y reutilizados por igual, así que
+          vive fuera de los bloques condicionales de la búsqueda. */}
+      <label htmlFor="falla">
+        Falla reportada
+        <textarea
+          id="falla"
+          value={falla}
+          maxLength={FALLA_MAX}
+          onChange={alEscribirFalla}
+          placeholder="Describe lo que le pasa al equipo"
+        />
+      </label>
+      {errorFalla && <p role="alert">{errorFalla}</p>}
+      {falla.length >= FALLA_MAX && (
+        <p role="status">Llegaste al máximo de {FALLA_MAX} caracteres.</p>
+      )}
 
       {resultados.length > 1 && (
         <div role="alert">

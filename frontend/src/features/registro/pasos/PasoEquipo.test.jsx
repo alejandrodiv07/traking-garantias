@@ -1,7 +1,8 @@
-// Pruebas del paso 1 del asistente: el serial (Tarea 17 del plan; spec §7.1).
+// Pruebas del paso 1 del asistente: el serial (Tarea 17 del plan; spec §7.1)
+// y la falla reportada (corrección D5; obligatoria, de 5 a 2000 caracteres).
 // Requisitos probados: foco inicial, búsqueda por Enter o pausa de 400 ms con
 // 3+ caracteres, reutilización de equipo, advertencia por producto distinto.
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -37,10 +38,21 @@ beforeEach(() => {
 const base = { actualizar: vi.fn(), estado: {} };
 const renderPaso = (props = {}) => render(<PasoEquipo {...base} {...props} />);
 
+// Los pasos que solo renderizan y asercan terminan antes de que la carga del
+// catálogo resuelva; su setState cae fuera de act y React amaga. Esta espera
+// lo consume DENTRO de act. Debe llamarse en pruebas de render directo.
+async function cargarCatalogoEnAct() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 describe("el campo del serial", () => {
-  it("recibe el foco al abrir el asistente (lector de código listo)", () => {
+  it("recibe el foco al abrir el asistente (lector de código listo)", async () => {
     renderPaso();
     expect(screen.getByLabelText(/serial/i)).toBe(document.activeElement);
+    await cargarCatalogoEnAct();
   });
 });
 
@@ -121,5 +133,57 @@ describe("resultado de la búsqueda", () => {
     await userEvent.setup({ delay: 1 }).type(screen.getByLabelText(/serial/i), "ABCDEF");
     await waitFor(() => expect(screen.getByLabelText(/marca/i)).toBeTruthy());
     expect(screen.getByLabelText(/modelo/i)).toBeTruthy();
+  });
+});
+
+describe("la falla reportada (en el paso equipo, corregida en D5)", () => {
+  it("al abrir el asistente el campo de la falla está vacío y es de entrada multilinea", async () => {
+    renderPaso();
+    const campo = screen.getByLabelText(/falla reportada/i);
+    expect(campo.tagName).toBe("TEXTAREA");
+    expect(campo).toHaveValue("");
+    await cargarCatalogoEnAct();
+  });
+
+  it("escribe una falla corta (de menos de 5) y aparece el error de 5 a 2000", async () => {
+    const user = userEvent.setup();
+    renderPaso();
+    await user.type(screen.getByLabelText(/falla reportada/i), "casa");
+    expect(screen.getByText("La falla va de 5 a 2000 caracteres")).toBeTruthy();
+  });
+
+  it("borra la falla y avisa que es obligatoria", async () => {
+    const user = userEvent.setup();
+    renderPaso();
+    const campo = screen.getByLabelText(/falla reportada/i);
+    await user.type(campo, "No enciende");
+    await user.clear(campo);
+    expect(screen.getByText("La falla reportada es obligatoria")).toBeTruthy();
+  });
+
+  it("escribe una falla de 5+ caracteres y compromete actualizar({ falla })", async () => {
+    const user = userEvent.setup();
+    const actualizar = vi.fn();
+    renderPaso({ actualizar });
+    await user.type(screen.getByLabelText(/falla reportada/i), "No enciende");
+    expect(actualizar).toHaveBeenCalledWith(
+      expect.objectContaining({ falla: "No enciende" }),
+    );
+  });
+
+  it("con más de 2000 caracteres trunca a 2000 y avisa el máximo", async () => {
+    renderPaso();
+    const campo = screen.getByLabelText(/falla reportada/i);
+    expect(campo).toHaveAttribute("maxLength", "2000");
+    fireEvent.change(campo, { target: { value: "x".repeat(2100) } });
+    expect(campo).toHaveValue("x".repeat(2000));
+    expect(screen.getByText(/llegaste al máximo/i)).toBeTruthy();
+    await cargarCatalogoEnAct();
+  });
+
+  it("sin tocar el campo no asusta de entrada: el aviso de obligatoria sale al interactuar", async () => {
+    renderPaso();
+    expect(screen.queryByText("La falla reportada es obligatoria")).toBeNull();
+    await cargarCatalogoEnAct();
   });
 });
