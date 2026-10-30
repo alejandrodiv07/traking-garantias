@@ -15,6 +15,7 @@ import Consulta from "./features/garantias/Consulta.jsx";
 import AbrirOrden from "./features/taller/AbrirOrden.jsx";
 import Taller from "./features/taller/Taller.jsx";
 import Garantias from "./features/garantias/Garantias.jsx";
+import OrdenDetalle from "./features/taller/OrdenDetalle.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./features/auth/estado.css";
@@ -93,7 +94,7 @@ function Rutas() {
         <Route path="/garantias/consulta" element={<Consulta />} />
         <Route path="/taller" element={<Taller />} />
         <Route path="/taller/nueva" element={<AbrirOrden />} />
-        <Route path="/taller/:id" element={<div>Detalle de la orden</div>} />
+        <Route path="/taller/:id" element={<OrdenDetalle />} />
       </Route>
 
       <Route path="/sin-acceso" element={<SinAcceso />} />

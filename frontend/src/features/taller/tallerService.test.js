@@ -19,7 +19,15 @@ vi.mock("../registro/registroService.js", async () => {
   return { ...real, subirAdjunto: fakes.subirAdjunto };
 });
 
-import { abrirOrden, leerEquipo, subirAdjuntos } from "./tallerService.js";
+import {
+  abrirOrden,
+  adjuntosOrden,
+  historialOrden,
+  leerEquipo,
+  notasOrden,
+  obtenerOrden,
+  subirAdjuntos,
+} from "./tallerService.js";
 
 beforeEach(() => {
   for (const f of Object.values(fakes)) f.mockReset();
@@ -93,5 +101,88 @@ describe("subirAdjuntos", () => {
     fakes.subirAdjunto.mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false });
     expect(await subirAdjuntos("o1", [a, b])).toEqual([b]);
     expect(fakes.subirAdjunto).toHaveBeenCalledWith("o1", a.archivo, { tipo: "FOTO", etiqueta: null });
+  });
+});
+
+// Constructor falso de supabase-js: cada tabla responde lo que se le diga y
+// registra el encadenado (select / eq / order) para comprobar la consulta.
+function tablasFalsas(respuestas) {
+  const llamadas = {};
+  fakes.from.mockImplementation((tabla) => {
+    const registro = (llamadas[tabla] = []);
+    const b = {
+      select: (...a) => (registro.push(["select", ...a]), b),
+      eq: (...a) => (registro.push(["eq", ...a]), b),
+      order: (...a) => (registro.push(["order", ...a]), b),
+      maybeSingle: () => Promise.resolve(respuestas[tabla]),
+      then: (res, rej) => Promise.resolve(respuestas[tabla]).then(res, rej),
+    };
+    return b;
+  });
+  return llamadas;
+}
+
+describe("lecturas del detalle de la orden", () => {
+  it("obtenerOrden junta la fila del tablero, las columnas de la orden y el nombre del técnico", async () => {
+    const llamadas = tablasFalsas({
+      v_tablero: { data: { orden_id: "o1", numero_orden: "OS-1", serial: "RT5", estado: "RECIBIDO" }, error: null },
+      ordenes_servicio: {
+        data: { id: "o1", tipo_atencion: "GARANTIA", falla_reportada: "no enciende", tecnico_asignado_id: "t1" },
+        error: null,
+      },
+      profiles: { data: { full_name: "Tomás Técnico" }, error: null },
+    });
+    const r = await obtenerOrden("o1");
+    expect(llamadas.v_tablero).toContainEqual(["eq", "orden_id", "o1"]);
+    expect(llamadas.ordenes_servicio).toContainEqual(["eq", "id", "o1"]);
+    expect(llamadas.profiles).toContainEqual(["eq", "id", "t1"]);
+    expect(r.ok).toBe(true);
+    expect(r.datos).toMatchObject({
+      numero_orden: "OS-1",
+      serial: "RT5",
+      tipo_atencion: "GARANTIA",
+      falla_reportada: "no enciende",
+      tecnico: "Tomás Técnico",
+    });
+  });
+
+  it("sin técnico asignado no consulta profiles", async () => {
+    const llamadas = tablasFalsas({
+      v_tablero: { data: { orden_id: "o1" }, error: null },
+      ordenes_servicio: { data: { id: "o1", tecnico_asignado_id: null }, error: null },
+    });
+    const r = await obtenerOrden("o1");
+    expect(llamadas.profiles).toBeUndefined();
+    expect(r.datos.tecnico).toBeNull();
+  });
+
+  it("una orden que no se ve es NO_ENCONTRADO", async () => {
+    tablasFalsas({
+      v_tablero: { data: null, error: null },
+      ordenes_servicio: { data: null, error: null },
+    });
+    expect((await obtenerOrden("zz")).codigo).toBe("NO_ENCONTRADO");
+  });
+
+  it("historialOrden pide la bitácora de la orden, la más reciente primero", async () => {
+    const llamadas = tablasFalsas({ historial_ordenes: { data: [{ id: 1 }], error: null } });
+    const r = await historialOrden("o1");
+    expect(llamadas.historial_ordenes).toContainEqual(["eq", "orden_id", "o1"]);
+    expect(llamadas.historial_ordenes).toContainEqual(["order", "creado_en", { ascending: false }]);
+    expect(r).toEqual({ ok: true, datos: [{ id: 1 }] });
+  });
+
+  it("notasOrden trae el autor por su nombre", async () => {
+    const llamadas = tablasFalsas({ notas_internas: { data: [{ id: "n1" }], error: null } });
+    await notasOrden("o1");
+    expect(llamadas.notas_internas[0][1]).toMatch(/autor:autor_id\(full_name\)/);
+    expect(llamadas.notas_internas).toContainEqual(["eq", "orden_id", "o1"]);
+  });
+
+  it("adjuntosOrden lee los adjuntos de la orden y mapea 42501", async () => {
+    const llamadas = tablasFalsas({ adjuntos: { data: null, error: { code: "42501", message: "no" } } });
+    const r = await adjuntosOrden("o1");
+    expect(llamadas.adjuntos).toContainEqual(["eq", "orden_id", "o1"]);
+    expect(r).toMatchObject({ ok: false, codigo: "SIN_PERMISO" });
   });
 });
