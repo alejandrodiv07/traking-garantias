@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Prueba de punta a punta del Hito 1 (Tarea 22 del plan).
-# Como un TECNICO: guardar_cliente → registrar_ingreso con RT5-8842-AA y
-# plazo 7 → el registro aparece en v_tablero → registrar_revision con
-# golpes=true → el registro queda ANULADA_POR_USO → el UPDATE de la
-# revisión falla. Sale 1 ante CUALQUIER desvío.
+# Prueba de punta a punta de la fase 2a (spec §9), contra el Postgres de Docker.
+# Un TECNICO registra la garantía de RT5-8842-AA (plazo 7) → la consulta por
+# serial la muestra vigente → abre la orden con la auditoría de recepción →
+# una revisión con golpes la deja ANULADA_POR_USO (atención de PAGO) → la
+# revisión no se puede editar → el JEFE rechaza la orden (sin motivo falla,
+# con motivo pasa) → la entrega sin reparar conserva el motivo.
+# Sale 1 ante CUALQUIER desvío.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 TECNICO='22222222-2222-2222-2222-222222222222'
-ADMIN='11111111-1111-1111-1111-111111111111'
+JEFE='33333333-3333-3333-3333-333333333333'
 
 container=""
 trap '[ -n "$container" ] && docker rm -f "$container" >/dev/null 2>&1 || true' EXIT
@@ -39,24 +41,23 @@ for f in supabase/tests/00_harness_supabase_local.sql supabase/migrations/*.sql 
 done
 
 # ---------------------------------------------------------------------
-# SEMILLA DEL ACTOR: el técnico con su segundo factor superado
+# SEMILLA DE ACTORES: técnico y jefe con su segundo factor superado
 # ---------------------------------------------------------------------
 psql -v ON_ERROR_STOP=1 >/dev/null <<SQL
-INSERT INTO auth.users (id, email, raw_user_meta_data)
-VALUES ('$TECNICO','tecnico@primetelecom.com','{}'::jsonb)
+INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
+ ('$TECNICO','tecnico@primetelecom.com','{}'::jsonb),
+ ('$JEFE','jefe@primetelecom.com','{}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 DO \$\$
 BEGIN
   IF to_regclass('public.mfa_sesiones') IS NOT NULL THEN
     INSERT INTO public.mfa_sesiones (session_id, user_id)
-    VALUES ('$TECNICO','$TECNICO');
+    VALUES ('$TECNICO','$TECNICO'), ('$JEFE','$JEFE');
   END IF;
 END \$\$;
+UPDATE public.profiles SET role='JEFE_SERVICIO' WHERE id='$JEFE';
 SQL
 
-# ---------------------------------------------------------------------
-# EL FLUJO COMO TECNICO
-# ---------------------------------------------------------------------
 FALLOS=0
 PASAN=0
 
@@ -68,74 +69,102 @@ chk() { # chk <nombre> <sql-booleano>
   fi
 }
 
-# 1) guardar_cliente
-CLIENTE=$(psql -tA -c "SELECT public.guardar_cliente('V','12345678','Juan Perez',NULL,NULL,NULL);")
-
-# 2) registrar_ingreso con RT5-8842-AA y plazo 7: factura de HOY, vence en 7
-#    (corre como el técnico: la RPC exige el rol del JWT)
-INGRESO=$(psql -tA <<SQL
+# como <uid> <sql>: ejecuta una sentencia con la identidad de un usuario
+# interno (la RPC exige el rol del JWT). Devuelve 0 si la sentencia pasó.
+como() {
+  psql -v ON_ERROR_STOP=1 -tA >/dev/null 2>&1 <<SQL
 BEGIN;
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub = '$TECNICO';
-SET LOCAL request.jwt.claim.session_id = '$TECNICO';
-SELECT 'RES' AS marca, i.registro_id, i.numero_registro, i.consulta_token, i.cobertura
-FROM (SELECT * FROM public.registrar_ingreso(
-    'RT5-8842-AA',
-    (SELECT id FROM public.productos WHERE modelo='HG8245'),
-    '$CLIENTE',
-    'No enciende al conectar el transformador',
-    'cargador y manual',
-    'FACTURA', 'F-2026-88', public.hoy_local(), 7, 'Tienda Prime', NULL, NULL,
-    now())) i;
+SET LOCAL request.jwt.claim.sub = '$1';
+SET LOCAL request.jwt.claim.session_id = '$1';
+$2
 COMMIT;
 SQL
-)
-REGISTRO=$(printf '%s\n' "$INGRESO" | awk -F'|' '/^RES\|/{print $2}')
-NUMREG=$(printf '%s\n' "$INGRESO" | awk -F'|' '/^RES\|/{print $3}')
-TOKEN=$(printf '%s\n' "$INGRESO" | awk -F'|' '/^RES\|/{print $4}')
+}
 
-chk "e1 el ingreso creó el registro con código legible" \
-  "((SELECT numero_registro = '$NUMREG' AND numero_registro ~ '^REG-[0-9]{4}-[0-9]{6}\$' FROM public.registros WHERE id='$REGISTRO') IS TRUE)"
-chk "e2 el hash guardado corresponde al token (que no está en claro)" \
-  "((SELECT encode(consulta_token_hash,'hex') = encode(extensions.digest('$TOKEN','sha256'),'hex') FROM public.registros WHERE id='$REGISTRO') IS TRUE)"
-chk "e3 hay revisión de recepción para el registro" \
-  "(SELECT count(*)=1 FROM public.revisiones WHERE registro_id='$REGISTRO' AND tipo='RECEPCION')"
-chk "e4 el técnico que registró quedó asignado" \
-  "(SELECT tecnico_asignado_id='$TECNICO' FROM public.registros WHERE id='$REGISTRO')"
+# 1) El titular y la garantía de la venta (plazo 7, factura de hoy)
+CLIENTE=$(psql -tA -c "SELECT public.guardar_cliente('V','12345678','Juan Perez','04141234567','juan@ejemplo.com',NULL);")
+PRODUCTO=$(psql -tA -c "SELECT id FROM public.productos WHERE modelo='HG8245';")
 
-# 3) v_tablero lo muestra: la fila existe con el serial y su vencimiento
-chk "e5 el registro aparece en v_tablero (RT5-8842-AA)" \
-  "(SELECT count(*)=1 FROM public.v_tablero WHERE serial='RT5-8842-AA')"
-chk "e6 v_tablero lo muestra con SUS 7 días de vigencia futuros" \
-  "(SELECT dias_restantes = 7 FROM public.v_tablero WHERE serial='RT5-8842-AA')"
+como "$TECNICO" "SELECT public.registrar_garantia('$CLIENTE','$PRODUCTO','RT5-8842-AA','FACTURA','F-2026-88', public.hoy_local(), 7);" \
+  && chk "e1 el técnico registró la garantía (origen VENTA, sin orden)" \
+    "(SELECT origen = 'VENTA' AND registrado_por = '$TECNICO' FROM public.equipos WHERE numero_serie='RT5-8842-AA')
+     AND (SELECT count(*) = 0 FROM public.ordenes_servicio)" \
+  || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e1 registrar_garantia"; }
 
-# 4) registrar_revision golpes=true → ANULADA_POR_USO
-psql -tA >/dev/null <<SQL
-BEGIN;
-SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub = '$TECNICO';
-SET LOCAL request.jwt.claim.session_id = '$TECNICO';
-SELECT public.registrar_revision('$REGISTRO','TECNICA',
-  '{"condiciones":{"factura_presentada":true,"titular_coincide":true},
-    "equipo":{"serial_legible":true,"caja_original":true,"precintos_intactos":true,"contenido_completo":true},
-    "senales":{"descarga_electrica":false,"liquidos":false,"altas_temperaturas":false,"golpes":true,
-               "manipulacion_terceros":false}}'::jsonb,
-  'Equipo con golpes en la carcasa');
-COMMIT;
-SQL
-chk "e7 la revisión con golpes dejó el registro ANULADA_POR_USO" \
-  "(SELECT cobertura::text='ANULADA_POR_USO' FROM public.registros WHERE id='$REGISTRO')"
-chk "e8 el motivo de anulación menciona golpes" \
-  "(SELECT motivo_anulacion_cobertura ~ 'golpes' FROM public.registros WHERE id='$REGISTRO')"
+# 2) La Consulta por serial (y por factura) la muestra vigente
+chk "e2 la consulta por serial: EN_GARANTIA, 7 días, compra CONFIRMADA" \
+  "(SELECT vigencia::text = 'EN_GARANTIA' AND dias_restantes = 7 AND estado_compra = 'CONFIRMADA'
+      FROM public.buscar_equipo(p_serial => 'rt5 8842 aa'))"
+chk "e3 la consulta por factura halla el mismo equipo" \
+  "(SELECT count(*) = 1 FROM public.buscar_equipo(p_factura => 'f-2026-88'))"
+chk "e4 el tablero de garantías la lista con su titular" \
+  "(SELECT titular = 'Juan Perez' AND vigencia::text = 'EN_GARANTIA' FROM public.v_garantias WHERE numero_serie='RT5-8842-AA')"
 
-# 5) la revisión no se puede editar (solo de anexar)
-if psql -c "UPDATE public.revisiones SET observaciones='falsificado' WHERE registro_id='$REGISTRO';" >/dev/null 2>&1; then
-  echo "*FALLA*  e9 el UPDATE de una revisión DEBE fallar (solo de anexar)"
+# 3) Abrir la orden con la auditoría de recepción en regla
+EQUIPO=$(psql -tA -c "SELECT id FROM public.equipos WHERE numero_serie='RT5-8842-AA';")
+como "$TECNICO" "SELECT public.abrir_orden('$EQUIPO','No enciende al conectar el transformador','cargador y manual',
+  '{\"condiciones\":{\"factura_presentada\":true,\"titular_coincide\":true},
+    \"equipo\":{\"serial_legible\":true,\"caja_original\":true,\"precintos_intactos\":true,\"contenido_completo\":true},
+    \"senales\":{\"descarga_electrica\":false,\"liquidos\":false,\"altas_temperaturas\":false,\"golpes\":false,\"manipulacion_terceros\":false}}'::jsonb);" \
+  || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e5 abrir_orden"; }
+ORDEN=$(psql -tA -c "SELECT id FROM public.ordenes_servicio LIMIT 1;")
+chk "e5 la orden OS-AAAA-NNNN nace EN_GARANTIA / GARANTIA con su revisión de recepción" \
+  "(SELECT numero_orden ~ '^OS-[0-9]{4}-[0-9]{4}\$' AND cobertura::text = 'EN_GARANTIA' AND tipo_atencion = 'GARANTIA'
+      AND tecnico_asignado_id = '$TECNICO' FROM public.ordenes_servicio WHERE id='$ORDEN')
+   AND (SELECT count(*) = 1 FROM public.revisiones WHERE orden_id='$ORDEN' AND tipo='RECEPCION')"
+chk "e6 la orden aparece en v_tablero" \
+  "(SELECT count(*) = 1 FROM public.v_tablero WHERE serial='RT5-8842-AA')"
+
+# 4) Auditoría posterior con mal uso: golpes → ANULADA_POR_USO (atención de PAGO)
+como "$TECNICO" "SELECT public.registrar_revision('$ORDEN','TECNICA',
+  '{\"condiciones\":{\"factura_presentada\":true,\"titular_coincide\":true},
+    \"equipo\":{\"serial_legible\":true,\"caja_original\":true,\"precintos_intactos\":true,\"contenido_completo\":true},
+    \"senales\":{\"descarga_electrica\":false,\"liquidos\":false,\"altas_temperaturas\":false,\"golpes\":true,
+               \"manipulacion_terceros\":false}}'::jsonb,
+  'Equipo con golpes en la carcasa');" \
+  || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e7 registrar_revision"; }
+chk "e7 la revisión con golpes dejó la orden ANULADA_POR_USO y de PAGO" \
+  "(SELECT cobertura::text = 'ANULADA_POR_USO' AND tipo_atencion = 'PAGO' AND motivo_anulacion_cobertura ~ 'golpes'
+      FROM public.ordenes_servicio WHERE id='$ORDEN')"
+
+# 5) La revisión no se puede editar (solo de anexar)
+if psql -c "UPDATE public.revisiones SET observaciones='falsificado' WHERE orden_id='$ORDEN';" >/dev/null 2>&1; then
+  echo "*FALLA*  e8 el UPDATE de una revisión DEBE fallar (solo de anexar)"
   FALLOS=$((FALLOS+1))
 else
-  echo "PASA   e9 el UPDATE de una revisión está bloqueado"
+  echo "PASA   e8 el UPDATE de una revisión está bloqueado"
   PASAN=$((PASAN+1))
 fi
+
+# 6) El estado solo cambia por la RPC; el rechazo exige motivo
+if como "$TECNICO" "UPDATE public.ordenes_servicio SET estado='EN_DIAGNOSTICO' WHERE id='$ORDEN';"; then
+  echo "*FALLA*  e9 el UPDATE directo del estado DEBE estar denegado"
+  FALLOS=$((FALLOS+1))
+else
+  echo "PASA   e9 el UPDATE directo del estado está denegado"
+  PASAN=$((PASAN+1))
+fi
+if como "$JEFE" "SELECT public.cambiar_estado('$ORDEN','RECHAZADO');"; then
+  echo "*FALLA*  e10 rechazar SIN motivo DEBE fallar"
+  FALLOS=$((FALLOS+1))
+else
+  echo "PASA   e10 rechazar sin motivo falla"
+  PASAN=$((PASAN+1))
+fi
+como "$JEFE" "SELECT public.cambiar_estado('$ORDEN','RECHAZADO','Rechazada tras la auditoría','El equipo muestra golpes: la garantía no aplica');" \
+  || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e11 rechazar con motivo"; }
+chk "e11 el JEFE rechazó con motivo y quedó en la orden y en la bitácora" \
+  "(SELECT estado = 'RECHAZADO' AND motivo_rechazo ~ 'golpes' FROM public.ordenes_servicio WHERE id='$ORDEN')
+   AND (SELECT count(*) = 1 FROM public.historial_ordenes WHERE orden_id='$ORDEN' AND estado_nuevo='RECHAZADO' AND comentario = 'Rechazada tras la auditoría')"
+
+# 7) Devolución sin reparar: RECHAZADO → ENTREGADO conserva el motivo
+como "$JEFE" "SELECT public.cambiar_estado('$ORDEN','ENTREGADO');" \
+  || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e12 entregar"; }
+chk "e12 entregada: motivo intacto, fecha de entrega llena y fuera de lo abierto" \
+  "(SELECT estado = 'ENTREGADO' AND fecha_entrega IS NOT NULL AND motivo_rechazo ~ 'golpes'
+      FROM public.ordenes_servicio WHERE id='$ORDEN')
+   AND (SELECT NOT abierto FROM public.v_tablero WHERE serial='RT5-8842-AA')"
 
 echo
 echo "PASA $PASAN · FALLA $FALLOS"
@@ -143,4 +172,3 @@ if [ "$FALLOS" -gt 0 ] || [ "$PASAN" -eq 0 ]; then
   echo "HAY DESVÍOS"
   exit 1
 fi
-echo "PUNTA A PUNTA COMPLETO"
