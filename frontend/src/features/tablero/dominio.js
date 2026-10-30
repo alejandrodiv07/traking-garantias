@@ -20,7 +20,7 @@ const PROGRESO = "progreso";
 const RESUELTO = "resuelto";
 const ADVERSO = "adverso";
 
-/** Los 10 estados de `estados_garantia`, en su columna `orden`. */
+/** Los 11 estados de `estados_garantia`, en su columna `orden`. */
 export const ESTADOS = Object.freeze([
   { codigo: "RECIBIDO", nombre: "Recibido", tono: NEUTRO, final: false },
   { codigo: "EN_DIAGNOSTICO", nombre: "En diagnóstico", tono: PROGRESO, final: false },
@@ -30,6 +30,9 @@ export const ESTADOS = Object.freeze([
   { codigo: "REPARADO", nombre: "Reparado", tono: RESUELTO, final: false },
   { codigo: "IRREPARABLE", nombre: "Irreparable", tono: ADVERSO, final: false },
   { codigo: "RECHAZADO_POR_CLIENTE", nombre: "Rechazado por cliente", tono: ADVERSO, final: false },
+  // Decisión del TALLER (orden 85, migración 0016): no es terminal — su
+  // única salida es ENTREGADO —, así que sigue contando como abierta.
+  { codigo: "RECHAZADO", nombre: "Rechazado", tono: ADVERSO, final: false },
   { codigo: "ENTREGADO", nombre: "Entregado", tono: RESUELTO, final: true },
   { codigo: "ANULADO", nombre: "Anulado", tono: NEUTRO, final: true },
 ]);
