@@ -10,15 +10,19 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { cobertura, estado as estadoDe, estaAbierta, transicionesDesde } from "../tablero/dominio.js";
 import HistorialRevisiones from "../revisiones/HistorialRevisiones.jsx";
+import RevisionForm from "../revisiones/RevisionForm.jsx";
 import BarraEstados from "./componentes/BarraEstados.jsx";
 import {
   adjuntosOrden,
+  agregarNota,
   asignarTecnico,
+  actualizarDiagnostico,
   cambiarEstado,
   historialOrden,
   listarTecnicos,
   notasOrden,
   obtenerOrden,
+  registrarPresupuesto,
 } from "./tallerService.js";
 import "./taller.css";
 
@@ -76,13 +80,108 @@ function Resumen({ o }) {
   );
 }
 
-function Diagnostico({ o }) {
+/**
+ * Pestaña "Diagnóstico y presupuesto": el diagnóstico va por UPDATE directo
+ * de la columna que sigue abierta (la 0021 cerró estado y costo, no esta);
+ * el presupuesto SOLO en servicio pago, por la RPC 0021; y, con la orden en
+ * PRESUPUESTADO, la recepción de la decisión del cliente por cambiar_estado.
+ * La UI anticipa (montos/decisión); la base decide en todos los casos.
+ */
+function DiagnosticoPresupuesto({ orden, onCambio }) {
+  const [texto, setTexto] = useState(orden.diagnostico ?? "");
+  const [monto, setMonto] = useState(orden.costo_reparacion ?? "");
+  const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState(null);
+  const [error, setError] = useState(null);
+
+  async function enviar(ejecutar, alGuardar) {
+    setEnviando(true);
+    setError(null);
+    setAviso(null);
+    const r = await ejecutar();
+    setEnviando(false);
+    if (r.ok) {
+      alGuardar();
+      onCambio();
+    } else {
+      setError(r.mensaje || "No se pudo guardar");
+    }
+  }
+
+  function guardarDiagnostico(ev) {
+    ev.preventDefault();
+    return enviar(
+      () => actualizarDiagnostico(orden.orden_id, texto),
+      () => setAviso("Diagnóstico guardado"),
+    );
+  }
+
+  function presupuestar(ev) {
+    ev.preventDefault();
+    return enviar(
+      () => registrarPresupuesto(orden.orden_id, Number(monto)),
+      () => setAviso("Presupuesto registrado"),
+    );
+  }
+
+  function decidir(estado) {
+    return enviar(
+      () => cambiarEstado(orden.orden_id, { estado }),
+      () => setAviso("Decisión registrada"),
+    );
+  }
+
   return (
-    <div>
-      <p>{o.diagnostico || "Aún no hay diagnóstico."}</p>
-      {o.tipo_atencion === "PAGO" && (
-        <p>Presupuesto: {o.costo_reparacion != null ? o.costo_reparacion : "pendiente"}</p>
+    <div className="od-dx">
+      {aviso && <p role="status">{aviso}</p>}
+      <form className="od-forma" onSubmit={guardarDiagnostico}>
+        <label htmlFor="od-dx">
+          Diagnóstico
+          <textarea
+            id="od-dx"
+            placeholder="Aún no hay diagnóstico"
+            value={texto}
+            onChange={(ev) => setTexto(ev.target.value)}
+          />
+        </label>
+        <button type="submit" disabled={enviando}>
+          Guardar diagnóstico
+        </button>
+      </form>
+
+      {orden.tipo_atencion === "PAGO" ? (
+        <form className="od-forma" onSubmit={presupuestar}>
+          <label htmlFor="od-monto">
+            Presupuesto (monto)
+            <input
+              id="od-monto"
+              type="number"
+              min="0"
+              step="0.01"
+              value={monto}
+              onChange={(ev) => setMonto(ev.target.value)}
+            />
+          </label>
+          <button type="submit" disabled={enviando}>
+            Registrar presupuesto
+          </button>
+        </form>
+      ) : (
+        <p role="note">Solo se presupuesta un servicio pago.</p>
       )}
+
+      {orden.estado === "PRESUPUESTADO" && (
+        <div className="od-decision">
+          <p>Decisión del cliente:</p>
+          <button type="button" onClick={() => decidir("EN_REPARACION")}>
+            Aceptó el presupuesto
+          </button>
+          <button type="button" onClick={() => decidir("RECHAZADO_POR_CLIENTE")}>
+            No aceptó el presupuesto
+          </button>
+        </div>
+      )}
+      {error && <p role="alert">{error}</p>}
     </div>
   );
 }
@@ -109,7 +208,8 @@ function textoEvento(h) {
   return h.comentario ? `${cambio}: ${h.comentario}` : cambio;
 }
 
-function Bitacora({ ordenId }) {
+/** Lo leído de la bitácora: cambios de estado, eventos y notas internas. */
+function LecturaBitacora({ ordenId }) {
   const historial = useLista(historialOrden, ordenId);
   const notas = useLista(notasOrden, ordenId);
   if (historial.cargando || notas.cargando) return <p role="status">Cargando bitácora…</p>;
@@ -144,6 +244,52 @@ function Bitacora({ ordenId }) {
   );
 }
 
+/** Pestaña Bitácora: lo leído + el formulario de notas internas (INSERT con
+ * el autor de la sesión; la RLS lo exige). Al anotar se relee la bitácora. */
+function Bitacora({ ordenId }) {
+  const [version, setVersion] = useState(0);
+  const [nota, setNota] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function agregar(ev) {
+    ev.preventDefault();
+    const t = nota.trim();
+    if (!t) return;
+    setEnviando(true);
+    setError(null);
+    const r = await agregarNota(ordenId, t);
+    setEnviando(false);
+    if (r.ok) {
+      setNota("");
+      setVersion((v) => v + 1);
+    } else {
+      setError(r.mensaje || "No se pudo guardar la nota");
+    }
+  }
+
+  return (
+    <div className="od-bitacora-panel">
+      <LecturaBitacora key={version} ordenId={ordenId} />
+      <form className="od-forma" onSubmit={agregar}>
+        <label htmlFor="od-nota">
+          Nota interna
+          <textarea
+            id="od-nota"
+            placeholder="Visible solo para el taller"
+            value={nota}
+            onChange={(ev) => setNota(ev.target.value)}
+          />
+        </label>
+        <button type="submit" disabled={enviando || !nota.trim()}>
+          Agregar nota
+        </button>
+      </form>
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
 /** Modal del detalle: un div `role="dialog"` con nombre accesible y desechable. */
 function Modal({ titulo, cerrar, children }) {
   return (
@@ -153,6 +299,29 @@ function Modal({ titulo, cerrar, children }) {
       <button type="button" onClick={cerrar}>
         Cancelar
       </button>
+    </div>
+  );
+}
+
+/**
+ * Pestaña Auditoría: la lista de revisiones SIEMPRE se muestra (incluso para
+ * RECEPCION) y el formulario de revisión técnica se lo deja a `RevisionForm`
+ * (la base decide con `registrar_revision`). Al guardar, la lista se releerá
+ * y la orden se recarga (la revisión técnica puede mover la cobertura).
+ */
+function Auditoria({ ordenId, rol, onCambio }) {
+  const [version, setVersion] = useState(0);
+  return (
+    <div className="od-auditoria">
+      <HistorialRevisiones key={version} ordenId={ordenId} />
+      <RevisionForm
+        ordenId={ordenId}
+        rol={rol}
+        onRegistrada={() => {
+          setVersion((v) => v + 1);
+          onCambio();
+        }}
+      />
     </div>
   );
 }
@@ -387,8 +556,8 @@ export default function OrdenDetalle() {
 
       <div role="tabpanel" className="od-panel">
         {pestana === "Resumen" && <Resumen o={orden} />}
-        {pestana === "Auditoría" && <HistorialRevisiones ordenId={orden.orden_id} />}
-        {pestana === "Diagnóstico y presupuesto" && <Diagnostico o={orden} />}
+        {pestana === "Auditoría" && <Auditoria ordenId={orden.orden_id} rol={rol} onCambio={cargar} />}
+        {pestana === "Diagnóstico y presupuesto" && <DiagnosticoPresupuesto orden={orden} onCambio={cargar} />}
         {pestana === "Documentos" && <Documentos ordenId={orden.orden_id} />}
         {pestana === "Bitácora" && <Bitacora ordenId={orden.orden_id} />}
       </div>

@@ -12,10 +12,13 @@ const fakes = vi.hoisted(() => ({
   notasOrden: vi.fn(),
   adjuntosOrden: vi.fn(),
   listarRevisiones: vi.fn(),
+  registrarRevision: vi.fn(),
   listarTecnicos: vi.fn(),
   cambiarEstado: vi.fn(),
   asignarTecnico: vi.fn(),
   registrarPresupuesto: vi.fn(),
+  actualizarDiagnostico: vi.fn(),
+  agregarNota: vi.fn(),
   rol: "JEFE_SERVICIO",
 }));
 vi.mock("./tallerService.js", () => fakes);
@@ -64,6 +67,9 @@ beforeEach(() => {
   fakes.notasOrden.mockReset().mockResolvedValue({ ok: true, datos: [] });
   fakes.adjuntosOrden.mockReset().mockResolvedValue({ ok: true, datos: [] });
   fakes.listarRevisiones.mockReset().mockResolvedValue({ ok: true, datos: [] });
+  fakes.registrarRevision.mockReset().mockResolvedValue({ ok: true, datos: { cobertura: "EN_GARANTIA" } });
+  fakes.actualizarDiagnostico.mockReset().mockResolvedValue({ ok: true, datos: null });
+  fakes.agregarNota.mockReset().mockResolvedValue({ ok: true, datos: null });
   fakes.listarTecnicos.mockReset().mockResolvedValue({
     ok: true,
     datos: [
@@ -171,7 +177,7 @@ describe("OrdenDetalle: pestañas", () => {
     expect(fakes.listarRevisiones).toHaveBeenCalledWith("o1");
   });
 
-  it("Diagnóstico: en pago muestra el diagnóstico y el presupuesto", async () => {
+  it("Diagnóstico: en pago muestra el diagnóstico y el presupuesto cargados", async () => {
     fakes.obtenerOrden.mockResolvedValue({
       ok: true,
       datos: ORDEN({ tipo_atencion: "PAGO", cobertura: "FUERA_DE_GARANTIA", diagnostico: "Fuente quemada", costo_reparacion: "45.00" }),
@@ -179,16 +185,17 @@ describe("OrdenDetalle: pestañas", () => {
     montar();
     await cargada();
     await pestana("Diagnóstico y presupuesto");
-    expect(screen.getByText("Fuente quemada")).toBeTruthy();
-    expect(screen.getByText(/Presupuesto: 45/)).toBeTruthy();
+    expect(screen.getByLabelText("Diagnóstico")).toHaveValue("Fuente quemada");
+    expect(screen.getByLabelText("Presupuesto (monto)")).toHaveValue(45);
   });
 
-  it("Diagnóstico: en garantía no hay presupuesto y sin texto avisa que falta", async () => {
+  it("Diagnóstico: en garantía no hay formulario de presupuesto y sin texto avisa que falta", async () => {
     montar();
     await cargada();
     await pestana("Diagnóstico y presupuesto");
-    expect(screen.getByText(/Aún no hay diagnóstico/)).toBeTruthy();
-    expect(screen.queryByText(/Presupuesto:/)).toBeNull();
+    expect(screen.getByPlaceholderText(/Aún no hay diagnóstico/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Registrar presupuesto" })).toBeNull();
+    expect(screen.getByText(/Solo se presupuesta un servicio pago/)).toBeTruthy();
   });
 
   it("Documentos lista fotos y documentos por nombre de archivo", async () => {
@@ -441,5 +448,154 @@ describe("OrdenDetalle: acciones por rol — RECEPCION", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Avanzar a:" }), "Entregado");
     await user.click(screen.getByRole("button", { name: "Avanzar" }));
     expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", { estado: "ENTREGADO", comentario: null });
+  });
+});
+
+// Pestaña Auditoría: la lista de revisiones SIEMPRE se muestra; el formulario
+// de revisión técnica lo deja el propio RevisionForm fuera del alcance de
+// RECEPCION (la base decide con registrar_revision).
+describe("OrdenDetalle: pestaña Auditoría", () => {
+  it("muestra la lista y el formulario de revisión técnica", async () => {
+    const user = userEvent.setup();
+    fakes.listarRevisiones.mockResolvedValue({
+      ok: true,
+      datos: [
+        {
+          id: "r1",
+          tipo: "TECNICA",
+          revisado_en: "2026-10-26T09:00:00+00:00",
+          resultado: "EN_GARANTIA",
+          observaciones: "rayones leves",
+          checklist: {},
+          revisor: { full_name: "Rita Recepción" },
+        },
+      ],
+    });
+    montar();
+    await cargada();
+    await pestana("Auditoría");
+    expect(await screen.findByText(/rayones leves/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Guardar revisión" }));
+    expect(fakes.registrarRevision).toHaveBeenCalledWith(
+      "o1",
+      expect.objectContaining({ tipo: "TECNICA" }),
+    );
+    expect(await screen.findByText(/Revisión guardada/)).toBeTruthy();
+    expect(fakes.listarRevisiones).toHaveBeenCalledTimes(2); // la lista se recarga
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2); // la orden también (cambió el equipo)
+  });
+
+  it("a RECEPCION la auditoría se muestra sin formulario", async () => {
+    fakes.rol = "RECEPCION";
+    montar();
+    await cargada();
+    await pestana("Auditoría");
+    expect(await screen.findByRole("note")).toHaveTextContent("Tu rol no registra revisiones");
+    expect(screen.queryByRole("button", { name: "Guardar revisión" })).toBeNull();
+    expect(fakes.registrarRevision).not.toHaveBeenCalled();
+  });
+});
+
+describe("OrdenDetalle: pestaña Diagnóstico y presupuesto", () => {
+  it("guarda el diagnóstico por el UPDATE directo y refresca la orden", async () => {
+    const user = userEvent.setup();
+    montar();
+    await cargada();
+    await pestana("Diagnóstico y presupuesto");
+    await user.type(screen.getByLabelText("Diagnóstico"), "Fuente quemada");
+    await user.click(screen.getByRole("button", { name: "Guardar diagnóstico" }));
+    expect(fakes.actualizarDiagnostico).toHaveBeenCalledWith("o1", "Fuente quemada");
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2);
+    expect(await screen.findByRole("status")).toHaveTextContent("Diagnóstico guardado");
+  });
+
+  it("un error del servicio al guardar el diagnóstico se muestra", async () => {
+    const user = userEvent.setup();
+    fakes.actualizarDiagnostico.mockResolvedValue({ ok: false, codigo: "SIN_PERMISO", mensaje: "No permitido" });
+    montar();
+    await cargada();
+    await pestana("Diagnóstico y presupuesto");
+    await user.type(screen.getByLabelText("Diagnóstico"), "Fuente quemada");
+    await user.click(screen.getByRole("button", { name: "Guardar diagnóstico" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("No permitido");
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(1);
+  });
+
+  it("en PAGO registra el presupuesto y refresca", async () => {
+    const user = userEvent.setup();
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ tipo_atencion: "PAGO", cobertura: "FUERA_DE_GARANTIA" }),
+    });
+    montar();
+    await cargada();
+    await pestana("Diagnóstico y presupuesto");
+    await user.type(screen.getByLabelText("Presupuesto (monto)"), "60");
+    await user.click(screen.getByRole("button", { name: "Registrar presupuesto" }));
+    expect(fakes.registrarPresupuesto).toHaveBeenCalledWith("o1", 60);
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2);
+  });
+
+  it("un rechazo de la base al presupuestar se muestra", async () => {
+    const user = userEvent.setup();
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ tipo_atencion: "PAGO", cobertura: "FUERA_DE_GARANTIA" }),
+    });
+    fakes.registrarPresupuesto.mockResolvedValue({ ok: false, mensaje: "La orden está cerrada" });
+    montar();
+    await cargada();
+    await pestana("Diagnóstico y presupuesto");
+    await user.type(screen.getByLabelText("Presupuesto (monto)"), "60");
+    await user.click(screen.getByRole("button", { name: "Registrar presupuesto" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("La orden está cerrada");
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(1);
+  });
+
+  it("en PRESUPUESTADO los botones recepcionan la decisión del cliente", async () => {
+    const user = userEvent.setup();
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ tipo_atencion: "PAGO", cobertura: "FUERA_DE_GARANTIA", estado: "PRESUPUESTADO", estado_nombre: "Presupuestado" }),
+    });
+    montar();
+    await cargada();
+    await pestana("Diagnóstico y presupuesto");
+    await user.click(screen.getByRole("button", { name: "Aceptó el presupuesto" }));
+    expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", { estado: "EN_REPARACION" });
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2);
+    await user.click(screen.getByRole("button", { name: "No aceptó el presupuesto" }));
+    expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", { estado: "RECHAZADO_POR_CLIENTE" });
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("OrdenDetalle: pestaña Bitácora — notas internas", () => {
+  it("agrega una nota con agregarNota y recarga la bitácora", async () => {
+    const user = userEvent.setup();
+    fakes.notasOrden
+      .mockResolvedValueOnce({ ok: true, datos: [] })
+      .mockResolvedValue({
+        ok: true,
+        datos: [{ id: "n9", nota: "Llamar el lunes", created_at: "2026-10-30T12:00:00+00:00", autor: { full_name: "Jefe Jorge" } }],
+      });
+    montar();
+    await cargada();
+    await pestana("Bitácora");
+    await user.type(screen.getByLabelText("Nota interna"), "Llamar el lunes");
+    await user.click(screen.getByRole("button", { name: "Agregar nota" }));
+    expect(fakes.agregarNota).toHaveBeenCalledWith("o1", "Llamar el lunes");
+    expect(await screen.findByText(/Llamar el lunes/)).toBeTruthy();
+    expect(fakes.notasOrden).toHaveBeenCalledTimes(2);
+  });
+
+  it("una nota vacía no se envía", async () => {
+    const user = userEvent.setup();
+    montar();
+    await cargada();
+    await pestana("Bitácora");
+    expect(screen.getByRole("button", { name: "Agregar nota" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Agregar nota" }));
+    expect(fakes.agregarNota).not.toHaveBeenCalled();
   });
 });

@@ -157,3 +157,44 @@ export async function listarTecnicos() {
       .eq("is_active", true),
   );
 }
+
+/**
+ * Guarda el diagnóstico: UPDATE DIRECTO de la columna que sigue abierta (la
+ * 0021 solo cerró estado y costo_reparacion). El RLS de la tabla decide quién
+ * puede; el trigger de bitácora NO anota este cambio (solo eventos).
+ */
+export async function actualizarDiagnostico(ordenId, texto) {
+  try {
+    const { error } = await supabase
+      .from("ordenes_servicio")
+      .update({ diagnostico: String(texto ?? "").trim() || null })
+      .eq("id", ordenId);
+    if (error) return falloDeLectura(error);
+    return { ok: true, datos: null };
+  } catch (err) {
+    return falloDeLectura(err);
+  }
+}
+
+/**
+ * Anota una nota interna: INSERT con el AUTOR DE LA SESIÓN — la policy de
+ * RLS exige `autor_id = auth.uid()`, así que el uid lo lee aquí el servicio
+ * (los componentes no hablan con Supabase).
+ */
+export async function agregarNota(ordenId, texto) {
+  try {
+    const nota = String(texto ?? "").trim();
+    if (!nota) return { ok: false, codigo: "DESCONOCIDO", mensaje: "La nota no puede ir vacía" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { ok: false, codigo: "SESION_VENCIDA", mensaje: "Tu sesión venció: vuelve a entrar para continuar" };
+    }
+    const { error } = await supabase
+      .from("notas_internas")
+      .insert({ orden_id: ordenId, autor_id: user.id, nota });
+    if (error) return falloDeLectura(error);
+    return { ok: true, datos: null };
+  } catch (err) {
+    return falloDeLectura(err);
+  }
+}

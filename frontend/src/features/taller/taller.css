@@ -197,6 +197,74 @@
   padding-left: 18px;
 }
 
+/* Pestañas con formulario: diagnóstico, presupuesto, decisión del cliente y
+   notas internas. Solo tokens; mismo estilo de campo que el taller. */
+.od-auditoria,
+.od-dx,
+.od-bitacora-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.od-forma {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.od-forma label {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.od-forma textarea,
+.od-forma input,
+.od-forma button {
+  min-height: 44px;
+}
+
+.od-forma textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.od-forma button {
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--c-cta);
+  color: var(--c-cta-fg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.od-forma button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.od-decision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.od-decision button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--c-border-soft);
+  border-radius: 999px;
+  background: var(--c-surface);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.od-decision button:hover {
+  border-color: var(--c-border-hover);
+}
+
 /* Acciones por rol (RPC 0021): avanzar con la matriz filtrada, rechazar y
    asignar técnico. El formulario hereda el estilo de los inputs del taller. */
 .od-acciones {

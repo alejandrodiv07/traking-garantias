@@ -9,10 +9,11 @@ const fakes = vi.hoisted(() => ({
   eq: vi.fn(),
   select: vi.fn(),
   from: vi.fn(),
+  getUser: vi.fn(),
 }));
 
 vi.mock("../../lib/supabaseClient.js", () => ({
-  supabase: { rpc: fakes.rpc, from: fakes.from },
+  supabase: { rpc: fakes.rpc, from: fakes.from, auth: { getUser: fakes.getUser } },
 }));
 vi.mock("../registro/registroService.js", async () => {
   const real = await vi.importActual("../registro/registroService.js");
@@ -21,7 +22,9 @@ vi.mock("../registro/registroService.js", async () => {
 
 import {
   abrirOrden,
+  actualizarDiagnostico,
   adjuntosOrden,
+  agregarNota,
   asignarTecnico,
   cambiarEstado,
   historialOrden,
@@ -109,13 +112,16 @@ describe("subirAdjuntos", () => {
 });
 
 // Constructor falso de supabase-js: cada tabla responde lo que se le diga y
-// registra el encadenado (select / eq / order) para comprobar la consulta.
+// registra el encadenado (select / insert / update / eq / order) para
+// comprobar la consulta.
 function tablasFalsas(respuestas) {
   const llamadas = {};
   fakes.from.mockImplementation((tabla) => {
     const registro = (llamadas[tabla] = []);
     const b = {
       select: (...a) => (registro.push(["select", ...a]), b),
+      insert: (...a) => (registro.push(["insert", ...a]), b),
+      update: (...a) => (registro.push(["update", ...a]), b),
       eq: (...a) => (registro.push(["eq", ...a]), b),
       order: (...a) => (registro.push(["order", ...a]), b),
       maybeSingle: () => Promise.resolve(respuestas[tabla]),
@@ -257,5 +263,65 @@ describe("listarTecnicos", () => {
     expect(llamadas.profiles).toContainEqual(["eq", "is_active", true]);
     expect(llamadas.profiles).toContainEqual(["select", "id, full_name"]);
     expect(r).toEqual({ ok: true, datos: [{ id: "t1", full_name: "Tomás Técnico" }] });
+  });
+});
+
+// Piezas de las pestañas de la Tarea 16 (segunda ronda): el diagnóstico va por
+// UPDATE directo de la columna que sigue abierta (la 0021 no lo cierra) y las
+// notas internas por INSERT con el autor de la sesión (RLS: autor_id = auth.uid()).
+describe("agregarNota", () => {
+  it("inserta la nota con el autor de la sesión", async () => {
+    const llamadas = tablasFalsas({ notas_internas: { data: null, error: null } });
+    fakes.getUser.mockResolvedValue({ data: { user: { id: "u7" } }, error: null });
+    const r = await agregarNota("o1", "Llamar al cliente");
+    expect(llamadas.notas_internas).toContainEqual([
+      "insert",
+      { orden_id: "o1", autor_id: "u7", nota: "Llamar al cliente" },
+    ]);
+    expect(r).toEqual({ ok: true, datos: null });
+  });
+
+  it("sin sesión no toca la tabla", async () => {
+    const llamadas = tablasFalsas({});
+    fakes.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    const r = await agregarNota("o1", "Llamar al cliente");
+    expect(r.ok).toBe(false);
+    expect(llamadas.notas_internas).toBeUndefined();
+  });
+
+  it("una nota sin texto no se envía", async () => {
+    const llamadas = tablasFalsas({});
+    const r = await agregarNota("o1", "   ");
+    expect(r.ok).toBe(false);
+    expect(llamadas.notas_internas).toBeUndefined();
+  });
+
+  it("el rechazo de la base (42501) llega como SIN_PERMISO", async () => {
+    tablasFalsas({ notas_internas: { data: null, error: { code: "42501", message: "no" } } });
+    fakes.getUser.mockResolvedValue({ data: { user: { id: "u7" } }, error: null });
+    const r = await agregarNota("o1", "Llamar al cliente");
+    expect(r).toMatchObject({ ok: false, codigo: "SIN_PERMISO" });
+  });
+});
+
+describe("actualizarDiagnostico", () => {
+  it("actualiza la columna abierta `diagnostico` por id (fuera de la 0021)", async () => {
+    const llamadas = tablasFalsas({ ordenes_servicio: { data: null, error: null } });
+    const r = await actualizarDiagnostico("o1", "Fuente quemada");
+    expect(llamadas.ordenes_servicio).toContainEqual(["update", { diagnostico: "Fuente quemada" }]);
+    expect(llamadas.ordenes_servicio).toContainEqual(["eq", "id", "o1"]);
+    expect(r).toEqual({ ok: true, datos: null });
+  });
+
+  it("un texto vacío borra el diagnóstico (columna nullable)", async () => {
+    const llamadas = tablasFalsas({ ordenes_servicio: { data: null, error: null } });
+    await actualizarDiagnostico("o1", "");
+    expect(llamadas.ordenes_servicio).toContainEqual(["update", { diagnostico: null }]);
+  });
+
+  it("un rechazo de la base por RLS se mapea SIN_PERMISO", async () => {
+    tablasFalsas({ ordenes_servicio: { data: null, error: { code: "42501", message: "no permitido" } } });
+    const r = await actualizarDiagnostico("o1", "Fuente quemada");
+    expect(r).toMatchObject({ ok: false, codigo: "SIN_PERMISO" });
   });
 });
