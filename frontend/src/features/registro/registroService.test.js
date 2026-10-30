@@ -45,6 +45,7 @@ vi.mock("../../lib/supabaseClient.js", () => ({
 }));
 
 import {
+  buscarCliente,
   buscarEquipo,
   guardarCliente,
   listarProductos,
@@ -225,6 +226,56 @@ describe("listarProductos (catálogo del paso serial nuevo)", () => {
     }));
     const r = await listarProductos();
     expect(r).toMatchObject({ ok: false, codigo: "SIN_CONEXION" });
+  });
+});
+
+describe("buscarCliente (búsqueda por cédula/RIF/pasaporte)", () => {
+  it("consulta clientes por documento y devuelve la fila", async () => {
+    const eq = vi.fn().mockResolvedValue({ data: [{ id: "c7", nombre: "Juan Perez" }], error: null });
+    fakes.from.mockImplementation(() => ({
+      select: vi.fn(() => ({ eq })),
+    }));
+    const r = await buscarCliente("305892147");
+    expect(fakes.from).toHaveBeenCalledWith("clientes");
+    expect(eq).toHaveBeenCalledWith("documento", "305892147");
+    expect(r).toEqual({ ok: true, datos: { id: "c7", nombre: "Juan Perez" } });
+  });
+
+  it("sin resultados: datos = null (el asistente ofrece 'nuevo')", async () => {
+    const eq = vi.fn().mockResolvedValue({ data: [], error: null });
+    fakes.from.mockImplementation(() => ({ select: vi.fn(() => ({ eq })) }));
+    const r = await buscarCliente("11111111");
+    expect(r).toEqual({ ok: true, datos: null });
+  });
+});
+
+describe("previsualizarCobertura con anulación: trae también el motivo", () => {
+  it("cuando la base dice ANULADA_POR_USO, devuelve el motivo de motivo_anulacion", async () => {
+    fakes.rpc.mockImplementation(async (fn) => {
+      if (fn === "calcular_cobertura") return { data: "ANULADA_POR_USO", error: null };
+      if (fn === "motivo_anulacion") return { data: "golpes (señal de causa externa)", error: null };
+      return { data: null, error: { message: "función inesperada" } };
+    });
+    const r = await previsualizarCobertura({
+      venceEl: "2026-09-08",
+      fechaIngreso: "2026-09-02",
+      checklist: { senales: { golpes: true } },
+    });
+    expect(r).toEqual({
+      ok: true,
+      datos: { cobertura: "ANULADA_POR_USO", motivo: "golpes (señal de causa externa)" },
+    });
+  });
+
+  it("cuando NO anula, no pregunta el motivo", async () => {
+    fakes.rpc.mockResolvedValue({ data: "EN_GARANTIA", error: null });
+    const r = await previsualizarCobertura({
+      venceEl: "2026-09-08",
+      fechaIngreso: "2026-09-02",
+      checklist: { senales: { golpes: false } },
+    });
+    expect(r.datos).toEqual({ cobertura: "EN_GARANTIA", motivo: null });
+    expect(fakes.rpc).toHaveBeenCalledTimes(1);
   });
 });
 

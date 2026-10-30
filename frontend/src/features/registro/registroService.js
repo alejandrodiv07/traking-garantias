@@ -90,13 +90,45 @@ export async function registrarRevision(registroId, { tipo, checklist, observaci
   });
 }
 
+/** Búsqueda del titular por documento (cédula, RIF o pasaporte). */
+export async function buscarCliente(documento) {
+  try {
+    const limpio = String(documento ?? "").replace(/[^0-9]/g, "");
+    if (limpio.length < 5) return { ok: true, datos: null };
+    const { data, error } = await supabase
+      .from("clientes")
+      .select("id, tipo_documento, documento, nombre, telefono, email")
+      .eq("documento", limpio);
+    if (error) return mapearError(error);
+    return { ok: true, datos: data?.[0] ?? null };
+  } catch (err) {
+    if (err instanceof TypeError || String(err?.name ?? "").startsWith("Fetch")) {
+      return { ok: false, codigo: "SIN_CONEXION", mensaje: "Sin conexión" };
+    }
+    return { ok: false, codigo: "DESCONOCIDO", mensaje: err?.message ?? "Error inesperado" };
+  }
+}
+
 /** La cobertura SIEMPRE la calcula la base; el navegador solo pregunta. */
 export async function previsualizarCobertura({ venceEl, fechaIngreso, checklist }) {
-  return rpc("calcular_cobertura", {
+  const respuesta = await rpc("calcular_cobertura", {
     p_vence_el: venceEl ?? null,
     p_fecha_ingreso: fechaIngreso ?? null,
     p_checklist: checklist ?? null,
   });
+  if (!respuesta.ok) return respuesta;
+  // La anulación exige un MOTIVO que solo la base puede nombrar.
+  if (respuesta.datos === "ANULADA_POR_USO") {
+    const motivo = await rpc("motivo_anulacion", { p_checklist: checklist ?? null });
+    return {
+      ok: true,
+      datos: {
+        cobertura: respuesta.datos,
+        motivo: motivo.ok ? motivo.datos : null,
+      },
+    };
+  }
+  return { ok: true, datos: { cobertura: respuesta.datos, motivo: null } };
 }
 
 const MAX_BYTES = 8 * 1024 * 1024;   // 8 MB (fotos y documentos)
