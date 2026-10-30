@@ -65,7 +65,7 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_ing1 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'RT5-8842-AA', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No enciende, huele a quemado', 'cargador y manual',
     'FACTURA', 'F-200', DATE '2026-09-01', 7, 'Tienda C.C.', NULL, NULL,
@@ -92,7 +92,7 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_ing2 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'RT5 8842 AA', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'Antena floja', NULL, 'FACTURA', 'F-451', DATE '2026-09-10', 15, NULL, NULL, NULL);
 COMMIT;
@@ -104,7 +104,7 @@ SELECT pg_temp.chk('I8b el equipo NO duplica la factura (sigue la original)',
    WHERE id = (SELECT equipo_id FROM t_ing2)));
 SELECT pg_temp.chk('I9 dos ingresos seguidos con el mismo serial sin error de unicidad',
   pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
-   $$SELECT * FROM public.abrir_orden('rt5-8842-aa', pg_temp.producto_id(),
+   $$SELECT * FROM public.test_ingreso('rt5-8842-aa', pg_temp.producto_id(),
        (SELECT id FROM public.clientes LIMIT 1), 'Chirrido en ventilador', NULL,
        'NOTA_ENTREGA','ND-9','2026-09-20',7,NULL,NULL,NULL)$$) IS NULL);
 
@@ -119,7 +119,7 @@ SELECT pg_temp.chk('B2 mismo serial en dos productos: devuelve AMBAS filas',
 -- ============ ATOMICIDAD ============
 SELECT pg_temp.chk('D1 un checklist inválido no deja equipo ni registro',
   (pg_temp.mensaje('22222222-2222-2222-2222-222222222222',
-     $$SELECT * FROM public.abrir_orden('SERIAL-ROTO', pg_temp.producto_id(),
+     $$SELECT * FROM public.test_ingreso('SERIAL-ROTO', pg_temp.producto_id(),
         (SELECT id FROM public.clientes LIMIT 1), 'Falla de prueba', NULL,
         'FACTURA','F-9','2026-09-01',7,NULL,'{"senales":{"golpes":"si"}}',NULL)$$) IS NOT NULL)
   AND (SELECT count(*) FROM public.equipos WHERE numero_serie='SERIAL-ROTO') = 0);
@@ -130,7 +130,7 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_nofact AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'EQ-SIN-FAC', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'Se reinicia solo', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 COMMIT;
@@ -150,13 +150,13 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
 CREATE TEMP TABLE t_tz1 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'TZ-MAÑANA', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No conecta a internet', NULL, 'FACTURA','TZ-F','2026-08-27',7,NULL,NULL,NULL,
     '2026-09-04 02:30+00'::timestamptz);
 
 CREATE TEMP TABLE t_tz2 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'TZ-PASADO', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No conecta a internet', NULL, 'FACTURA','TZ-F2','2026-08-27',7,NULL,NULL,NULL,
     '2026-09-04 04:00+00'::timestamptz);
@@ -174,7 +174,7 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_tz3 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'TZ-TECNICO', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No conecta a internet', NULL, 'FACTURA','TZ-F3','2026-08-27',7,NULL,NULL,NULL,
     '2026-08-27 14:00+00'::timestamptz);
@@ -193,10 +193,10 @@ SELECT pg_temp.chk('B3 buscar_equipo incluye el historial de ordenes_servicio de
 
 -- ============ PERMISOS ============
 SELECT pg_temp.chk('X1 anon no puede llamar abrir_orden',
-  pg_temp.mensaje('anon', $$SELECT 1 FROM public.abrir_orden('X', pg_temp.producto_id(), NULL, 'falla', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)$$) ~ 'permission denied');
+  pg_temp.mensaje('anon', $$SELECT 1 FROM public.test_ingreso('X', pg_temp.producto_id(), NULL, 'falla', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)$$) ~ 'permission denied');
 SELECT pg_temp.chk('X2 usuario sin perfil rechazado (42501)',
   pg_temp.mensaje('44444444-4444-4444-4444-444444444444',
-    $$SELECT * FROM public.abrir_orden('X-2', pg_temp.producto_id(),
+    $$SELECT * FROM public.test_ingreso('X-2', pg_temp.producto_id(),
        (SELECT id FROM public.clientes LIMIT 1), 'Falla', NULL, NULL,NULL,NULL,NULL,NULL,NULL,NULL)$$) ~ 'Su rol');
 SELECT pg_temp.chk('X3 buscar_equipo también exige sesión interna',
   pg_temp.mensaje('anon', $$SELECT 1 FROM public.buscar_equipo('RT5-8842-AA')$$) ~ 'permission denied');
@@ -210,12 +210,12 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_k1 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'IDEM-001', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No enciende', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 CREATE TEMP TABLE t_k2 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'IDEM-001', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No enciende', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
@@ -241,7 +241,7 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_k3 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'IDEM-001', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'Otra falla distinta', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
@@ -256,7 +256,7 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
 CREATE TEMP TABLE t_k4 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'IDEM-001', pg_temp.producto_id(), (SELECT id FROM public.clientes LIMIT 1),
     'Falla del admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
@@ -273,11 +273,11 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_n1 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'IDEM-NULL', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'Sin clave uno', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 CREATE TEMP TABLE t_n2 AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'IDEM-NULL', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'Sin clave dos', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 COMMIT;

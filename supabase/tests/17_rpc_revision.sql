@@ -68,12 +68,12 @@ BEGIN
   BEGIN
     IF con_factura THEN
       SELECT 'OK:' || cobertura::text INTO v
-        FROM public.abrir_orden(serie, pg_temp.producto_id(), pg_temp.cliente_id(),
+        FROM public.test_ingreso(serie, pg_temp.producto_id(), pg_temp.cliente_id(),
              'Falla de prueba del equipo', NULL, 'FACTURA', 'MF-1',
              DATE '2026-09-01', 7, NULL, NULL, NULL, '2026-09-02 14:00+00'::timestamptz);
     ELSE
       SELECT 'OK:' || cobertura::text INTO v
-        FROM public.abrir_orden(serie, pg_temp.producto_id(), pg_temp.cliente_id(),
+        FROM public.test_ingreso(serie, pg_temp.producto_id(), pg_temp.cliente_id(),
              'Falla de prueba del equipo', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
              '2026-09-02 14:00+00'::timestamptz);
     END IF;
@@ -202,6 +202,6 @@ SELECT pg_temp.chk('C12 confirmar_compra sobre equipo con factura rechazado',
 
 -- ============ A: ANON rechazado en todo ============
 SELECT pg_temp.chk('X1 anon no puede nada de esto',
-  pg_temp.mensaje('anon', $$SELECT 1 FROM public.abrir_orden('X', pg_temp.producto_id(), pg_temp.cliente_id(), 'falla', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)$$) ~ 'permission denied'
+  pg_temp.mensaje('anon', $$SELECT 1 FROM public.test_ingreso('X', pg_temp.producto_id(), pg_temp.cliente_id(), 'falla', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)$$) ~ 'permission denied'
   AND pg_temp.mensaje('anon', $$SELECT 1 FROM public.registrar_revision(pg_temp.reg_admin(), 'TECNICA', pg_temp.checklist_ok(), NULL)$$) ~ 'permission denied'
   AND pg_temp.mensaje('anon', $$SELECT 1 FROM public.confirmar_compra(pg_temp.eq_sinfac(), 'FACTURA','C','2026-08-28',7)$$) ~ 'permission denied');

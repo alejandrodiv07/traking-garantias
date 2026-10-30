@@ -70,10 +70,10 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
 CREATE TEMP TABLE t_orden AS
-SELECT * FROM public.abrir_orden(
+SELECT * FROM public.test_ingreso(
     'OA-001', pg_temp.producto_id(), pg_temp.cliente_id(),
     'No enciende, huele a quemado', NULL,
-    'FACTURA', 'F-OA', CURRENT_DATE, 365, NULL,
+    'FACTURA', 'F-OA', public.hoy_local(), 15, NULL,
     pg_temp.checklist_ok(), NULL);
 COMMIT;
 RESET ROLE;

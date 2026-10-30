@@ -62,23 +62,23 @@ BEGIN
   PERFORM set_config('request.jwt.claim.session_id', '11111111-1111-1111-1111-111111111111', TRUE);
 
   -- SIN FACTURA → PENDIENTE
-  PERFORM public.abrir_orden('TAB-VP', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-VP', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
   -- Con factura: (serie, emision, plazo)
-  PERFORM public.abrir_orden('TAB-V8', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-V8', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-V8', hoy, 8, NULL, NULL, NULL, mediodia);
-  PERFORM public.abrir_orden('TAB-V7', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-V7', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-V7', hoy, 7, NULL, NULL, NULL, mediodia);
-  PERFORM public.abrir_orden('TAB-V4', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-V4', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-V4', hoy, 4, NULL, NULL, NULL, mediodia);
-  PERFORM public.abrir_orden('TAB-V3', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-V3', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-V3', hoy, 3, NULL, NULL, NULL, mediodia);
-  PERFORM public.abrir_orden('TAB-V1', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-V1', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-V1', hoy, 1, NULL, NULL, NULL, mediodia);
-  PERFORM public.abrir_orden('TAB-V0', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-V0', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-V0', hoy - 1, 1, NULL, NULL, NULL, mediodia);
-  PERFORM public.abrir_orden('TAB-Vm1', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('TAB-Vm1', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-Vm1', hoy - 2, 1, NULL, NULL, NULL, mediodia);
   EXECUTE 'RESET ROLE';
 END $$;
@@ -115,7 +115,7 @@ BEGIN
     -- fijar el día local exacto). Con factura vigente: cobertura EN_GARANTIA —
     -- la 0017 (spec §4.5) solo deja reparar a un servicio GARANTIA desde
     -- EN_DIAGNOSTICO, y TAB-SLA15 se cierra al final de este archivo.
-    PERFORM public.abrir_orden('TAB-' || caso.serie, pg_temp.producto_id(), pg_temp.cliente_id(),
+    PERFORM public.test_ingreso('TAB-' || caso.serie, pg_temp.producto_id(), pg_temp.cliente_id(),
       'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-' || caso.serie, hoy, 365,
       NULL, NULL, NULL,
       ((((public.hoy_local() - caso.dias)::text) || ' 12:00')::timestamp AT TIME ZONE 'America/Caracas'));
@@ -140,10 +140,10 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', TRUE);
   PERFORM set_config('request.jwt.claim.session_id', '11111111-1111-1111-1111-111111111111', TRUE);
   -- recién ingresado, garantía vencida hace 2 días
-  PERFORM public.abrir_orden('SPEC-FRESH', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('SPEC-FRESH', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-SF', hoy - 2, 1, NULL, NULL, NULL, ((((hoy)::text) || ' 12:00')::timestamp AT TIME ZONE 'America/Caracas'));
   -- 15 días en taller, en garantía
-  PERFORM public.abrir_orden('SPEC-SLA15', pg_temp.producto_id(), pg_temp.cliente_id(),
+  PERFORM public.test_ingreso('SPEC-SLA15', pg_temp.producto_id(), pg_temp.cliente_id(),
     'Falla del tablero en el equipo', NULL, 'FACTURA', 'F-S15', hoy, 15, NULL, NULL, NULL,
     ((((public.hoy_local() - 15)::text) || ' 12:00')::timestamp AT TIME ZONE 'America/Caracas'));
   SELECT urgencia_rank INTO rank_fresco FROM public.v_tablero WHERE serial='SPEC-FRESH';

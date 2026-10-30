@@ -55,6 +55,7 @@ preparar_base() {
     case "$(basename "$m")" in _*) continue ;; esac   # copias, nunca se aplican
     psql_db "$1" -v ON_ERROR_STOP=1 -f - < "$m" >/dev/null
   done
+  psql_db "$1" -v ON_ERROR_STOP=1 -f - < "$tests_dir/apoyo_pruebas.sql" >/dev/null
   if [ -f "$tests_dir/../seed.sql" ]; then
     psql_db "$1" -v ON_ERROR_STOP=1 -f - < "$tests_dir/../seed.sql" >/dev/null
     # El seed deja el catálogo usable: una base sin productos es un error.
