@@ -1,6 +1,7 @@
 // Pruebas del Tablero con datos reales (Tarea 20 del plan; spec §7.3).
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fakes = vi.hoisted(() => ({
@@ -53,7 +54,7 @@ beforeEach(() => {
 describe("TablaRegistros", () => {
   it("muestra POR SEPARADO los días restantes y los días en taller", async () => {
     fakes.listarTablero.mockResolvedValue({ ok: true, filas: [FILA()] });
-    render(<Tablero />);
+    render(<MemoryRouter><Tablero /></MemoryRouter>);
     await waitFor(() => expect(screen.getAllByText(/RT5-8842-AA/).length >= 1).toBe(true));
     expect(screen.getByText(/5 d\b/)).toBeTruthy();   // días restantes de la garantía
     expect(screen.getByText(/0 días en taller/)).toBeTruthy();
@@ -64,7 +65,7 @@ describe("TablaRegistros", () => {
       ok: true,
       filas: [FILA({ nivel_vigencia: "PENDIENTE", vence_el: null, dias_restantes: null, cobertura: "POR_DETERMINAR" })],
     });
-    render(<Tablero />);
+    render(<MemoryRouter><Tablero /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText(/Sin factura/)).toBeTruthy());
   });
 });
@@ -86,7 +87,7 @@ describe("el detalle del registro (Revisiones desde el Tablero)", () => {
         },
       ],
     });
-    render(<Tablero />);
+    render(<MemoryRouter><Tablero /></MemoryRouter>);
     await userEvent.setup().click(await screen.findByRole("button", { name: "Revisar OS-2026-00001" }));
     const dialogo = screen.getByRole("dialog", { name: /Detalle de OS-2026-00001/ });
     expect(dialogo).toBeTruthy();
@@ -103,7 +104,7 @@ describe("el detalle del registro (Revisiones desde el Tablero)", () => {
 
   it("guardar una revisión recarga el listado del tablero", async () => {
     fakes.listarTablero.mockResolvedValue({ ok: true, filas: [FILA()] });
-    render(<Tablero />);
+    render(<MemoryRouter><Tablero /></MemoryRouter>);
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getByRole("button", { name: "Revisar OS-2026-00001" })).toBeTruthy());
     expect(fakes.listarTablero).toHaveBeenCalledTimes(1);
@@ -114,21 +115,28 @@ describe("el detalle del registro (Revisiones desde el Tablero)", () => {
 });
 
 describe("la barra del Tablero", () => {
-  it('el botón dice "Nuevo registro" y abre el asistente', async () => {
-    render(<Tablero />);
-    const boton = await screen.findByRole("button", { name: /Nuevo registro/ });
+  it('el botón dice "Nueva orden" y lleva a la consulta de garantías', async () => {
+    render(
+      <MemoryRouter initialEntries={["/tablero"]}>
+        <Routes>
+          <Route path="/tablero" element={<Tablero />} />
+          <Route path="/garantias/consulta" element={<div>Pantalla de consulta</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const boton = await screen.findByRole("button", { name: /Nueva orden/ });
     await userEvent.setup().click(boton);
-    expect(screen.getByRole("dialog", { name: /Nuevo registro/ })).toBeTruthy();
+    expect(screen.getByText("Pantalla de consulta")).toBeTruthy();
   });
 
   it("estado vacío", async () => {
-    render(<Tablero />);
+    render(<MemoryRouter><Tablero /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText(/no hay registros|Sin registros/i)).toBeTruthy());
   });
 
   it("estado de error con Reintentar", async () => {
     fakes.listarTablero.mockResolvedValue({ ok: false, codigo: "SIN_CONEXION", mensaje: "Sin conexión" });
-    render(<Tablero />);
+    render(<MemoryRouter><Tablero /></MemoryRouter>);
     const reintentar = await screen.findByRole("button", { name: /Reintentar/ });
     expect(reintentar).toBeTruthy();
   });

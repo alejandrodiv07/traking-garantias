@@ -9,6 +9,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./features/auth/AuthContext.jsx";
 import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.jsx";
 import LoginPage from "./features/auth/LoginPage.jsx";
+import Layout from "./features/layout/Layout.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./features/auth/estado.css";
@@ -22,6 +23,8 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+const TODOS_LOS_ROLES = ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"];
 
 function Rutas() {
   return (
@@ -71,6 +74,22 @@ function Rutas() {
           </RutaProtegida>
         }
       />
+
+      {/* Fase 2a: cada pantalla reemplaza su stub en las tareas 13–17. */}
+      <Route
+        element={
+          <RutaProtegida rolesPermitidos={TODOS_LOS_ROLES}>
+            <Layout />
+          </RutaProtegida>
+        }
+      >
+        <Route path="/garantias" element={<div>Tablero de garantías</div>} />
+        <Route path="/garantias/nueva" element={<div>Nueva garantía</div>} />
+        <Route path="/garantias/consulta" element={<div>Consulta de garantía</div>} />
+        <Route path="/taller" element={<div>Taller</div>} />
+        <Route path="/taller/nueva" element={<div>Abrir orden</div>} />
+        <Route path="/taller/:id" element={<div>Detalle de la orden</div>} />
+      </Route>
 
       <Route path="/sin-acceso" element={<SinAcceso />} />
       <Route path="*" element={<Raiz />} />

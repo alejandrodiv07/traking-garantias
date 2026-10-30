@@ -4,12 +4,12 @@
  * (urgencia combinada de vigencia y SLA); ya no hay datos de demostración.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LogOut, Plus, Search, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import BarraLateral from "./componentes/BarraLateral.jsx";
 import TablaRegistros from "./componentes/TablaRegistros.jsx";
 import PanelVencimientos from "./componentes/PanelVencimientos.jsx";
-import NuevoRegistro from "../registro/NuevoRegistro.jsx";
 import DetalleRegistro from "./componentes/DetalleRegistro.jsx";
 import { estaAbierta } from "./dominio.js";
 import { listarTablero } from "./tableroService.js";
@@ -27,13 +27,13 @@ const NIVELES = ["", "VENCIDA", "HOY", "CRITICA", "PRONTO", "NORMAL"];
 
 export default function Tablero() {
   const { perfil, rol, salir } = useAuth();
+  const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [urgenciaFiltro, setUrgenciaFiltro] = useState("");
   const [filas, setFilas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-  const [asistenteAbierto, setAsistenteAbierto] = useState(false);
   const [detalle, setDetalle] = useState(null);
 
   const cargar = useCallback(async () => {
@@ -117,10 +117,10 @@ export default function Tablero() {
             <button
               type="button"
               className="tg-btn tg-btn--principal"
-              onClick={() => setAsistenteAbierto(true)}
+              onClick={() => navigate("/garantias/consulta")}
             >
               <Plus size={17} strokeWidth={2.4} aria-hidden="true" />
-              Nuevo registro
+              Nueva orden
             </button>
           </div>
 
@@ -210,17 +210,6 @@ export default function Tablero() {
           </div>
         </main>
       </div>
-
-      {asistenteAbierto && (
-        <NuevoRegistro
-          userId={perfil?.id}
-          onCerrar={() => setAsistenteAbierto(false)}
-          onCreado={() => {
-            setAsistenteAbierto(false);
-            cargar();
-          }}
-        />
-      )}
 
       {detalle && (
         <DetalleRegistro
