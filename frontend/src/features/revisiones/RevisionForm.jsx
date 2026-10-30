@@ -4,6 +4,7 @@
 // Solo anexar: el formulario no ofrece editar ni borrar nada.
 import { useState } from "react";
 import { registrarRevision } from "./revisionesService.js";
+import "./revisiones.css";
 
 const GRUPOS = [
   {
@@ -69,6 +70,7 @@ export default function RevisionForm({ registroId, rol, onRegistrada }) {
 
   return (
     <form
+      className="rv-form"
       onSubmit={(e) => {
         e.preventDefault();
         enviar();
@@ -104,7 +106,7 @@ export default function RevisionForm({ registroId, rol, onRegistrada }) {
         />
       </label>
 
-      <button type="submit" disabled={enviando}>
+      <button type="submit" className="rv-principal" disabled={enviando}>
         Guardar revisión
       </button>
 

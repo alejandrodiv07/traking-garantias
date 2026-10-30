@@ -3,6 +3,7 @@
 // SIN botones de editar ni borrar: una corrección es una revisión nueva.
 import { useEffect, useState } from "react";
 import { listarRevisiones } from "./revisionesService.js";
+import "./revisiones.css";
 
 export default function HistorialRevisiones({ registroId }) {
   const [revisiones, setRevisiones] = useState(null);
@@ -31,7 +32,7 @@ export default function HistorialRevisiones({ registroId }) {
   }
 
   return (
-    <ul aria-label="Historial de revisiones">
+    <ul className="rv-lista" aria-label="Historial de revisiones">
       {revisiones.map((v) => (
         <li key={v.id} data-testid="revision">
           <p>

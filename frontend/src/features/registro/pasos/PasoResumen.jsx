@@ -107,7 +107,7 @@ export default function PasoResumen({ estado, irPara, onCreado, userId, actualiz
       )}
 
       {(resultado?.ok || resultado === null) && !(resultado?.ok && resultado?.pendientes.length > 0) && (
-        <button type="button" onClick={() => confirmar(false)} disabled={enviando}>
+        <button type="button" className="nr-principal" onClick={() => confirmar(false)} disabled={enviando}>
           {resultado?.ok ? "Registrar el mismo registro" : "Confirmar y registrar"}
         </button>
       )}

@@ -1,0 +1,372 @@
+/* Asistente "Nuevo registro" (modal). Usa solo los tokens de styles/tokens.css,
+   así que el oscuro sale gratis. Se estiliza por elemento dentro de .nr para
+   que los pasos sigan siendo marcado limpio, sin clases en cada etiqueta. */
+.nr-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);   /* sin esto la columna crece con el contenido */
+  place-items: center;
+  padding: 16px;
+  background: var(--c-fondo-modal);
+}
+
+.nr,
+.nr * {
+  box-sizing: border-box;
+}
+
+.nr {
+  width: min(720px, 100%);
+  min-height: min(560px, 92dvh);   /* el alto no salta de un paso a otro */
+  max-height: min(92dvh, 860px);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: var(--c-radio);
+  box-shadow: var(--c-shadow-flotante);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.nr--aviso {
+  width: min(460px, 100%);
+  padding: 24px;
+  gap: 16px;
+}
+
+/* ---- cabecera ---- */
+.nr-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px 0;
+}
+.nr-cab h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--c-text);
+}
+
+/* ---- barra de pasos ---- */
+.nr-pasos {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0 24px 14px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  counter-reset: paso;
+  border-bottom: 1px solid var(--c-border-soft);
+}
+.nr-pasos li {
+  flex: 1 0 auto;
+  counter-increment: paso;
+}
+.nr .nr-pasos li button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--c-text-2);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.nr .nr-pasos li button::before {
+  content: counter(paso);
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c-neutro-bg);
+  color: var(--c-neutro-fg);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.nr .nr-pasos li button:hover:not(:disabled) {
+  border-color: var(--c-border-hover);
+  background: transparent;
+}
+.nr .nr-pasos li[aria-current="step"] button,
+.nr .nr-pasos li[aria-current="step"] button:hover:not(:disabled) {
+  background: var(--c-cta);
+  border-color: var(--c-cta);
+  color: var(--c-cta-fg);
+}
+.nr .nr-pasos li[aria-current="step"] button::before {
+  background: var(--c-cta-fg);
+  color: var(--c-cta);
+}
+
+/* ---- cuerpo ---- */
+.nr-cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.nr-cuerpo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nr label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--c-text);
+}
+/* Casillas y radios: en fila, con el texto al lado */
+.nr label:has(> input[type="checkbox"]),
+.nr label:has(> input[type="radio"]) {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+  font-size: 14.5px;
+}
+.nr input[type="checkbox"],
+.nr input[type="radio"] {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--c-cta);
+}
+
+.nr input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.nr select,
+.nr textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--c-field-border);
+  border-radius: 10px;
+  background: var(--c-field-bg);
+  color: var(--c-text);
+  font: inherit;
+  font-weight: 400;
+  transition: border-color 0.15s var(--c-ease), box-shadow 0.15s var(--c-ease);
+}
+.nr textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.nr ::placeholder {
+  color: var(--c-placeholder);
+}
+.nr input:not([type="checkbox"]):not([type="radio"]):hover,
+.nr select:hover,
+.nr textarea:hover {
+  border-color: var(--c-field-border-hover);
+}
+.nr input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+.nr select:focus-visible,
+.nr textarea:focus-visible {
+  outline: 2px solid transparent;           /* visible en alto contraste */
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-bg);
+}
+.nr [aria-invalid="true"] {
+  border-color: var(--c-invalid-border);
+}
+.nr input[type="file"] {
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--c-text-2);
+}
+
+.nr fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+}
+.nr legend {
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+}
+
+.nr ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---- mensajes ---- */
+.nr p[role="alert"],
+.nr div[role="alert"] {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--c-error-border);
+  border-radius: 10px;
+  background: var(--c-error-bg);
+  color: var(--c-error);
+  font-size: 13.5px;
+}
+.nr p[role="status"],
+.nr div[role="status"],
+.nr p[aria-live] {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--c-text-2);
+}
+.nr .nr-cuerpo p[role="status"]:not(:empty) {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--c-info-bg);
+  color: var(--c-text);
+}
+
+/* ---- resumen (lista de definición) ---- */
+.nr dl {
+  margin: 0;
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.nr dl > div {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 4px 16px;
+  align-items: start;
+  padding: 12px 16px;
+}
+.nr dl > div + div {
+  border-top: 1px solid var(--c-border-soft);
+}
+.nr dt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+}
+.nr dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.nr dt button {
+  min-height: 28px;
+  padding: 2px 10px;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ---- botones ---- */
+.nr button {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s var(--c-ease), border-color 0.15s var(--c-ease);
+}
+.nr button:hover:not(:disabled) {
+  background: var(--c-neutro-bg);
+}
+.nr button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.nr .nr-principal,
+.nr .nr-pie button:last-child {
+  background: var(--c-cta);
+  border-color: var(--c-cta);
+  color: var(--c-cta-fg);
+}
+.nr .nr-principal:hover:not(:disabled),
+.nr .nr-pie button:last-child:hover:not(:disabled) {
+  background: var(--c-cta-hover);
+}
+
+.nr-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--c-border-soft);
+  background: var(--c-surface);
+  border-radius: 0 0 var(--c-radio) var(--c-radio);
+}
+
+.nr-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .nr-fondo {
+    padding: 0;
+    align-items: stretch;
+  }
+  .nr {
+    max-height: none;
+    height: 100dvh;
+    border-radius: 0;
+    border: 0;
+  }
+  .nr--aviso {
+    height: auto;
+    align-self: center;
+  }
+  .nr-cab,
+  .nr-cuerpo,
+  .nr-pie,
+  .nr-pasos {
+    padding-inline: 16px;
+  }
+  .nr dl > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nr * {
+    transition: none !important;
+  }
+}
