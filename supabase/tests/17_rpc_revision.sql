@@ -197,8 +197,8 @@ BEGIN;
 UPDATE public.equipos SET numero_soporte='F-OTRA', fecha_emision=DATE '2026-09-10', plazo_dias=15
  WHERE id=pg_temp.eq_sinfac();
 ROLLBACK;  -- confirmar de nuevo: DEBE FALLAR por la función
-SELECT pg_temp.chk('C12 confirmar_compra sobre equipo con factura rechazado',
-  pg_temp.confirmar_como('11111111-1111-1111-1111-111111111111', pg_temp.eq_sinfac(), DATE '2026-09-10', 15) ~ 'ya tiene');
+SELECT pg_temp.chk('C12 confirmar_compra sobre equipo con factura ya cargada la ratifica (0020)',
+  pg_temp.confirmar_como('11111111-1111-1111-1111-111111111111', pg_temp.eq_sinfac(), DATE '2026-09-10', 15) = 'OK');
 
 -- ============ A: ANON rechazado en todo ============
 SELECT pg_temp.chk('X1 anon no puede nada de esto',
