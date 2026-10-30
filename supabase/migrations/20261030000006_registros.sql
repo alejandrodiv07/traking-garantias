@@ -249,3 +249,104 @@ CREATE POLICY notasRegistro_select ON public.notas_internas
     FOR SELECT TO authenticated USING (TRUE);
 CREATE POLICY notasRegistro_insert ON public.notas_internas
     FOR INSERT TO authenticated WITH CHECK (autor_id = auth.uid());
+-- ---------------------------------------------------------------------
+--  7. CONSULTA PÚBLICA DEL REGISTRO  (portada de §9 de garantias)
+-- ---------------------------------------------------------------------
+-- Sin interfaz en este hito: la pantalla llega después, la base ya queda.
+CREATE TABLE public.consulta_publica_intentos (
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ip             INET,
+    numero_registro TEXT,
+    exito          BOOLEAN NOT NULL,
+    intentado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_cpi_reg_ip_tiempo ON public.consulta_publica_intentos (ip, intentado_en DESC)
+    WHERE NOT exito;
+ALTER TABLE public.consulta_publica_intentos ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.consulta_publica_intentos FROM PUBLIC, anon, authenticated;
+-- RLS con CERO policies: solo la función SECURITY DEFINER la escribe y lee.
+
+CREATE OR REPLACE FUNCTION public.consultar_registro(
+    p_numero_registro TEXT,
+    p_token           TEXT
+)
+RETURNS TABLE (
+    numero_registro TEXT,
+    estado          TEXT,
+    estado_nombre   TEXT,
+    equipo          TEXT,
+    falla_reportada TEXT,
+    diagnostico     TEXT,
+    cobertura       public.cobertura_garantia,
+    fecha_ingreso   TIMESTAMPTZ,
+    fecha_entrega   TIMESTAMPTZ,
+    actualizado_en  TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_ip       INET;
+    v_fallos   INTEGER;
+    v_rid      UUID;
+BEGIN
+    -- IP real del cliente (PostgREST expone las cabeceras del request).
+    BEGIN
+        v_ip := nullif(btrim(split_part(
+                    coalesce(current_setting('request.headers', TRUE)::json ->> 'x-forwarded-for', ''),
+                    ',', 1)), '')::inet;
+    EXCEPTION WHEN OTHERS THEN
+        v_ip := NULL;
+    END;
+
+    -- Freno de fuerza bruta (portado sin cambios).
+    SELECT count(*) INTO v_fallos
+      FROM public.consulta_publica_intentos c
+     WHERE c.ip = v_ip
+       AND NOT c.exito
+       AND c.intentado_en > now() - interval '15 minutes';
+
+    IF v_ip IS NOT NULL AND v_fallos >= 10 THEN
+        INSERT INTO public.consulta_publica_intentos (ip, numero_registro, exito)
+        VALUES (v_ip, p_numero_registro, FALSE);
+        RAISE EXCEPTION 'Demasiadas consultas fallidas. Intente de nuevo en 15 minutos.'
+            USING ERRCODE = '53400';
+    END IF;
+
+    -- Búsqueda POR EL HASH: cero filas responde igual a "no existe" que a
+    -- "token incorrecto" (anti-enumeración) y el intento queda en bitácora.
+    SELECT r.id INTO v_rid
+      FROM public.registros r
+     WHERE r.consulta_token_hash = extensions.digest(coalesce(p_token, ''), 'sha256')
+       AND r.numero_registro = upper(btrim(coalesce(p_numero_registro, '')));
+
+    INSERT INTO public.consulta_publica_intentos (ip, numero_registro, exito)
+    VALUES (v_ip, p_numero_registro, v_rid IS NOT NULL);
+
+    IF v_rid IS NULL THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT r.numero_registro,
+           r.estado,
+           e.nombre,
+           (m.nombre || ' ' || pr.modelo)::TEXT,
+           r.falla_reportada,
+           r.diagnostico,
+           r.cobertura,
+           r.fecha_ingreso,
+           r.fecha_entrega,
+           r.updated_at
+      FROM public.registros r
+      JOIN public.estados_garantia e ON e.codigo = r.estado
+      JOIN public.equipos eq         ON eq.id = r.equipo_id
+      JOIN public.productos pr       ON pr.id = eq.producto_id
+      JOIN public.marcas m           ON m.id = pr.marca_id
+     WHERE r.id = v_rid;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.consultar_registro(TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consultar_registro(TEXT, TEXT) TO anon, authenticated;

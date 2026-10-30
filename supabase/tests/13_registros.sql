@@ -173,3 +173,58 @@ DELETE FROM public.historial_registros;  -- DEBE FALLAR
 ROLLBACK;
 SELECT pg_temp.chk('P3 historial intacto tras UPDATE/DELETE (5 de reg1 + 1 de reg2)',
   (SELECT count(*)=6 FROM public.historial_registros));
+-- ============ CONSULTA PÚBLICA: consultar_registro (Tarea 8) ============
+-- Portados de los casos T11 del 99 anterior (consultar_garantia).
+-- Las aserciones van envueltas en helpers que CONSERVAN el estado del
+-- error: si la función no existiera aún, el chk se pintaría FALLA y no
+-- un error silencioso (la ausencia no puede pasar por implementado).
+
+-- Ejecuta un SELECT count y devuelve el entero, o -1 si falló algo.
+CREATE FUNCTION pg_temp.filas_o_error(q text) RETURNS integer
+LANGUAGE plpgsql AS $$
+DECLARE r int;
+BEGIN
+  EXECUTE q INTO r; RETURN r;
+EXCEPTION WHEN OTHERS THEN RETURN -1;
+END $$;
+
+-- Ejecuta una sentencia y devuelve el SQLSTATE del error que lanzó, o NULL.
+CREATE FUNCTION pg_temp.error_estado(q text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+BEGIN
+  EXECUTE q; RETURN NULL;
+EXCEPTION WHEN OTHERS THEN
+  RETURN SQLSTATE;
+END $$;
+
+BEGIN;
+-- El número se lee ANTES de cambiar de rol: anon no lee la tabla, solo la RPC.
+SELECT format('SELECT count(*) FROM public.consultar_registro(%L, ''prueba-1'')', numero_registro) AS pub_q,
+       format('SELECT count(*) FROM public.consultar_registro(%L, ''0000000000000000000000000000dead'')', numero_registro) AS pub_qmal
+FROM public.registros ORDER BY fecha_ingreso LIMIT 1 \gset
+SET ROLE anon;
+SELECT pg_temp.chk('K1 consulta pública con token correcto devuelve 1 fila',
+  pg_temp.filas_o_error(:'pub_q') = 1);
+SELECT pg_temp.chk('K2 token incorrecto devuelve CERO filas (anti-enumeración)',
+  pg_temp.filas_o_error(:'pub_qmal') = 0);
+RESET ROLE;
+COMMIT;
+
+-- Anti-enumeración: ningún parámetro de salida expone datos internos
+SELECT pg_temp.chk('K3 la respuesta pública NO expone cedula/correo/costo/tecnico/notas',
+  NOT EXISTS (
+    SELECT 1 FROM information_schema.parameters
+     WHERE specific_schema='public' AND parameter_mode='OUT'
+       AND specific_name IN (SELECT specific_name FROM information_schema.routines
+                              WHERE routine_schema='public' AND routine_name='consultar_registro')
+       AND parameter_name ~* 'documento|email|costo|tecnico|nota|cliente'));
+
+-- Freno de fuerza bruta: 10 fallos en la ventana y la IP queda bloqueada
+INSERT INTO public.consulta_publica_intentos (ip, numero_registro, exito)
+SELECT '10.5.0.9', 'REG-XXXX-000099', FALSE FROM generate_series(1,10);
+SELECT set_config('request.headers', '{"x-forwarded-for":"10.5.0.9"}', false);
+SELECT pg_temp.chk('K4 la consulta desde una IP bloqueada se rechaza con 53400',
+  pg_temp.error_estado('SELECT * FROM public.consultar_registro(''REG-XXXX-000099'',''tok-consulta'')') = '53400');
+SELECT pg_temp.chk('K5 el intento fallido quedó registrado en la bitácora',
+  (SELECT count(*)>=2 FROM public.consulta_publica_intentos WHERE NOT exito));
