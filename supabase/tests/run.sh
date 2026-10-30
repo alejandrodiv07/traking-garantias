@@ -99,9 +99,14 @@ for f in "${pruebas[@]}"; do
   fi
   pasa=$(printf '%s\n' "$contenido" | grep -c 'NOTICE: *PASA' || true)
   falla=$(printf '%s\n' "$contenido" | grep -c -F '*FALLA*' || true)
+  # Una prueba que revienta por un objeto inexistente (p. ej. la función aún no
+  # existe) nunca imprime *FALLA*: sin esto quedaría en verde.
+  rotas=$(printf '%s\n' "$contenido" | grep -cE 'ERROR:  (function|relation|column|type) .* does not exist' || true)
+  falla=$((falla + rotas))
   printf '%-34s · PASA %3d · FALLA %3d\n' "$nombre" "$pasa" "$falla"
   if [ "$falla" -gt 0 ]; then
-    printf '%s\n' "$contenido" | grep -F '*FALLA*' | sed 's/^/      /'
+    printf '%s\n' "$contenido" | grep -F '*FALLA*' | sed 's/^/      /' || true
+    printf '%s\n' "$contenido" | grep -E 'ERROR:  (function|relation|column|type) .* does not exist' | sed 's/^/      /' || true
   fi
   if [ "$pasa" -eq 0 ] || [ "$falla" -gt 0 ]; then
     salida=1

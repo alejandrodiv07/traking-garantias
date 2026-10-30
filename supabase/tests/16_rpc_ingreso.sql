@@ -177,3 +177,87 @@ SELECT pg_temp.chk('X2 usuario sin perfil rechazado (42501)',
        (SELECT id FROM public.clientes LIMIT 1), 'Falla', NULL, NULL,NULL,NULL,NULL,NULL,NULL,NULL)$$) ~ 'Su rol');
 SELECT pg_temp.chk('X3 buscar_equipo también exige sesión interna',
   pg_temp.mensaje('anon', $$SELECT 1 FROM public.buscar_equipo('RT5-8842-AA')$$) ~ 'permission denied');
+
+-- ============ IDEMPOTENCIA (clave de envío) ============
+-- Un doble clic o un reintento tras un timeout manda la MISMA clave: debe
+-- devolver el registro original, no crear otro. El token en claro solo
+-- existe en la primera respuesta (la base guarda únicamente el hash).
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
+CREATE TEMP TABLE t_k1 AS
+SELECT * FROM public.registrar_ingreso(
+    'IDEM-001', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
+    'No enciende', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+CREATE TEMP TABLE t_k2 AS
+SELECT * FROM public.registrar_ingreso(
+    'IDEM-001', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
+    'No enciende', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+COMMIT;
+RESET ROLE;
+SELECT pg_temp.chk('K1 misma clave dos veces: el MISMO registro',
+  (SELECT k1.registro_id = k2.registro_id AND k1.numero_registro = k2.numero_registro
+     FROM t_k1 k1, t_k2 k2));
+SELECT pg_temp.chk('K2 la repetición no crea otro registro ni otra revisión',
+  (SELECT count(*) FROM public.registros WHERE id = (SELECT registro_id FROM t_k1)) = 1
+  AND (SELECT count(*) FROM public.registros r JOIN public.equipos e ON e.id = r.equipo_id
+        WHERE e.numero_serie = 'IDEM-001') = 1
+  AND (SELECT count(*) FROM public.revisiones WHERE registro_id = (SELECT registro_id FROM t_k1)) = 1);
+SELECT pg_temp.chk('K3 la primera respuesta trae el token; la repetición NO (solo existe el hash)',
+  (SELECT length(consulta_token) = 32 FROM t_k1) AND (SELECT consulta_token IS NULL FROM t_k2));
+SELECT pg_temp.chk('K4 la repetición conserva cobertura y equipo del original',
+  (SELECT k1.equipo_id = k2.equipo_id AND k1.cobertura = k2.cobertura AND NOT k2.equipo_nuevo
+     FROM t_k1 k1, t_k2 k2));
+
+-- Otra clave = otro envío legítimo (p. ej. un segundo ingreso del mismo equipo)
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
+CREATE TEMP TABLE t_k3 AS
+SELECT * FROM public.registrar_ingreso(
+    'IDEM-001', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
+    'Otra falla distinta', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+COMMIT;
+RESET ROLE;
+SELECT pg_temp.chk('K5 clave distinta: registro nuevo',
+  (SELECT k3.registro_id <> k1.registro_id FROM t_k3 k3, t_k1 k1));
+
+-- La clave pertenece a quien la usó: otro usuario con la misma clave NO recibe el registro ajeno
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
+CREATE TEMP TABLE t_k4 AS
+SELECT * FROM public.registrar_ingreso(
+    'IDEM-001', pg_temp.producto_id(), (SELECT id FROM public.clientes LIMIT 1),
+    'Falla del admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+COMMIT;
+RESET ROLE;
+SELECT pg_temp.chk('K6 la misma clave de OTRO usuario crea su propio registro (no filtra el ajeno)',
+  (SELECT k4.registro_id <> k1.registro_id FROM t_k4 k4, t_k1 k1)
+  AND (SELECT creado_por = '11111111-1111-1111-1111-111111111111'
+         FROM public.registros WHERE id = (SELECT registro_id FROM t_k4)));
+
+-- Sin clave (NULL) se conserva el comportamiento anterior: cada llamada es un registro
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
+CREATE TEMP TABLE t_n1 AS
+SELECT * FROM public.registrar_ingreso(
+    'IDEM-NULL', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
+    'Sin clave uno', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+CREATE TEMP TABLE t_n2 AS
+SELECT * FROM public.registrar_ingreso(
+    'IDEM-NULL', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
+    'Sin clave dos', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+COMMIT;
+RESET ROLE;
+SELECT pg_temp.chk('K7 sin clave: dos llamadas = dos registros (compatibilidad)',
+  (SELECT n1.registro_id <> n2.registro_id FROM t_n1 n1, t_n2 n2));
