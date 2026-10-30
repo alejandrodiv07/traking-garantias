@@ -217,9 +217,12 @@ GRANT SELECT ON public.historial_registros TO authenticated;
 GRANT SELECT, INSERT ON public.notas_internas TO authenticated;
 -- Sin DELETE en ninguna tabla, para ningún rol de aplicación.
 
--- Los cuatro roles internos leen todo el tablero (taller de 4 personas).
+-- Los cuatro roles internos leen todo el tablero (taller de 4 personas);
+-- un autenticado sin perfil (mi_rol() NULL) no ve nada, igual que en
+-- equipos/revisiones/ajustes/adjuntos.
 CREATE POLICY reg_select ON public.registros
-    FOR SELECT TO authenticated USING (TRUE);
+    FOR SELECT TO authenticated
+    USING (public.mi_rol() IN ('ADMIN', 'JEFE_SERVICIO', 'TECNICO', 'RECEPCION'));
 
 -- Un TECNICO solo modifica lo que tiene asignado, y no puede reasignarlo
 -- ni a sí mismo ni a otro; y solo lo abierto.
@@ -250,10 +253,12 @@ CREATE POLICY reg_update_recepcion ON public.registros
 -- Sin policy de DELETE: se anula, no se borra.
 
 CREATE POLICY hist_registros_select ON public.historial_registros
-    FOR SELECT TO authenticated USING (TRUE);
+    FOR SELECT TO authenticated
+    USING (public.mi_rol() IN ('ADMIN', 'JEFE_SERVICIO', 'TECNICO', 'RECEPCION'));
 
 CREATE POLICY notasRegistro_select ON public.notas_internas
-    FOR SELECT TO authenticated USING (TRUE);
+    FOR SELECT TO authenticated
+    USING (public.mi_rol() IN ('ADMIN', 'JEFE_SERVICIO', 'TECNICO', 'RECEPCION'));
 CREATE POLICY notasRegistro_insert ON public.notas_internas
     FOR INSERT TO authenticated WITH CHECK (autor_id = auth.uid());
 -- ---------------------------------------------------------------------

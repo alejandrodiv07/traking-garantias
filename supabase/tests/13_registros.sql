@@ -212,6 +212,37 @@ SELECT t.col, pg_temp.error_msg('22222222-2222-2222-2222-222222222222',
 SELECT pg_temp.chk('P5 las columnas criticas rechazan el UPDATE del TECNICO (permission denied)',
   (SELECT bool_and(err ~* 'permission denied') FROM p5));
 
+-- ============ P6: SIN PERFIL NO VE NADA ============
+-- Un autenticado SIN perfil (mi_rol() NULL) nació viendo todo el tablero
+-- con las policies USING (TRUE). Ahora las tres exigen rol interno.
+-- Usuario fantasma: lo creamos y retiramos su perfil (sin perfil no hay
+-- mfa, así que mi_rol() queda NULL por partida doble).
+INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
+ ('44444444-4444-4444-4444-444444444444','fantasma@x.com','{}'::jsonb);
+DELETE FROM public.profiles WHERE email='fantasma@x.com';
+
+-- Ejecuta un SELECT count(*), en la sesión del usuario dado.
+CREATE FUNCTION pg_temp.filas(uid text, sql text) RETURNS bigint
+LANGUAGE plpgsql AS $$
+DECLARE n bigint;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', uid, TRUE);
+  PERFORM set_config('request.jwt.claim.session_id', uid, TRUE);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    EXECUTE sql INTO n;
+  EXCEPTION WHEN OTHERS THEN
+    EXECUTE 'RESET ROLE'; RETURN -1;
+  END;
+  EXECUTE 'RESET ROLE';
+  RETURN n;
+END $$;
+
+SELECT pg_temp.chk('P6 un usuario SIN perfil no ve registros, historial ni notas (RLS)',
+  pg_temp.filas('44444444-4444-4444-4444-444444444444', 'SELECT count(*) FROM public.registros') = 0
+  AND pg_temp.filas('44444444-4444-4444-4444-444444444444', 'SELECT count(*) FROM public.historial_registros') = 0
+  AND pg_temp.filas('44444444-4444-4444-4444-444444444444', 'SELECT count(*) FROM public.notas_internas') = 0);
+
 -- ============ CONSULTA PÚBLICA: consultar_registro (Tarea 8) ============
 -- Portados de los casos T11 del 99 anterior (consultar_garantia).
 -- Las aserciones van envueltas en helpers que CONSERVAN el estado del
