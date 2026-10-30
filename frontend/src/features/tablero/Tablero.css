@@ -25,51 +25,41 @@
 }
 
 .tg {
-  /* ---- superficies y texto ---- */
-  --tg-bg: #faf9f5;
-  --tg-surface: #ffffff;
-  --tg-surface-2: #fdfcfa;
-  --tg-border: rgba(15, 12, 8, 0.1);
-  --tg-border-soft: rgba(15, 12, 8, 0.06);
-  --tg-text: rgba(15, 12, 8, 0.92);
-  --tg-text-2: rgba(15, 12, 8, 0.64);
-  /* 0.60 y no 0.52: sobre el crema del fondo, un 52 % da ~3,8:1 y se usa en
-     textos de 11,5-13 px (cabeceras de KPI, seriales, pie de tabla). Con 0.60
-     sube a ~5:1 y cumple AA sin cambiar el tono gris del diseño. */
-  --tg-text-3: rgba(15, 12, 8, 0.6);
-
-  /* ---- acento (mismo que el login) ---- */
-  --tg-accent: #d97757;
-  /* #d97757 sobre blanco da ~3.1:1: vale para bordes e iconos, NO para texto.
-     Para texto se usa la variante oscurecida, que sí cumple AA (~4.6:1). */
-  --tg-accent-text: #b85c3f;
-  --tg-accent-text-hover: #9c4c34;
-  --tg-accent-bg: rgba(217, 119, 87, 0.12);
-
-  /* ---- casi-negro: CTA principal y barra lateral ---- */
-  --tg-cta: #191915;
-  --tg-cta-hover: #2b2b26;
-
-  /* ---- cuatro tonos de estado. No diez: el operador distingue "en curso"
-     de "terminado" de un vistazo; el nombre exacto lo lee en la etiqueta. ---- */
-  --tg-neutro-bg: #f1efe9;
-  --tg-neutro-fg: #5f584d;
-  --tg-neutro-dot: #a8a096;
-  --tg-progreso-bg: #fbf0e2;
-  --tg-progreso-fg: #8a5a12;
-  --tg-progreso-dot: #c98a2e;
-  --tg-resuelto-bg: #e9f0e8;
-  --tg-resuelto-fg: #3f6b46;
-  --tg-resuelto-dot: #5c8f66;
-  --tg-adverso-bg: #fbecee;
-  --tg-adverso-fg: #a63244;
-  --tg-adverso-dot: #c25a68;
-
-  --tg-shadow-card: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
-  --tg-shadow-flotante: 0 12px 32px rgba(20, 20, 19, 0.14);
-  --tg-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  --tg-radio: 14px;
-  --tg-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Los valores viven en styles/tokens.css (claro y oscuro); aquí solo los alias. */
+  --tg-bg: var(--c-bg);
+  --tg-surface: var(--c-surface);
+  --tg-surface-2: var(--c-surface-2);
+  --tg-border: var(--c-border);
+  --tg-border-soft: var(--c-border-soft);
+  --tg-border-hover: var(--c-border-hover);
+  --tg-text: var(--c-text);
+  --tg-text-2: var(--c-text-2);
+  --tg-text-3: var(--c-text-3);
+  --tg-accent: var(--c-accent);
+  --tg-accent-text: var(--c-accent-text);
+  --tg-accent-text-hover: var(--c-accent-text-hover);
+  --tg-accent-bg: var(--c-accent-bg);
+  --tg-cta: var(--c-cta);
+  --tg-cta-hover: var(--c-cta-hover);
+  --tg-cta-fg: var(--c-cta-fg);
+  --tg-inverso: var(--c-inverso);
+  --tg-neutro-bg: var(--c-neutro-bg);
+  --tg-neutro-fg: var(--c-neutro-fg);
+  --tg-neutro-dot: var(--c-neutro-dot);
+  --tg-progreso-bg: var(--c-progreso-bg);
+  --tg-progreso-fg: var(--c-progreso-fg);
+  --tg-progreso-dot: var(--c-progreso-dot);
+  --tg-resuelto-bg: var(--c-resuelto-bg);
+  --tg-resuelto-fg: var(--c-resuelto-fg);
+  --tg-resuelto-dot: var(--c-resuelto-dot);
+  --tg-adverso-bg: var(--c-adverso-bg);
+  --tg-adverso-fg: var(--c-adverso-fg);
+  --tg-adverso-dot: var(--c-adverso-dot);
+  --tg-shadow-card: var(--c-shadow-card);
+  --tg-shadow-flotante: var(--c-shadow-flotante);
+  --tg-ease: var(--c-ease);
+  --tg-radio: var(--c-radio);
+  --tg-mono: var(--c-mono);
 
   min-height: 100dvh;
   display: flex;
@@ -97,7 +87,7 @@
 .tg-rail {
   width: 64px;
   flex: none;
-  background: var(--tg-cta);
+  background: var(--tg-inverso);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,7 +187,7 @@
   left: 100%;
   top: 50%;
   margin-left: 12px;
-  background: var(--tg-cta);
+  background: var(--tg-inverso);
   color: #faf9f5;
   font-size: 12.5px;
   font-weight: 600;
@@ -341,7 +331,7 @@
 
 .tg-btn--principal {
   background: var(--tg-cta);
-  color: #faf9f5;
+  color: var(--tg-cta-fg);
 }
 
 .tg-btn--principal:hover {
@@ -356,7 +346,7 @@
 
 .tg-btn--suave:hover {
   background: var(--tg-surface-2);
-  border-color: rgba(15, 12, 8, 0.2);
+  border-color: var(--tg-border-hover);
 }
 
 .tg-btn--ancho {
@@ -547,7 +537,7 @@
 }
 
 .tg-input:hover {
-  border-color: rgba(15, 12, 8, 0.2);
+  border-color: var(--tg-border-hover);
 }
 
 .tg-input:focus {
@@ -603,14 +593,14 @@
 }
 
 .tg-chip:hover {
-  border-color: rgba(15, 12, 8, 0.22);
+  border-color: var(--tg-border-hover);
   color: var(--tg-text);
 }
 
 .tg-chip[aria-pressed="true"] {
   background: var(--tg-cta);
   border-color: var(--tg-cta);
-  color: #faf9f5;
+  color: var(--tg-cta-fg);
 }
 
 .tg-chip-cuenta {
@@ -812,7 +802,7 @@
   bottom: 24px;
   transform: translateX(-50%);
   z-index: 100;
-  background: var(--tg-cta);
+  background: var(--tg-inverso);
   color: #faf9f5;
   font-size: 13.5px;
   font-weight: 500;

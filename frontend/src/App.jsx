@@ -11,7 +11,6 @@ import RutaProtegida, { PantallaCargando } from "./features/auth/RutaProtegida.j
 import LoginPage from "./features/auth/LoginPage.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
-import "./App.css";
 import "./features/auth/estado.css";
 
 export default function App() {

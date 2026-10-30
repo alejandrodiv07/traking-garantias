@@ -3,36 +3,34 @@
   /* --- paleta: tokens del sistema (canvas "Prime Telecom — Garantias"),
      un unico acento (terracota) reservado para foco/enlaces; el CTA
      principal usa el casi-negro para maxima seriedad y contraste. --- */
-  --pt-bg-app:#faf9f5;
-  --pt-bg-surface:#ffffff;
-  --pt-border-subtle:rgba(15,12,8,.08);
-  --pt-border-card:rgba(15,12,8,.12);
-  --pt-border-strong:rgba(15,12,8,.22);
-  --pt-border-focus:rgba(15,12,8,.36);
-  --pt-text-primary:rgba(15,12,8,.92);
-  --pt-text-secondary:rgba(15,12,8,.64);
-  --pt-text-tertiary:rgba(15,12,8,.6);
-  --pt-text-inverse:#faf9f5;
-  --pt-accent:#d97757;
-  --pt-accent-hover:#c46a4d;
-  --pt-accent-active:#b05e43;
-  --pt-accent-bg:rgba(217,119,87,.12);
-  --pt-accent-tint:rgba(217,119,87,.04);
-  /* Solo para TEXTO sobre blanco: #d97757 da ~3.1:1, insuficiente para
-     texto normal (WCAG AA exige 4.5:1). Estas dos si lo cumplen (~4.5:1
-     y ~6:1) sin cambiar de matiz. */
-  --pt-accent-text:#b85c3f;
-  --pt-accent-text-hover:#9c4c34;
-  --pt-cta:#191915;
-  --pt-cta-hover:#2b2b26;
-  --pt-cta-active:#0f0c08;
-  --pt-error:#a63244;
-  --pt-error-bg:rgba(166,50,68,.05);
-  --pt-info:#2a78d6;
-  --pt-info-bg:rgba(42,120,214,.1);
-  --pt-shadow-sm:0 1px 3px rgba(20,20,19,.06);
-  --pt-shadow-card:0 18px 44px rgba(20,20,19,.1),0 3px 10px rgba(20,20,19,.05);
-  --pt-ease:cubic-bezier(.23,1,.32,1);
+  /* Los valores viven en styles/tokens.css (claro y oscuro); aquí solo los alias. */
+  --pt-bg-app:var(--c-bg);
+  --pt-bg-surface:var(--c-surface);
+  --pt-border-subtle:var(--c-border-soft);
+  --pt-border-card:var(--c-border);
+  --pt-border-strong:var(--c-border-hover);
+  --pt-border-focus:var(--c-field-border-hover);
+  --pt-text-primary:var(--c-text);
+  --pt-text-secondary:var(--c-text-2);
+  --pt-text-tertiary:var(--c-text-3);
+  --pt-text-inverse:var(--c-cta-fg);
+  --pt-accent:var(--c-accent);
+  --pt-accent-hover:var(--c-accent-text);
+  --pt-accent-active:var(--c-accent-text-hover);
+  --pt-accent-bg:var(--c-accent-bg);
+  --pt-accent-tint:var(--c-accent-bg);
+  --pt-accent-text:var(--c-accent-text);
+  --pt-accent-text-hover:var(--c-accent-text-hover);
+  --pt-cta:var(--c-cta);
+  --pt-cta-hover:var(--c-cta-hover);
+  --pt-cta-active:var(--c-cta-hover);
+  --pt-error:var(--c-error);
+  --pt-error-bg:var(--c-error-bg);
+  --pt-info:var(--c-info);
+  --pt-info-bg:var(--c-info-bg);
+  --pt-shadow-sm:var(--c-shadow-card);
+  --pt-shadow-card:var(--c-shadow-card-grande);
+  --pt-ease:var(--c-ease);
 
   min-height:100vh;min-height:100dvh;width:100%;
   display:flex;align-items:center;justify-content:center;
@@ -66,22 +64,22 @@
 .pt-fldwrap{position:relative}
 .pt-fldicon{
   position:absolute;left:14px;top:50%;transform:translateY(-50%);
-  color:#a8a29a;pointer-events:none;transition:color .18s var(--pt-ease);
+  color:var(--c-placeholder);pointer-events:none;transition:color .18s var(--pt-ease);
 }
 .pt-fldwrap:focus-within .pt-fldicon{color:var(--pt-accent)}
 .pt-fld{
   font-family:inherit;font-size:14px;
-  border:1px solid #e5e2da;border-radius:10px;height:46px;
+  border:1px solid var(--c-field-border);border-radius:10px;height:46px;
   padding:0 14px 0 40px;width:100%;
-  background:#fbfaf7;color:var(--pt-text-primary);
+  background:var(--c-field-bg);color:var(--pt-text-primary);
   transition:border-color .18s var(--pt-ease),background-color .18s var(--pt-ease),box-shadow .18s var(--pt-ease);
 }
-.pt-fld::placeholder{color:#a8a29a}
-.pt-fld:hover{border-color:#d6d2c6}
-.pt-fld:focus{outline:none;border-color:var(--pt-accent);background:#fff;box-shadow:0 0 0 3px var(--pt-accent-bg)}
+.pt-fld::placeholder{color:var(--c-placeholder)}
+.pt-fld:hover{border-color:var(--c-field-border-hover)}
+.pt-fld:focus{outline:none;border-color:var(--pt-accent);background:var(--c-surface);box-shadow:0 0 0 3px var(--pt-accent-bg)}
 .pt-fld:disabled{opacity:.6;cursor:not-allowed}
 .pt-fld.pt-haspwtoggle{padding-right:64px}
-.pt-fld[aria-invalid="true"]{border-color:#d99b96}
+.pt-fld[aria-invalid="true"]{border-color:var(--c-invalid-border)}
 .pt-fld[aria-invalid="true"]:focus{border-color:var(--pt-error);box-shadow:0 0 0 3px var(--pt-error-bg)}
 
 .pt-pwtoggle{
@@ -95,7 +93,7 @@
 .pt-pwtoggle:hover{color:var(--pt-accent-text-hover)}
 .pt-pwtoggle:focus-visible{outline:none;box-shadow:0 0 0 2px var(--pt-accent-bg);border-radius:4px}
 
-.pt-helper{font-size:11.5px;color:#94a3b8;margin-top:6px;line-height:1.4}
+.pt-helper{font-size:11.5px;color:var(--c-text-3);margin-top:6px;line-height:1.4}
 .pt-helper.pt-helper-err{color:var(--pt-error)}
 
 .pt-link{
@@ -124,14 +122,14 @@
 
 .pt-spinner{
   width:14px;height:14px;flex:none;border-radius:50%;
-  border:2px solid rgba(250,249,245,.35);border-top-color:var(--pt-text-inverse);
+  border:2px solid color-mix(in srgb, var(--pt-text-inverse) 35%, transparent);border-top-color:var(--pt-text-inverse);
   animation:pt-spin .6s linear infinite;
 }
 @keyframes pt-spin{to{transform:rotate(360deg)}}
 
 /* ---- caja de soporte ---- */
 .pt-support{
-  width:100%;margin-top:14px;background:#fdfcfa;
+  width:100%;margin-top:14px;background:var(--c-surface-2);
   border:1px solid var(--pt-border-subtle);border-radius:14px;
   padding:14px 18px;text-align:center;
 }
@@ -143,7 +141,7 @@
 .pt-statebox .pt-stitle{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin-bottom:4px}
 .pt-statebox .pt-stitle svg{flex:none}
 .pt-statebox .pt-sbody{font-size:12px;line-height:1.5}
-.pt-statebox.pt-err{background:var(--pt-error-bg);border:1px solid rgba(166,50,68,.14)}
+.pt-statebox.pt-err{background:var(--pt-error-bg);border:1px solid var(--c-error-border)}
 .pt-statebox.pt-err .pt-stitle,.pt-statebox.pt-err svg{color:var(--pt-error)}
 .pt-statebox.pt-err .pt-sbody{color:var(--pt-error);opacity:.85}
 .pt-statebox.pt-info{background:var(--pt-info-bg);border:1px solid rgba(42,120,214,.14)}
@@ -210,16 +208,16 @@
   font-family:inherit;font-size:26px;font-weight:600;
   letter-spacing:14px;text-indent:14px;text-align:center;
   font-variant-numeric:tabular-nums;
-  border:1px solid #e5e2da;border-radius:12px;height:60px;
+  border:1px solid var(--c-field-border);border-radius:12px;height:60px;
   width:100%;padding:0;
-  background:#fbfaf7;color:var(--pt-text-primary);
+  background:var(--c-field-bg);color:var(--pt-text-primary);
   transition:border-color .18s var(--pt-ease),background-color .18s var(--pt-ease),box-shadow .18s var(--pt-ease);
 }
-.pt-otp::placeholder{color:#d6d2c6;font-size:22px}
-.pt-otp:hover{border-color:#d6d2c6}
-.pt-otp:focus{outline:none;border-color:var(--pt-accent);background:#fff;box-shadow:0 0 0 3px var(--pt-accent-bg)}
+.pt-otp::placeholder{color:var(--c-placeholder);font-size:22px}
+.pt-otp:hover{border-color:var(--c-field-border-hover)}
+.pt-otp:focus{outline:none;border-color:var(--pt-accent);background:var(--c-surface);box-shadow:0 0 0 3px var(--pt-accent-bg)}
 .pt-otp:disabled{opacity:.6;cursor:not-allowed}
-.pt-otp[aria-invalid="true"]{border-color:#d99b96}
+.pt-otp[aria-invalid="true"]{border-color:var(--c-invalid-border)}
 .pt-otp[aria-invalid="true"]:focus{border-color:var(--pt-error);box-shadow:0 0 0 3px var(--pt-error-bg)}
 
 .pt-resend{

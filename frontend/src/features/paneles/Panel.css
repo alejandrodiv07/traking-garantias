@@ -3,10 +3,10 @@
    pueda ser `style-src 'self'` sin `unsafe-inline`. */
 .pn-pagina {
   min-height: 100dvh;
-  background: #f7f5f0;
+  background: var(--c-bg);
   padding: 40px 24px;
   font: 400 15px/1.6 'Inter', system-ui, -apple-system, sans-serif;
-  color: #0f172a;
+  color: var(--c-text);
 }
 
 .pn-cabecera {
@@ -24,7 +24,7 @@
   font-size: 12.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #b45309;
+  color: var(--c-progreso-fg);
   font-weight: 600;
 }
 
@@ -36,20 +36,20 @@
 }
 
 .pn-boton {
-  border: 1px solid #d6d3cc;
-  background: #fff;
+  border: 1px solid var(--c-field-border);
+  background: var(--c-surface);
   border-radius: 10px;
   padding: 9px 16px;
   font: 600 14px/1 inherit;
   cursor: pointer;
-  color: #0f172a;
+  color: var(--c-text);
 }
 
 .pn-tarjeta {
   max-width: 720px;
   margin: 0 auto;
-  background: #fff;
-  border: 1px solid #e7e4dd;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: 20px;
   padding: 8px;
 }
@@ -59,11 +59,11 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px 16px;
-  border-bottom: 1px solid #f1efe9;
+  border-bottom: 1px solid var(--c-border-soft);
 }
 
 .pn-etiqueta {
-  color: #64748b;
+  color: var(--c-text-2);
   font-size: 14px;
 }
 
@@ -76,6 +76,6 @@
 .pn-nota {
   max-width: 720px;
   margin: 20px auto 0;
-  color: #64748b;
+  color: var(--c-text-2);
   font-size: 13.5px;
 }

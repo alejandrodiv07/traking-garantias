@@ -1,0 +1,134 @@
+/* ===========================================================================
+   Tokens de diseño — ÚNICA fuente de color del producto (claro y oscuro).
+   Login (--pt-*), Tablero (--tg-*), asistente (.nr) y revisiones (.rv) leen de
+   aquí. Cambiar un color se hace en este archivo y solo en este archivo.
+
+   Registro: herramienta interna de taller. Papel crema, tinta casi negra y un
+   único acento terracota. El oscuro conserva el mismo tono cálido.
+   Contraste (WCAG AA): texto >= 4,5:1; bordes de campo y semáforo >= 3:1.
+   =========================================================================== */
+
+:root {
+  --c-bg: #faf9f5;
+  --c-surface: #ffffff;
+  --c-surface-2: #fdfcfa;
+  --c-field-bg: #fbfaf7;
+  --c-border: rgba(15, 12, 8, 0.1);
+  --c-border-soft: rgba(15, 12, 8, 0.06);
+  --c-border-hover: rgba(15, 12, 8, 0.22);
+  /* Borde de un campo de formulario: >= 3:1 sobre la superficie (WCAG 1.4.11) */
+  --c-field-border: #8a857a;
+  --c-field-border-hover: #5f584d;
+  --c-placeholder: #6e695e;
+  --c-text: rgba(15, 12, 8, 0.92);
+  --c-text-2: rgba(15, 12, 8, 0.64);
+  --c-text-3: rgba(15, 12, 8, 0.6);
+
+  /* #d97757 sobre blanco da ~3,1:1: vale para bordes e iconos, NO para texto.
+     Para texto se usa la variante oscurecida (~4,6:1). */
+  --c-accent: #d97757;
+  --c-accent-text: #b85c3f;
+  --c-accent-text-hover: #9c4c34;
+  --c-accent-bg: rgba(217, 119, 87, 0.12);
+
+  /* CTA principal y su texto; "inverso" = superficie siempre oscura (barra lateral) */
+  --c-cta: #191915;
+  --c-cta-hover: #2b2b26;
+  --c-cta-fg: #faf9f5;
+  --c-inverso: #191915;
+
+  /* Cuatro tonos de estado: neutro, en curso, resuelto, adverso. */
+  --c-neutro-bg: #f1efe9;
+  --c-neutro-fg: #5f584d;
+  --c-neutro-dot: #a8a096;
+  --c-progreso-bg: #fbf0e2;
+  --c-progreso-fg: #8a5a12;
+  --c-progreso-dot: #c98a2e;
+  --c-resuelto-bg: #e9f0e8;
+  --c-resuelto-fg: #3f6b46;
+  --c-resuelto-dot: #5c8f66;
+  --c-adverso-bg: #fbecee;
+  --c-adverso-fg: #a63244;
+  --c-adverso-dot: #c25a68;
+
+  --c-error: #a63244;
+  --c-error-bg: rgba(166, 50, 68, 0.06);
+  --c-error-border: rgba(166, 50, 68, 0.22);
+  --c-invalid-border: #b4414f;
+  --c-info: #2a78d6;
+  --c-info-bg: rgba(42, 120, 214, 0.1);
+
+  --c-shadow-card: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
+  --c-shadow-card-grande: 0 18px 44px rgba(20, 20, 19, 0.1), 0 3px 10px rgba(20, 20, 19, 0.05);
+  --c-shadow-flotante: 0 12px 32px rgba(20, 20, 19, 0.14);
+  --c-fondo-modal: rgba(20, 18, 14, 0.42);
+
+  --c-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --c-radio: 14px;
+  --c-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #16150f;
+    --c-surface: #201e19;
+    --c-surface-2: #1b1a15;
+    --c-field-bg: #1a1914;
+    --c-border: rgba(250, 249, 245, 0.13);
+    --c-border-soft: rgba(250, 249, 245, 0.07);
+    --c-border-hover: rgba(250, 249, 245, 0.28);
+    --c-field-border: #8f897d;
+    --c-field-border-hover: #c2bcae;
+    --c-placeholder: #8f897d;
+    --c-text: rgba(250, 249, 245, 0.93);
+    --c-text-2: rgba(250, 249, 245, 0.7);
+    --c-text-3: rgba(250, 249, 245, 0.64);
+
+    --c-accent: #e0896b;
+    --c-accent-text: #f0a287;
+    --c-accent-text-hover: #f6bba6;
+    --c-accent-bg: rgba(224, 137, 107, 0.16);
+
+    --c-cta: #ece9e1;
+    --c-cta-hover: #ffffff;
+    --c-cta-fg: #191915;
+    --c-inverso: #0d0c09;
+
+    --c-neutro-bg: #2a2822;
+    --c-neutro-fg: #cfc9bb;
+    --c-neutro-dot: #8d8679;
+    --c-progreso-bg: #3a2c14;
+    --c-progreso-fg: #f0c27a;
+    --c-progreso-dot: #d99a3a;
+    --c-resuelto-bg: #1f3023;
+    --c-resuelto-fg: #94cf9f;
+    --c-resuelto-dot: #6aa575;
+    --c-adverso-bg: #3a1c22;
+    --c-adverso-fg: #f4a3b0;
+    --c-adverso-dot: #d4707f;
+
+    --c-error: #f29aa8;
+    --c-error-bg: rgba(242, 154, 168, 0.1);
+    --c-error-border: rgba(242, 154, 168, 0.3);
+    --c-invalid-border: #e0818f;
+    --c-info: #7ab2f2;
+    --c-info-bg: rgba(122, 178, 242, 0.13);
+
+    --c-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --c-shadow-card-grande: 0 18px 44px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(0, 0, 0, 0.3);
+    --c-shadow-flotante: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --c-fondo-modal: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Foco visible en TODO el producto. Se sustituye, nunca se quita: el contorno
+   transparente sigue pintándose en el modo de alto contraste de Windows. */
+:focus-visible {
+  outline: 2px solid var(--c-cta);
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+}
