@@ -2,9 +2,6 @@
 // Los dos tiempos por separado, cada uno con su color: los días que le
 // quedan a la GARANTÍA y los que lleva el equipo EN EL TALLER (SLA). Una
 // fila sin fecha de vencimiento dice "Sin factura", no un guion.
-import { useState } from "react";
-import { Search } from "lucide-react";
-
 const TONO = {
   VENCIDA: "tg-nivel--rojo",
   HOY: "tg-nivel--rojo",

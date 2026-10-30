@@ -5,9 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fakes = vi.hoisted(() => ({
   listarTablero: vi.fn(),
+  listarRevisiones: vi.fn(),
+  registrarRevision: vi.fn(),
 }));
 
 vi.mock("./tableroService.js", () => fakes);
+// El borde del feature vecino (revisiones): Tablero lo consume montando
+// HistorialRevisiones/RevisionForm; el servicio es el que se falsifica.
+vi.mock("../revisiones/revisionesService.js", () => fakes);
 vi.mock("../auth/AuthContext.jsx", () => ({
   useAuth: () => ({ perfil: { full_name: "Ada Admin" }, rol: "ADMIN", salir: vi.fn() }),
 }));
@@ -38,6 +43,11 @@ const FILA = (extras = {}) => ({
 
 beforeEach(() => {
   fakes.listarTablero.mockReset().mockResolvedValue({ ok: true, filas: [] });
+  fakes.listarRevisiones.mockReset().mockResolvedValue({ ok: true, datos: [] });
+  fakes.registrarRevision.mockReset().mockResolvedValue({
+    ok: true,
+    datos: { revision_id: "v9", cobertura: "EN_GARANTIA" },
+  });
 });
 
 describe("TablaRegistros", () => {
@@ -56,6 +66,50 @@ describe("TablaRegistros", () => {
     });
     render(<Tablero />);
     await waitFor(() => expect(screen.getByText(/Sin factura/)).toBeTruthy());
+  });
+});
+
+describe("el detalle del registro (Revisiones desde el Tablero)", () => {
+  it("al pulsar Revisar se abre el detalle con el código y las revisiones cargadas", async () => {
+    fakes.listarTablero.mockResolvedValue({ ok: true, filas: [FILA()] });
+    fakes.listarRevisiones.mockResolvedValue({
+      ok: true,
+      datos: [
+        {
+          id: "v1",
+          tipo: "RECEPCION",
+          revisor: { full_name: "Ada Admin" },
+          revisado_en: "2026-09-02T14:00:00+00:00",
+          checklist: {},
+          resultado: "POR_DETERMINAR",
+          observaciones: "Entrada sin factura",
+        },
+      ],
+    });
+    render(<Tablero />);
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Revisar REG-2026-000001" }));
+    const dialogo = screen.getByRole("dialog", { name: /Detalle de REG-2026-000001/ });
+    expect(dialogo).toBeTruthy();
+    // el encabezado identifica al equipo (el serial también aparece en la tabla
+    // y en el panel de vencimientos, por eso se comprueba que exista)
+    expect(screen.getAllByText(/Huawei HG8245/).length >= 1).toBe(true);
+    expect(screen.getAllByText(/RT5-8842-AA/).length >= 1).toBe(true);
+    // las revisiones del registro se piden y se pintan
+    await waitFor(() => expect(screen.getAllByTestId("revision").length >= 1).toBe(true));
+    expect(fakes.listarRevisiones).toHaveBeenCalledWith("r1");
+    // y el formulario de revisión queda montado
+    expect(screen.getByRole("button", { name: /Guardar revisión/ })).toBeTruthy();
+  });
+
+  it("guardar una revisión recarga el listado del tablero", async () => {
+    fakes.listarTablero.mockResolvedValue({ ok: true, filas: [FILA()] });
+    render(<Tablero />);
+    const user = userEvent.setup();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Revisar REG-2026-000001" })).toBeTruthy());
+    expect(fakes.listarTablero).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Revisar REG-2026-000001" }));
+    await user.click(screen.getByRole("button", { name: /Guardar revisión/ }));
+    await waitFor(() => expect(fakes.listarTablero).toHaveBeenCalledTimes(2));
   });
 });
 

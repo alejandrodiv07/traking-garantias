@@ -842,7 +842,176 @@
 }
 
 /* ===========================================================================
-   6. RESPONSIVE
+   6. DETALLE DEL REGISTRO (ventana sobre el tablero)
+   =========================================================================== */
+/* El dialogo es la propia tarjeta fija centrada: sin fondo que tape, la
+   ventana viste todo el contenido (cabecera, ficha y revisiones). */
+.tg-detalle {
+  position: fixed;
+  z-index: 50;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(680px, calc(100vw - 32px));
+  max-height: min(86dvh, 920px);
+  overflow-y: auto;
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  border-radius: var(--tg-radio);
+  box-shadow: var(--tg-shadow-flotante);
+  padding: 22px 24px;
+  animation: tg-abrir 0.18s var(--tg-ease);
+}
+
+@keyframes tg-abrir {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.tg-detalle-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tg-detalle-codigo {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.tg-detalle-sub {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--tg-text-2);
+  overflow-wrap: break-word;
+}
+
+.tg-detalle-sub .tg-mono {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.tg-detalle-datos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 14px;
+  background: var(--tg-surface-2);
+  border: 1px solid var(--tg-border-soft);
+  border-radius: 12px;
+}
+
+.tg-detalle-datos dt {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tg-text-3);
+}
+
+.tg-detalle-datos dd {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.tg-detalle-datos dd .tg-mono {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tg-text-3);
+  display: block;
+}
+
+.tg-detalle section[aria-label="Revisiones del registro"] h3 {
+  margin: 20px 0 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.tg-detalle ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tg-detalle li + li {
+  margin-top: 10px;
+}
+
+.tg-detalle li p {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+}
+
+.tg-detalle fieldset {
+  margin-top: 14px;
+  border: 1px solid var(--tg-border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.tg-detalle legend {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tg-text-3);
+  padding: 0 4px;
+}
+
+.tg-detalle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.tg-detalle textarea {
+  font: 400 14px/1.5 inherit;
+  font-family: inherit;
+  width: 100%;
+  margin-top: 4px;
+  min-height: 72px;
+  border: 1px solid var(--tg-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--tg-surface);
+  color: var(--tg-text);
+  resize: vertical;
+}
+
+.tg-detalle textarea:focus {
+  outline: none;
+  border-color: var(--tg-accent);
+  box-shadow: 0 0 0 3px var(--tg-accent-bg);
+}
+
+@media (max-width: 560px) {
+  .tg-detalle {
+    top: auto;
+    left: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0;
+    padding: 18px 16px;
+  }
+
+  .tg-detalle-datos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================================================================
+   7. RESPONSIVE
    =========================================================================== */
 
 /* El panel lateral deja de caber al lado: pasa debajo, no se encoge hasta

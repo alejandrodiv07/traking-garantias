@@ -126,7 +126,7 @@ Leyenda: ✅ real y conectado · 🟡 parcial / maqueta / sin UI · ❌ no exist
 | Pantalla | Estado | Nota |
 |---|---|---|
 | Login | ✅ | |
-| Tablero ADMIN (KPIs, tabla, vencimientos, filtros, búsqueda) | 🟡 | **Todo sale de `datosDemo.js`.** El filtrado y la búsqueda son en memoria. 3 botones sin acción (`avisar(...)`) |
+| Tablero ADMIN (tabla, filtros, búsqueda, vencimientos) | 🟢 | Datos reales de `v_tablero`; filtrado y búsqueda del lado de la base. El botón "Revisar" (rol ≠ Recepción) abre el detalle con **Revisiones** (historial + formulario, RPC `registrar_revision` reales); al guardar, el tablero se recarga |
 | Panel Jefe de servicio (`/jefe`) | 🟡 | `Panel.jsx` provisional |
 | Panel Técnico (`/tecnico`) | 🟡 | `Panel.jsx` provisional |
 | Panel Recepción (`/recepcion`) | 🟡 | `Panel.jsx` provisional |

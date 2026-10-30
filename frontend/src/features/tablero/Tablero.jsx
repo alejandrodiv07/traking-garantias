@@ -4,12 +4,13 @@
  * (urgencia combinada de vigencia y SLA); ya no hay datos de demostración.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, LogOut, Plus, Search, X } from "lucide-react";
+import { LogOut, Plus, Search, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import BarraLateral from "./componentes/BarraLateral.jsx";
 import TablaRegistros from "./componentes/TablaRegistros.jsx";
 import PanelVencimientos from "./componentes/PanelVencimientos.jsx";
 import NuevoRegistro from "../registro/NuevoRegistro.jsx";
+import DetalleRegistro from "./componentes/DetalleRegistro.jsx";
 import { estaAbierta } from "./dominio.js";
 import { listarTablero } from "./tableroService.js";
 import "./Tablero.css";
@@ -33,6 +34,7 @@ export default function Tablero() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [asistenteAbierto, setAsistenteAbierto] = useState(false);
+  const [detalle, setDetalle] = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -199,6 +201,7 @@ export default function Tablero() {
                 <TablaRegistros
                   filas={filas}
                   rol={rol}
+                  onRevisar={setDetalle}
                 />
               )}
             </section>
@@ -216,6 +219,18 @@ export default function Tablero() {
             setAsistenteAbierto(false);
             cargar();
           }}
+        />
+      )}
+
+      {detalle && (
+        <DetalleRegistro
+          fila={detalle}
+          rol={rol}
+          onCerrar={() => setDetalle(null)}
+          // Guardar una revisión puede cambiar la cobertura: el listado se
+          // recarga. El botón "Revisar" solo existe para rol ≠ RECEPCION,
+          // TablaRegistros ya lo filtra.
+          onRegistrada={cargar}
         />
       )}
     </div>
