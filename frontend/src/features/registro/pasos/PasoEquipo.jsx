@@ -15,7 +15,9 @@ const FALLA_MAX = 2000;
 
 function errorDeFalla(texto) {
   if (texto.trim() === "") return "La falla reportada es obligatoria";
-  if (texto.length < FALLA_MIN || texto.length > FALLA_MAX) {
+  // La base mide length(btrim(...)): se mide igual para no aceptar relleno.
+  const largo = texto.trim().length;
+  if (largo < FALLA_MIN || largo > FALLA_MAX) {
     return "La falla va de 5 a 2000 caracteres";
   }
   return null;
