@@ -1,5 +1,5 @@
 // Servicio de revisiones (Tarea 21 del plan): lectura de `revisiones` por
-// registro y anexo vía la RPC `registrar_revision`. NADIE edita ni borra.
+// orden y anexo vía la RPC `registrar_revision`. NADIE edita ni borra.
 import { supabase } from "../../lib/supabaseClient.js";
 
 function mapearError(err) {
@@ -10,14 +10,14 @@ function mapearError(err) {
   return { ok: false, codigo: "DESCONOCIDO", mensaje: err?.message ?? "Error inesperado" };
 }
 
-export async function listarRevisiones(registroId) {
+export async function listarRevisiones(ordenId) {
   try {
     const { data, error } = await supabase
       .from("revisiones")
       // Embed por FK `revisiones.revisado_por → profiles.id`: el revisor
       // se ve por su nombre, no como UUID.
       .select("id, tipo, revisado_en, checklist, resultado, observaciones, revisor:revisado_por(full_name)")
-      .eq("registro_id", registroId)
+      .eq("orden_id", ordenId)
       .order("revisado_en", { ascending: false });
     if (error) return mapearError(error);
     return { ok: true, datos: data ?? [] };
@@ -29,10 +29,10 @@ export async function listarRevisiones(registroId) {
   }
 }
 
-export async function registrarRevision(registroId, { tipo, checklist, observaciones }) {
+export async function registrarRevision(ordenId, { tipo, checklist, observaciones }) {
   try {
     const { data, error } = await supabase.rpc("registrar_revision", {
-      p_registro_id: registroId,
+      p_orden_id: ordenId,
       p_tipo: tipo,
       p_checklist: checklist ?? null,
       p_observaciones: observaciones ?? null,

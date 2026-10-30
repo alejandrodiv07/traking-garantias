@@ -70,7 +70,7 @@ export default function Tablero() {
         .sort((a, b) => a.dias_restantes - b.dias_restantes)
         .slice(0, 5)
         .map((f) => ({
-          id: f.registro_id,
+          id: f.orden_id,
           venceEl: f.vence_el,
           cliente: f.cliente,
           serie: f.serial,

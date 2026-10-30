@@ -11,12 +11,12 @@ export default function DetalleRegistro({ fila, rol, onCerrar, onRegistrada }) {
   return (
     <div
       role="dialog"
-      aria-label={`Detalle de ${fila.numero_registro}`}
+      aria-label={`Detalle de ${fila.numero_orden}`}
       className="tg-detalle"
     >
       <header className="tg-detalle-cab">
         <div>
-          <h2 className="tg-detalle-codigo tg-mono">{fila.numero_registro}</h2>
+          <h2 className="tg-detalle-codigo tg-mono">{fila.numero_orden}</h2>
           <p className="tg-detalle-sub">
             {fila.producto}
             <span className="tg-mono">{fila.serial}</span>
@@ -53,8 +53,8 @@ export default function DetalleRegistro({ fila, rol, onCerrar, onRegistrada }) {
 
       <section aria-label="Revisiones del registro">
         <h3>Revisiones</h3>
-        <HistorialRevisiones registroId={fila.registro_id} />
-        <RevisionForm registroId={fila.registro_id} rol={rol} onRegistrada={onRegistrada} />
+        <HistorialRevisiones ordenId={fila.orden_id} />
+        <RevisionForm ordenId={fila.orden_id} rol={rol} onRegistrada={onRegistrada} />
       </section>
     </div>
   );

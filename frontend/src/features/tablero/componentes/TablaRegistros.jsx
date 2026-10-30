@@ -41,8 +41,8 @@ export default function TablaRegistros({ filas, rol, onRevisar }) {
         </thead>
         <tbody>
           {filas.map((f) => (
-            <tr key={f.registro_id}>
-              <td>{f.numero_registro}</td>
+            <tr key={f.orden_id}>
+              <td>{f.numero_orden}</td>
               <td>
                 {f.producto}
                 <span className="tg-tabla-serial">{f.serial}</span>
@@ -62,7 +62,7 @@ export default function TablaRegistros({ filas, rol, onRevisar }) {
               {rol !== "RECEPCION" && (
                 <td>
                   {f.abierto && (
-                    <button type="button" aria-label={`Revisar ${f.numero_registro}`} onClick={() => onRevisar?.(f)}>
+                    <button type="button" aria-label={`Revisar ${f.numero_orden}`} onClick={() => onRevisar?.(f)}>
                       Revisar
                     </button>
                   )}

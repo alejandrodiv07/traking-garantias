@@ -23,7 +23,7 @@ const EQUIPO_EXISTENTE = [{
   titular: "Juan Perez",
   vence_el: "2026-09-08",
   dias_restantes: 5,
-  registros: [{ numero: "REG-2026-000001", estado: "ENTREGADO" }],
+  ordenes_servicio: [{ numero: "OS-2026-00001", estado: "ENTREGADO" }],
 }];
 const PRODUCTOS = [
   { id: "p1", modelo: "HG8245", marca: "Huawei" },

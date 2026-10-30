@@ -47,7 +47,7 @@ beforeEach(() => {
 describe("HistorialRevisiones", () => {
   it("la revisión más reciente aparece primero (cronológico inverso)", async () => {
     fakes.listarRevisiones.mockResolvedValue({ ok: true, datos: REVISIONES });
-    render(<HistorialRevisiones registroId="r1" />);
+    render(<HistorialRevisiones ordenId="r1" />);
     const filas = await screen.findAllByTestId("revision");
     expect(filas.length).toBe(2);
     // cronológico inverso: la TECNICA (2026-09-20) queda antes que la RECEPCIÓN (2026-09-02)
@@ -59,7 +59,7 @@ describe("HistorialRevisiones", () => {
 
   it("muestra el nombre del revisor, fecha, resultado y observaciones", async () => {
     fakes.listarRevisiones.mockResolvedValue({ ok: true, datos: [REVISIONES[0]] });
-    render(<HistorialRevisiones registroId="r1" />);
+    render(<HistorialRevisiones ordenId="r1" />);
     await waitFor(() => expect(screen.getByText(/sin causa externa/)).toBeTruthy());
     // el revisor se ve por su nombre, jamás como UUID
     expect(screen.getByText(/Tito Tecnico/)).toBeTruthy();
@@ -67,7 +67,7 @@ describe("HistorialRevisiones", () => {
 
   it("NO hay botones de editar ni de borrar", async () => {
     fakes.listarRevisiones.mockResolvedValue({ ok: true, datos: REVISIONES });
-    render(<HistorialRevisiones registroId="r1" />);
+    render(<HistorialRevisiones ordenId="r1" />);
     await waitFor(() => expect(screen.getAllByTestId("revision").length).toBe(2));
     expect(screen.queryByRole("button", { name: /editar|borrar/i })).toBeNull();
   });
@@ -75,13 +75,13 @@ describe("HistorialRevisiones", () => {
 
 describe("RevisionForm", () => {
   it("para RECEPCION el formulario no se muestra", () => {
-    render(<RevisionForm registroId="r1" rol="RECEPCION" onRegistrada={() => {}} />);
+    render(<RevisionForm ordenId="r1" rol="RECEPCION" onRegistrada={() => {}} />);
     expect(screen.queryByRole("button", { name: /guardar revisión/i })).toBeNull();
     expect(screen.getByText(/no registra revisiones/i)).toBeTruthy();
   });
 
   it("envía el checklist y muestra el resultado que devuelve la base", async () => {
-    render(<RevisionForm registroId="r1" rol="TECNICO" onRegistrada={() => {}} />);
+    render(<RevisionForm ordenId="r1" rol="TECNICO" onRegistrada={() => {}} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole("checkbox", { name: /serial de fábrica/i }));
     await user.click(screen.getByRole("button", { name: /guardar revisión/i }));
@@ -98,7 +98,7 @@ describe("RevisionForm", () => {
     fakes.registrarRevision.mockResolvedValue({
       ok: false, codigo: "SIN_PERMISO", mensaje: "Su rol no puede registrar revisiones",
     });
-    render(<RevisionForm registroId="r1" rol="TECNICO" onRegistrada={() => {}} />);
+    render(<RevisionForm ordenId="r1" rol="TECNICO" onRegistrada={() => {}} />);
     await userEvent.setup().click(screen.getByRole("button", { name: /guardar revisión/i }));
     await waitFor(() => expect(screen.getByText(/no puede registrar revisiones/i)).toBeTruthy());
   });

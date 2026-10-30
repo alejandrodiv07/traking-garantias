@@ -20,8 +20,8 @@ vi.mock("../auth/AuthContext.jsx", () => ({
 import Tablero from "./Tablero.jsx";
 
 const FILA = (extras = {}) => ({
-  registro_id: "r1",
-  numero_registro: "REG-2026-000001",
+  orden_id: "r1",
+  numero_orden: "OS-2026-00001",
   estado: "RECIBIDO",
   estado_nombre: "Recibido",
   cobertura: "EN_GARANTIA",
@@ -87,8 +87,8 @@ describe("el detalle del registro (Revisiones desde el Tablero)", () => {
       ],
     });
     render(<Tablero />);
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Revisar REG-2026-000001" }));
-    const dialogo = screen.getByRole("dialog", { name: /Detalle de REG-2026-000001/ });
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Revisar OS-2026-00001" }));
+    const dialogo = screen.getByRole("dialog", { name: /Detalle de OS-2026-00001/ });
     expect(dialogo).toBeTruthy();
     // el encabezado identifica al equipo (el serial también aparece en la tabla
     // y en el panel de vencimientos, por eso se comprueba que exista)
@@ -105,9 +105,9 @@ describe("el detalle del registro (Revisiones desde el Tablero)", () => {
     fakes.listarTablero.mockResolvedValue({ ok: true, filas: [FILA()] });
     render(<Tablero />);
     const user = userEvent.setup();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Revisar REG-2026-000001" })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Revisar OS-2026-00001" })).toBeTruthy());
     expect(fakes.listarTablero).toHaveBeenCalledTimes(1);
-    await user.click(screen.getByRole("button", { name: "Revisar REG-2026-000001" }));
+    await user.click(screen.getByRole("button", { name: "Revisar OS-2026-00001" }));
     await user.click(screen.getByRole("button", { name: /Guardar revisión/ }));
     await waitFor(() => expect(fakes.listarTablero).toHaveBeenCalledTimes(2));
   });

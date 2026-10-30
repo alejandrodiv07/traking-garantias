@@ -9,7 +9,7 @@ import { buscarEquipo, listarProductos } from "../registroService.js";
 const PAUSA_MS = 400;   // spec §7.2 (plan): pausa sin teclear para buscar
 
 // Límites de "falla" (corrección D5): los mismos de la base — CHECK de 5 a
-// 2000 caracteres en la tabla registros, y p_falla es OBLIGATORIO.
+// 2000 caracteres en la tabla ordenes_servicio, y p_falla es OBLIGATORIO.
 const FALLA_MIN = 5;
 const FALLA_MAX = 2000;
 
@@ -172,9 +172,9 @@ export default function PasoEquipo({ estado, actualizar }) {
               ? ` (${resultados[0].dias_restantes > 0 ? `${resultados[0].dias_restantes} días restantes` : "vencida"})`
               : ""}
           </p>
-          {resultados[0].registros?.length > 0 && (
+          {resultados[0].ordenes_servicio?.length > 0 && (
             <ul>
-              {resultados[0].registros.map((rg) => (
+              {resultados[0].ordenes_servicio.map((rg) => (
                 <li key={rg.numero}>
                   Registro {rg.numero} — {rg.estado}
                 </li>

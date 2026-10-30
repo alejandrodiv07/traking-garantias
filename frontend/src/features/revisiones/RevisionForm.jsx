@@ -38,7 +38,7 @@ const GRUPOS = [
   },
 ];
 
-export default function RevisionForm({ registroId, rol, onRegistrada }) {
+export default function RevisionForm({ ordenId, rol, onRegistrada }) {
   const [checklist, setChecklist] = useState({});
   const [observaciones, setObservaciones] = useState("");
   const [resultado, setResultado] = useState(null);
@@ -49,12 +49,12 @@ export default function RevisionForm({ registroId, rol, onRegistrada }) {
     return <p role="note">Tu rol no registra revisiones.</p>;
   }
 
-  const tipo = "TECNICA";   // la de recepción la crea registrar_ingreso
+  const tipo = "TECNICA";   // la de recepción la crea abrir_orden
 
   async function enviar() {
     setEnviando(true);
     setError("");
-    const r = await registrarRevision(registroId, {
+    const r = await registrarRevision(ordenId, {
       tipo,
       checklist: { ...checklist },
       observaciones: observaciones.trim() || null,

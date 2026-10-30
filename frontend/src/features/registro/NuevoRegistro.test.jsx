@@ -30,7 +30,7 @@ beforeEach(() => {
   fakes.listarProductos.mockReset().mockResolvedValue({ ok: true, datos: [] });
   fakes.enviarRegistro.mockReset().mockResolvedValue({
     ok: true,
-    registro: { registro_id: "r1", numero_registro: "REG-2026-000001" },
+    registro: { orden_id: "r1", numero_orden: "OS-2026-00001" },
     pendientes: [],
   });
 });
@@ -79,7 +79,7 @@ describe("NuevoRegistro: el asistente recorre los 6 pasos montados", () => {
     await user.click(await screen.findByRole("button", { name: /confirmar y registrar/i }));
     expect(await screen.findByText(/registro creado/i)).toBeTruthy();
     expect(fakes.enviarRegistro).toHaveBeenCalledTimes(1);
-    expect(onCreado).toHaveBeenCalledWith(expect.objectContaining({ registro_id: "r1" }));
+    expect(onCreado).toHaveBeenCalledWith(expect.objectContaining({ orden_id: "r1" }));
   });
 
   it("el botón Editar del resumen vuelve al paso correspondiente", async () => {

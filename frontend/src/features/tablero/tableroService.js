@@ -2,7 +2,7 @@
 import { supabase } from "../../lib/supabaseClient.js";
 
 const COLUMNAS =
-  "registro_id, numero_registro, estado, estado_nombre, cobertura, serial, producto, cliente, documento, numero_soporte, fecha_ingreso, vence_el, dias_restantes, nivel_vigencia, dias_en_taller, nivel_sla, urgencia_rank, abierto";
+  "orden_id, numero_orden, estado, estado_nombre, cobertura, serial, producto, cliente, documento, numero_soporte, fecha_ingreso, vence_el, dias_restantes, nivel_vigencia, dias_en_taller, nivel_sla, urgencia_rank, abierto";
 
 function mapearError(err) {
   const codigo = err?.code;
@@ -16,7 +16,7 @@ function mapearError(err) {
 /**
  * Filas del Tablero: abiertas primero (urgencia combinada, luego ingreso),
  * después los cerrados. La búsqueda multicriterio cubre serial, titular,
- * documento, número de soporte (factura) y número de registro — con UNA
+ * documento, número de soporte (factura) y número de orden — con UNA
  * caja de texto, porque quien atienda el mostrador tiene una sola cosa en
  * la mano (spec §7.3).
  */
@@ -34,7 +34,7 @@ export async function listarTablero({ busqueda, estado, urgencia } = {}) {
       const sinComo = b.replace(/[*%]/g, "");
       q = q.or(
         [
-          "numero_registro.ilike.*" + sinComo + "*",
+          "numero_orden.ilike.*" + sinComo + "*",
           "serial.ilike.*" + sinComo + "*",
           "cliente.ilike.*" + sinComo + "*",
           "documento.ilike.*" + sinComo + "*",

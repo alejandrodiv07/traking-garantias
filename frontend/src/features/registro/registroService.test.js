@@ -50,8 +50,8 @@ import {
   guardarCliente,
   listarProductos,
   previsualizarCobertura,
-  registrarIngreso,
   registrarRevision,
+  abrirOrden,
   subirAdjunto,
 } from "./registroService.js";
 
@@ -91,7 +91,7 @@ describe("llamadas a la base (nombres exactos de la RPC)", () => {
     });
   });
 
-  it("registrarIngreso pasa las claves exactas", async () => {
+  it("abrirOrden pasa las claves exactas", async () => {
     const carga = {
       serial: "RT5-8842-AA",
       productoId: "p1",
@@ -106,8 +106,8 @@ describe("llamadas a la base (nombres exactos de la RPC)", () => {
       checklist: { a: true },
       observaciones: "obs",
     };
-    await registrarIngreso(carga);
-    expect(fakes.rpc).toHaveBeenCalledWith("registrar_ingreso", {
+    await abrirOrden(carga);
+    expect(fakes.rpc).toHaveBeenCalledWith("abrir_orden", {
       p_serial: "RT5-8842-AA",
       p_producto_id: "p1",
       p_cliente_id: "c1",
@@ -124,9 +124,9 @@ describe("llamadas a la base (nombres exactos de la RPC)", () => {
     });
   });
 
-  it("registrarIngreso manda la clave de envío (idempotencia)", async () => {
-    await registrarIngreso({ serial: "S-1", falla: "No enciende", claveEnvio: "clave-1" });
-    expect(fakes.rpc).toHaveBeenCalledWith("registrar_ingreso", expect.objectContaining({ p_clave_envio: "clave-1" }));
+  it("abrirOrden manda la clave de envío (idempotencia)", async () => {
+    await abrirOrden({ serial: "S-1", falla: "No enciende", claveEnvio: "clave-1" });
+    expect(fakes.rpc).toHaveBeenCalledWith("abrir_orden", expect.objectContaining({ p_clave_envio: "clave-1" }));
   });
 
   it("registrarRevision llama a registrar_revision", async () => {
@@ -136,7 +136,7 @@ describe("llamadas a la base (nombres exactos de la RPC)", () => {
       observaciones: "golpes",
     });
     expect(fakes.rpc).toHaveBeenCalledWith("registrar_revision", {
-      p_registro_id: "reg-1",
+      p_orden_id: "reg-1",
       p_tipo: "TECNICA",
       p_checklist: { golpes: true },
       p_observaciones: "golpes",
@@ -286,18 +286,18 @@ describe("previsualizarCobertura con anulación: trae también el motivo", () =>
 });
 
 describe("subirAdjunto: camino feliz", () => {
-  it("sube a la ruta del registro y luego registra la fila", async () => {
-    fakes.upload.mockResolvedValue({ data: { path: "registros/reg-1/foto.jpg" }, error: null });
+  it("sube a la ruta de la orden y luego registra la fila", async () => {
+    fakes.upload.mockResolvedValue({ data: { path: "ordenes/reg-1/foto.jpg" }, error: null });
     fakes.setResultado({ data: [{ id: "a1" }], error: null });
 
     const r = await subirAdjunto("reg-1", ARCHIVO_JPG(), { tipo: "FOTO", etiqueta: "frontal" });
-    expect(fakes.storageFrom).toHaveBeenCalledWith("registros");
-    expect(fakes.upload).toHaveBeenCalledWith("registros/reg-1/foto.jpg", expect.anything());
+    expect(fakes.storageFrom).toHaveBeenCalledWith("ordenes");
+    expect(fakes.upload).toHaveBeenCalledWith("ordenes/reg-1/foto.jpg", expect.anything());
     expect(fakes.insert).toHaveBeenCalledWith(
       expect.objectContaining({
-        registro_id: "reg-1",
+        orden_id: "reg-1",
         tipo: "FOTO",
-        ruta: "registros/reg-1/foto.jpg",
+        ruta: "ordenes/reg-1/foto.jpg",
         mime: "image/jpeg",
         bytes: expect.any(Number),
         etiqueta: "frontal",

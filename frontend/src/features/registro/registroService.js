@@ -64,8 +64,8 @@ export async function guardarCliente(datos) {
   });
 }
 
-export async function registrarIngreso(payload) {
-  return rpc("registrar_ingreso", {
+export async function abrirOrden(payload) {
+  return rpc("abrir_orden", {
     p_serial: payload.serial,
     p_producto_id: payload.productoId ?? null,
     p_cliente_id: payload.clienteId ?? null,
@@ -83,9 +83,9 @@ export async function registrarIngreso(payload) {
   });
 }
 
-export async function registrarRevision(registroId, { tipo, checklist, observaciones }) {
+export async function registrarRevision(ordenId, { tipo, checklist, observaciones }) {
   return rpc("registrar_revision", {
-    p_registro_id: registroId,
+    p_orden_id: ordenId,
     p_tipo: tipo,
     p_checklist: checklist ?? null,
     p_observaciones: observaciones ?? null,
@@ -141,7 +141,7 @@ const MIME_DOC = ["application/pdf", "image/jpeg", "image/png"];
  * Sube un archivo al bucket privado y registra su fila en `adjuntos`.
  * Valida MIME y tamaño ANTES de subir (FORMATO_NO_ADMITIDO / LIMITE).
  */
-export async function subirAdjunto(registroId, archivo, { tipo, etiqueta }) {
+export async function subirAdjunto(ordenId, archivo, { tipo, etiqueta }) {
   const mime = archivo?.type ?? "";
   if (tipo === "FOTO" && !MIME_FOTO.includes(mime)) {
     return { ok: false, codigo: "FORMATO_NO_ADMITIDO", mensaje: "Formato no admitido: para las fotos usa JPG, PNG o WEBP" };
@@ -153,15 +153,15 @@ export async function subirAdjunto(registroId, archivo, { tipo, etiqueta }) {
     return { ok: false, codigo: "LIMITE", mensaje: "El archivo no puede pesar más de 8 MB" };
   }
 
-  const ruta = `registros/${registroId}/${archivo.name}`;
+  const ruta = `ordenes/${ordenId}/${archivo.name}`;
   try {
-    const { error: errorSubida } = await supabase.storage.from("registros").upload(ruta, archivo);
+    const { error: errorSubida } = await supabase.storage.from("ordenes").upload(ruta, archivo);
     if (errorSubida) return mapearError(errorSubida);
 
     const { data, error } = await supabase
       .from("adjuntos")
       .insert({
-        registro_id: registroId,
+        orden_id: ordenId,
         tipo,
         etiqueta: etiqueta ?? null,
         ruta,

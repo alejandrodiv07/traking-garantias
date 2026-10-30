@@ -1,17 +1,17 @@
-// Historial de revisiones del registro (Tarea 21 del plan; spec §7.4).
+// Historial de revisiones de la orden (Tarea 21 del plan; spec §7.4).
 // Cronológico inverso, con revisor, fecha, resultado y observaciones.
 // SIN botones de editar ni borrar: una corrección es una revisión nueva.
 import { useEffect, useState } from "react";
 import { listarRevisiones } from "./revisionesService.js";
 import "./revisiones.css";
 
-export default function HistorialRevisiones({ registroId }) {
+export default function HistorialRevisiones({ ordenId }) {
   const [revisiones, setRevisiones] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let vivo = true;
-    listarRevisiones(registroId).then((r) => {
+    listarRevisiones(ordenId).then((r) => {
       if (!vivo) return;
       if (r.ok) setRevisiones(r.datos);
       else setError(r);
@@ -19,7 +19,7 @@ export default function HistorialRevisiones({ registroId }) {
     return () => {
       vivo = false;
     };
-  }, [registroId]);
+  }, [ordenId]);
 
   if (error) {
     return (

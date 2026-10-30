@@ -31,7 +31,7 @@ describe("listarTablero", () => {
   it("con búsqueda consulta por serial, cliente, documento, factura y registro", async () => {
     await listarTablero({ busqueda: "RT5" });
     const filtro = fakes.cadena.or.mock.calls[0][0];
-    expect(filtro).toContain("numero_registro.ilike");
+    expect(filtro).toContain("numero_orden.ilike");
     for (const campo of ["serial", "cliente", "documento", "numero_soporte"]) {
       expect(filtro).toContain(`${campo}.ilike`);
     }

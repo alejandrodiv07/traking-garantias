@@ -1,16 +1,16 @@
-// Pruebas de enviarRegistro (Tarea 19 del plan): primero registrarIngreso,
-// luego subir cada adjunto; los que fallen quedan como pendientes.
+// Pruebas de enviarRegistro (Tarea 19 del plan): primero abrirOrden (el
+// orden existe antes de subir un solo archivo), luego subir cada adjunto.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fakes = vi.hoisted(() => ({
-  registrarIngreso: vi.fn(),
+  abrirOrden: vi.fn(),
   subirAdjunto: vi.fn(),
   limpiarBorrador: vi.fn(),
 }));
 
 vi.mock("./registroService.js", async (importOriginal) => ({
   ...(await importOriginal()),
-  registrarIngreso: fakes.registrarIngreso,
+  abrirOrden: fakes.abrirOrden,
   subirAdjunto: fakes.subirAdjunto,
   limpiarBorrador: fakes.limpiarBorrador,
 }));
@@ -34,32 +34,32 @@ const ESTADO = {
 };
 
 const REGISTRO = {
-  registro_id: "r9",
-  numero_registro: "REG-2026-000009",
+  orden_id: "r9",
+  numero_orden: "OS-2026-00009",
   cobertura: "EN_GARANTIA",
   consulta_token: "abc",
 };
 
 beforeEach(() => {
-  fakes.registrarIngreso.mockReset().mockResolvedValue({ ok: true, datos: REGISTRO });
+  fakes.abrirOrden.mockReset().mockResolvedValue({ ok: true, datos: REGISTRO });
   fakes.subirAdjunto.mockReset().mockResolvedValue({ ok: true, datos: {} });
   fakes.limpiarBorrador.mockReset();
 });
 
 describe("enviarRegistro", () => {
-  it("manda la clave de envío del estado a registrarIngreso", async () => {
+  it("manda la clave de envío del estado a abrirOrden", async () => {
     await enviarRegistro({ ...ESTADO, claveEnvio: "clave-9" }, [], { userId: "u1" });
-    expect(fakes.registrarIngreso).toHaveBeenCalledWith(expect.objectContaining({ claveEnvio: "clave-9" }));
+    expect(fakes.abrirOrden).toHaveBeenCalledWith(expect.objectContaining({ claveEnvio: "clave-9" }));
   });
 
-  it("registrarIngreso primero; sube cada archivo; limpia el borrador si todo sale", async () => {
+  it("abrirOrden primero; sube cada archivo; limpia el borrador si todo sale", async () => {
     const archivos = [
       { archivo: ARCHIVO("a.jpg"), tipo: "FOTO", etiqueta: "a" },
       { archivo: ARCHIVO("b.jpg"), tipo: "FOTO", etiqueta: "b" },
     ];
     const r = await enviarRegistro(ESTADO, archivos, { userId: "u1" });
 
-    expect(fakes.registrarIngreso).toHaveBeenCalledWith(
+    expect(fakes.abrirOrden).toHaveBeenCalledWith(
       expect.objectContaining({ serial: "RT5-8842-AA", falla: "No enciende" }),
     );
     expect(fakes.subirAdjunto).toHaveBeenCalledTimes(2);
@@ -92,7 +92,7 @@ describe("enviarRegistro", () => {
     fakes.subirAdjunto.mockResolvedValueOnce({ ok: true, datos: {} });
     const r = await enviarRegistro(ESTADO, [], {
       userId: "u1",
-      registroIdExistente: "r9",
+      ordenIdExistente: "r9",
       pendientesIniciales: pendientes,
     });
     expect(fakes.subirAdjunto).toHaveBeenCalledTimes(1);
@@ -101,8 +101,8 @@ describe("enviarRegistro", () => {
     expect(r.pendientes).toEqual([]);
   });
 
-  it("registrarIngreso falla por SESION_VENCIDA: NO limpia el borrador y vuelve con el mensaje", async () => {
-    fakes.registrarIngreso.mockResolvedValue({
+  it("abrirOrden falla por SESION_VENCIDA: NO limpia el borrador y vuelve con el mensaje", async () => {
+    fakes.abrirOrden.mockResolvedValue({
       ok: false,
       codigo: "SESION_VENCIDA",
       mensaje: "Tu sesión venció: vuelve a entrar para continuar",

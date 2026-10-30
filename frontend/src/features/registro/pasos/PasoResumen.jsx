@@ -28,7 +28,7 @@ export default function PasoResumen({ estado, irPara, onCreado, userId, actualiz
     if (!estado?.claveEnvio) actualizar?.({ claveEnvio });
     const r = await enviarRegistro({ ...estado, claveEnvio }, archivos, {
       userId,
-      registroIdExistente: resultado?.registro?.registro_id,
+      ordenIdExistente: resultado?.registro?.orden_id,
       pendientesIniciales: reintentar ? (resultado?.pendientes ?? []) : [],
     });
     setEnviando(false);
@@ -87,7 +87,7 @@ export default function PasoResumen({ estado, irPara, onCreado, userId, actualiz
 
       {resultado?.ok && resultado?.pendientes.length > 0 && (
         <div role="status">
-          <p>El registro {resultado.registro?.numero_registro} ya existe; falló la subida de {resultado.pendientes.length} archivo(s).</p>
+          <p>El registro {resultado.registro?.numero_orden} ya existe; falló la subida de {resultado.pendientes.length} archivo(s).</p>
           <button type="button" onClick={() => confirmar(true)}>
             Reintentar adjuntos
           </button>
@@ -95,7 +95,7 @@ export default function PasoResumen({ estado, irPara, onCreado, userId, actualiz
       )}
 
       {resultado?.ok && resultado?.pendientes.length === 0 && (
-        <p role="status">Registro creado: {resultado.registro?.numero_registro}</p>
+        <p role="status">Registro creado: {resultado.registro?.numero_orden}</p>
       )}
 
       {resultado && !resultado.ok && (
