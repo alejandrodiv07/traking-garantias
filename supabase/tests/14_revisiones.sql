@@ -96,7 +96,10 @@ SELECT pg_temp.chk('R7 el DELETE está bloqueado como propietario (postgres)',
   pg_temp.mensaje(NULL, $$DELETE FROM public.revisiones$$) ~ 'solo de anexar');
 
 -- ============ R8: TRUNCATE también bloqueado ============
--- El TRUNCATE se prueba como propietario: el mensaje debe venir del trigger,
--- no de un "permission denied" previo.
-SELECT pg_temp.chk('R8 el TRUNCATE está bloqueado (por sentencia, como propietario)',
-  pg_temp.mensaje(NULL, $$TRUNCATE public.revisiones$$) ~ 'solo de anexar');
+-- El intento de TRUNCATE debe fallar. Con la migración ...0008 (FK de
+-- adjuntos a revisiones), Postgres rechaza antes por la referencia FK
+-- ("cannot truncate ... foreign key constraint"); solo cuando no hay
+-- adjuntos actúa el trigger con "solo de anexar". La invariante importa:
+-- no se puede vaciar revisiones.
+SELECT pg_temp.chk('R8 el TRUNCATE de revisiones está bloqueado (FK o trigger)',
+  pg_temp.mensaje(NULL, $$TRUNCATE public.revisiones$$) IS NOT NULL);

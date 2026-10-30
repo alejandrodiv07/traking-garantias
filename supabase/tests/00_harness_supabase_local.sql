@@ -38,3 +38,27 @@ LANGUAGE sql STABLE AS $$
   );
 $$;
 GRANT EXECUTE ON FUNCTION auth.jwt() TO anon, authenticated, service_role;
+
+-- Añadido para 15_adjuntos + migración ...0008: emulación mínima del
+-- esquema `storage` de Supabase (tablas reales allí: buckets y objects,
+-- con muchas columnas más). Solo las que usan políticas y pruebas:
+--  - buckets(id, name, public)
+--  - objects(id, bucket_id, name, created_at)  con `name` = la ruta
+-- En el proyecto real estas tablas las gestiona el servicio de Storage;
+-- aquí solo proveen el escenario para políticas RLS y triggers.
+CREATE SCHEMA storage;
+CREATE TABLE storage.buckets (
+  id      text PRIMARY KEY,
+  name    text,
+  public  boolean NOT NULL DEFAULT false
+);
+CREATE TABLE storage.objects (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  bucket_id  text REFERENCES storage.buckets(id),
+  name       text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
+GRANT SELECT, INSERT ON storage.objects TO authenticated;
+GRANT SELECT ON storage.buckets TO authenticated, anon;
