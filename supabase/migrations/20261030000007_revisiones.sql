@@ -15,8 +15,10 @@ CREATE TABLE public.revisiones (
     revisado_por  UUID REFERENCES public.profiles(id) ON DELETE RESTRICT,
     revisado_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- La lista de verificación del spec §4.3, con estructura validada.
-    checklist     JSONB NOT NULL
-        CHECK (public.checklist_es_valido(checklist)),
+    -- Nullable: la revisión de recepción se crea con registrar_ingreso y
+    -- el paso "Verificación" del asistente es opcional.
+    checklist     JSONB
+        CHECK (checklist IS NULL OR public.checklist_es_valido(checklist)),
     -- Calculado por trigger (abajo). Lo que envíe el cliente se ignora.
     resultado     public.cobertura_garantia NOT NULL DEFAULT 'POR_DETERMINAR',
     observaciones TEXT
