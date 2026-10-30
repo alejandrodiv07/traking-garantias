@@ -1,7 +1,7 @@
 # Track Garantía — Estado del proyecto
 
 **Prime Telecom · Sistema de seguimiento de garantías y reparaciones**
-**Corte:** 2026-10-30 · **Rama:** `feat/registro-y-control` (hito 1, PR #1) · último commit: ver `git log -1`
+**Corte:** 2026-10-30 · **Rama:** `feat/fase-2a` (fase 2a: garantía, consulta y taller; sobre el hito 1, PR #1) · último commit: ver `git log -1`
 
 > Documento pensado para dos usos: **presentar** el sistema y **dar contexto rápido a agentes de IA** para planificar. Describe lo que hay *ahora* en el repo. Donde un documento antiguo contradiga a este, manda este (ver §6).
 
@@ -9,22 +9,23 @@
 
 ## 1. Resumen en 30 segundos
 
-Aplicación web para un taller de servicio técnico: el técnico **registra un equipo por su serial** (con fotos y documentos, admite lector de código de barras), lo consulta en un **Tablero** ordenado por la urgencia combinada de la vigencia de la garantía y del SLA de atención, y **anota revisiones** cuyo resultado lo calcula la base y es inalterable.
+Aplicación web para un taller de servicio técnico, en tres módulos unidos por el serial: **Registrar garantía** (post-venta), **Consulta** (búsqueda por serial, cédula/RIF, factura u orden, con vigencia y días restantes) y **Taller** (orden `OS-AAAA-NNNN` con auditoría de recepción, diagnóstico y presupuesto, bitácora y estados hasta la entrega o el rechazo con motivo). La cobertura y las reglas de avance las calcula y las impone la base; las revisiones y los adjuntos son inalterables.
 
 **Stack:** React 19 + Vite 8 (SPA) · Supabase (Auth + Postgres 17 con RLS + RPC + 3 Edge Functions) · Resend (correo del 2FA) · Vercel (hosting, con CSP y cabeceras estrictas) · GitHub Actions (CI de migraciones, pruebas SQL, vitest, lint y build).
 
-**Semáforo (después del hito 1):**
+**Semáforo (fase 2a):**
 
 | Capa | Estado |
 |---|---|
-| Base de datos (equipos, registros, revisiones, adjuntos, vista del Tablero, permisos) | 🟢 Construida y probada: 14 scripts SQL, 237 aserciones en verde |
-| Flujo "Nuevo registro" (asistente de 6 pasos con borrador y lector) | 🟢 Construido y probado (vitest + Testing Library) |
-| Tablero con datos reales + Revisiones | 🟢 Conectados a `v_tablero` y RPC reales |
-| Autenticación + 2FA por correo | 🟡 Funciona; pendiente dominio verificado en Resend (y pruebas del flujo completo de login) |
-| Consulta pública del cliente | 🟡 RPC `consultar_registro` lista en BD; **sin pantalla** (hito 2) |
-| Consulta de facturas de Ventas | ❌ Hito 2: falta decidir la fuente (CSV) |
+| Base de datos (garantías, órdenes, revisiones, adjuntos, reglas de avance, permisos) | 🟢 Construida y probada: 23 scripts SQL, 436 aserciones en verde; e2e de 12 comprobaciones |
+| Registrar garantía, Consulta, Abrir orden, Detalle de la orden, lista del Taller y tablero de garantías | 🟢 Construidos y probados (287 pruebas de vitest), conectados a las RPC reales |
+| Layout con barra lateral y rutas `/garantias` y `/taller` | 🟢 |
+| Autenticación + 2FA por correo | 🟡 Funciona; pendiente dominio verificado en Resend (la función desplegada sigue con destinatario fijo) |
+| Entregas, Inventario, Reportes, Clientes y Notificaciones (pantallas 05 a 08 del diseño) | ❌ Con maqueta en `docs/diseno-ui/`, sin backend (ver su README §4) |
+| Consulta pública del cliente y alertas de vencimiento | ❌ Fase 2c: la RPC `consultar_registro` existe, sin pantalla |
+| Facturas de Ventas por CSV | ❌ Fase 2b |
 
-**En una frase:** el hito 1 está completo (registrar → Tablero → revisiones); queda lo alrededor (pantalla pública, facturas de Ventas, avisos).
+**En una frase:** la fase 2a está completa de punta a punta (registrar la garantía → consultarla → abrir la orden → diagnosticar, presupuestar, rechazar o entregar); falta desplegarla y todo lo que rodea al taller.
 
 ---
 
@@ -37,16 +38,18 @@ Aplicación web para un taller de servicio técnico: el técnico **registra un e
  ┌──────────────────────── Supabase ────────────────────────┐
  │  Auth ........ signInWithPassword, sesiones JWT           │
  │  PostgREST ... lecturas/updates con RLS por rol           │
- │  RPC (SQL) ... registrar_ingreso · buscar_equipo ·        │
- │                guardar_cliente · registrar_revision ·     │
- │                confirmar_compra · consultar_registro ·    │
- │                calcular_cobertura · hoy_local · ajuste ·  │
- │                listar_huerfanos (service_role) ·          │
+ │  RPC (SQL) ... registrar_garantia · buscar_equipo ·       │
+ │                abrir_orden · registrar_revision ·         │
+ │                confirmar_compra · desestimar_compra ·     │
+ │                cambiar_estado · asignar_tecnico ·         │
+ │                registrar_presupuesto · guardar_cliente ·  │
+ │                consultar_registro · calcular_cobertura ·  │
+ │                hoy_local · listar_huerfanos (service_role)│
  │                generate_mfa_code · verify_mfa_code ·      │
  │                mfa_ok · mi_rol                            │
- │  Vista ....... v_tablero (urgencia combinada §4.5-4.6)    │
- │  Storage ..... bucket privado `registros`                 │
- │                (ruta registros/{registro_id}/…)           │
+ │  Vistas ...... v_tablero (urgencia §4.5-4.6) · v_garantias│
+ │  Storage ..... bucket privado `ordenes`                   │
+ │                (ruta ordenes/{orden_id}/…)                │
  │  Edge Fns .... mfa-enviar-codigo ──► Resend (correo)      │
  │                admin-crear-usuario  (service_role)        │
  │                limpiar-huerfanos    (cron diario)         │
@@ -56,22 +59,25 @@ Aplicación web para un taller de servicio técnico: el técnico **registra un e
 
 **Principio rector:** *la autorización vive en Postgres, no en React.* El resultado de la cobertura lo calcula la base a partir de la lista de verificación (el cliente solo pide `calcular_cobertura`); las revisiones y los adjuntos son **solo de anexar** (triggers que bloquean UPDATE/DELETE/TRUNCATE incluso para `service_role` y el dueño de la base).
 
-### Estructura del repo (novedades del hito)
+### Estructura del repo (novedades de la fase 2a)
 
 ```
 ├─ supabase/
-│  ├─ migrations/        10 SQL activos (0004 ajustes → 0012 idempotencia del ingreso)… ver §3
+│  ├─ migrations/        22 SQL activos (0013 a 0022 son de la fase 2a)
 │  ├─ archivo/           el monolito duplicado 20260906000001 (+ su referencia)
 │  ├─ functions/         admin-crear-usuario · mfa-enviar-codigo · limpiar-huerfanos
-│  ├─ tests/             00 harness · 10–19 pruebas SQL del hito · 96–99 previos · run.sh (Docker)
+│  ├─ tests/             00 harness · 10–28 pruebas SQL · 96–99 previos · apoyo_pruebas.sql · run.sh (Docker)
 │  └─ seed.sql           4 marcas y 8 productos
 ├─ scripts/
 │  ├─ verificar-migraciones.sh
-│  └─ e2e-registro.sh          punta a punta: registrar → tablero → revisión → inmutabilidad
+│  └─ e2e-registro.sh          garantía → consulta → orden → mal uso → rechazo con motivo → entrega
+├─ docs/diseno-ui/             8 maquetas HTML (01–04 conectadas; 05–08 pendientes de backend)
 ├─ frontend/src/features/
-│  ├─ registro/           normalizar · registroService · borrador · useAsistente ·
-│  │                      NuevoRegistro + pasos (equipo/cliente/compra/verificacion/adjuntos/resumen) · enviarRegistro
-│  ├─ tablero/            Tablero (datos reales) · tableroService · TablaRegistros · dominio
+│  ├─ layout/             Layout con barra lateral (NavLink)
+│  ├─ garantias/          Garantias (tablero) · NuevaGarantia · Consulta · garantiasService
+│  ├─ taller/             Taller (lista) · AbrirOrden · OrdenDetalle · BarraEstados · tallerService
+│  ├─ registro/           pasos reutilizados (cliente, compra, verificación, adjuntos) · borrador · normalizar
+│  ├─ tablero/            dominio (espejo de estados) · Tablero y paneles del hito 1
 │  └─ revisiones/         HistorialRevisiones · RevisionForm · revisionesService
 └─ .github/workflows/ci.yml
 ```
@@ -102,54 +108,51 @@ Leyenda: ✅ real y conectado · 🟡 parcial / maqueta / sin UI · ❌ no exist
 | Recuperar contraseña ("olvidé mi contraseña") | ❌ | — |
 | Cambiar contraseña propia | ❌ | — |
 
-### 3.2 Dominio de garantías (base de datos)
+### 3.2 Dominio (base de datos)
 
 | Funcionalidad | Estado | Dónde vive |
 |---|---|---|
-| Orden con número legible `ORD-AAAA-NNNNNN` | ✅ | Tabla `garantias` + secuencia |
-| Cálculo automático de vencimiento (`fecha_compra` + `meses_garantia`) | ✅ | Trigger `calcular_vencimiento_garantia` |
-| Cobertura (`POR_DETERMINAR`, `EN_GARANTIA`, `FUERA_DE_GARANTIA`, `ANULADA_POR_USO`) | ✅ | ENUM + CHECKs de coherencia |
-| 10 estados y máquina de transiciones con roles permitidos | ✅ | `estados_garantia`, `transiciones_estado`, trigger `validar_transicion_estado` |
-| Historial inmutable de cambios | ✅ | `historial_garantias` + trigger de solo-anexado (ni `postgres` puede editarlo) |
-| Notas internas (tabla aparte, nunca se filtran al cliente) | ✅ | `notas_internas` |
-| Catálogo de marcas y productos (con meses de garantía) | ✅ | `marcas`, `productos` |
-| Clientes | ✅ | `clientes` |
-| Crear orden de forma atómica | ✅ | RPC `crear_garantia()` (devuelve el token UNA vez) |
-| Consulta pública con orden + token de 128 bits, limitada por IP | ✅ | RPC `consultar_garantia()` + `consulta_publica_intentos` |
-| RLS por rol y GRANTs mínimos (sin DELETE para nadie) | ✅ | Migración `…0002_garantias.sql` §10-11 |
-| Reportes ("qué modelo falla más") | ❌ | El esquema lo permite; no hay vistas ni UI |
-| Adjuntos / fotos del equipo | ❌ | — |
-| Notificaciones al cliente (cambio de estado) | ❌ | — |
+| Garantía = fila de `equipos` (serial, titular, factura, plazo, vencimiento) con origen `VENTA` o `TALLER` | ✅ | `registrar_garantia` |
+| Plazo de 7 o 15 días; otro valor (1–365) solo ADMIN/JEFE_SERVICIO | ✅ | `registrar_garantia` (42501) |
+| Búsqueda por serial, cédula/RIF, factura u orden, con vigencia y estado de la compra | ✅ | `buscar_equipo`, vista `v_garantias` |
+| Cobertura con precedencia única (desestimada → sin factura → taller sin confirmar → vencida → mal uso → condición) | ✅ | `calcular_cobertura` |
+| Tipo de atención `GARANTIA`/`PAGO`/`PENDIENTE` (columna generada) | ✅ | `ordenes_servicio.tipo_atencion` |
+| Confirmar o desestimar la compra (motivo ≥ 10); recalcula las órdenes abiertas | ✅ | `confirmar_compra`, `desestimar_compra` |
+| Orden `OS-AAAA-NNNN` + auditoría de recepción en una transacción, idempotente por clave de envío | ✅ | `abrir_orden` |
+| 11 estados con `RECHAZADO` (motivo obligatorio, salida única a `ENTREGADO`) y roles cerrados | ✅ | `transiciones_estado`, trigger de validación |
+| Reglas de avance: foto, documento (equipo de taller sin confirmar), monto, pago por presupuesto | ✅ | trigger `validar_avance_orden` |
+| Cambio de estado, asignación de técnico y presupuesto solo por RPC (UPDATE directo cerrado) | ✅ | `cambiar_estado`, `asignar_tecnico`, `registrar_presupuesto` |
+| Bitácora de estados y de eventos (cobertura, presupuesto, técnico) inmutable | ✅ | `historial_ordenes` |
+| Revisiones y adjuntos solo de anexar (ni `service_role`) | ✅ | triggers del hito 1 |
+| Consulta pública con orden + token de 128 bits, limitada por IP | 🟡 | RPC `consultar_registro`; sin pantalla (2c) |
+| Reportes, entregas con datos, stock de inventario, avisos al cliente | ❌ | Ver `docs/diseno-ui/README.md` §4 |
 
 ### 3.3 Interfaz
 
-| Pantalla | Estado | Nota |
-|---|---|---|
-| Login | ✅ | |
-| Tablero ADMIN (tabla, filtros, búsqueda, vencimientos) | 🟢 | Datos reales de `v_tablero`; filtrado y búsqueda del lado de la base. El botón "Revisar" (rol ≠ Recepción) abre el detalle con **Revisiones** (historial + formulario, RPC `registrar_revision` reales); al guardar, el tablero se recarga |
-| Panel Jefe de servicio (`/jefe`) | 🟡 | `Panel.jsx` provisional |
-| Panel Técnico (`/tecnico`) | 🟡 | `Panel.jsx` provisional |
-| Panel Recepción (`/recepcion`) | 🟡 | `Panel.jsx` provisional |
-| Formulario "Nueva orden" (cliente + equipo + falla) | ❌ | La RPC existe |
-| Detalle de orden (historial, notas, diagnóstico) | ❌ | |
-| Cambio de estado / asignar técnico | ❌ | Reglas ya en BD |
-| Gestión de clientes | ❌ | |
-| Gestión de marcas y productos | ❌ | |
-| Administración de usuarios | ❌ | Servicios listos, falta UI |
-| Consulta pública para el cliente | ❌ | RPC lista; sin ruta ni pantalla |
-| Comprobante imprimible (con token) | ❌ | El token se devuelve una sola vez, hay que imprimirlo |
+| Pantalla | Ruta | Estado | Nota |
+|---|---|---|---|
+| Login | `/login` | ✅ | |
+| Tablero de garantías | `/garantias` | ✅ | Sobre `v_garantias`: chips Vigente / Por vencer / Vencida / Por confirmar, búsqueda |
+| Registrar garantía | `/garantias/nueva` | ✅ | Asistente de 4 pasos con borrador de 24 h; sin falla ni checklist |
+| Consulta | `/garantias/consulta` | ✅ | Cuatro criterios, cobertura con color, historial de órdenes, aviso previo y "Registrar ahora"; Confirmar/Desestimar compra solo para jefatura |
+| Lista del Taller | `/taller` | ✅ | Filtro por estado |
+| Abrir orden | `/taller/nueva?equipo=…` | ✅ | Falla, accesorios, auditoría de recepción, fotos y documentos |
+| Detalle de la orden | `/taller/:id` | ✅ | Barra de estados y cinco pestañas; acciones por rol (avanzar, rechazar con motivo, asignar técnico, presupuesto) por las RPC |
+| Tablero y paneles del hito 1 (`/tablero`, `/jefe`, …) | — | 🟡 | Siguen montados; el aterrizaje tras iniciar sesión es `/garantias` |
+| Entregas, Inventario, Reportes, Clientes, Notificaciones | — | ❌ | Maquetas 05–08 listas; falta backend y la pantalla de Notificaciones |
+| Administración de usuarios | — | ❌ | Servicios listos, falta UI |
 
 **Permisos por rol (ya aplicados en BD):**
 
 | Rol | Puede |
 |---|---|
 | ADMIN | Todo; gestiona usuarios y catálogos; anula órdenes |
-| JEFE_SERVICIO | Ve todo, asigna técnicos, anula órdenes, actualiza cualquier orden |
-| TECNICO | Ve todo; solo modifica órdenes **asignadas a él** y no cerradas; no puede reasignar |
-| RECEPCION | Crea órdenes; solo cierra entregas (`REPARADO`/`IRREPARABLE`/`RECHAZADO` → `ENTREGADO`) |
+| JEFE_SERVICIO | Ve todo, asigna técnicos, rechaza y anula órdenes, confirma o desestima compras, fija plazos distintos de 7 o 15 días |
+| TECNICO | Ve todo; registra garantías y abre órdenes; solo avanza y presupuesta las órdenes **asignadas a él**; no rechaza ni reasigna |
+| RECEPCION | Registra garantías y abre órdenes; registra la decisión del cliente sobre el presupuesto; cierra entregas (`REPARADO`/`IRREPARABLE`/`RECHAZADO_POR_CLIENTE`/`RECHAZADO` → `ENTREGADO`) |
 
 **Flujo de estados:**
-`RECIBIDO → EN_DIAGNOSTICO → (PRESUPUESTADO ⇄ EN_ESPERA_REPUESTO) → EN_REPARACION → REPARADO → ENTREGADO`; salidas laterales a `IRREPARABLE`, `RECHAZADO_POR_CLIENTE` (ambos también terminan en `ENTREGADO`) y `ANULADO` (solo ADMIN/JEFE, solo desde `RECIBIDO` o `EN_DIAGNOSTICO`).
+`RECIBIDO → EN_DIAGNOSTICO → (PRESUPUESTADO ⇄ EN_ESPERA_REPUESTO) → EN_REPARACION → REPARADO → ENTREGADO`; en un servicio de pago el camino pasa por `PRESUPUESTADO`; con cobertura `PENDIENTE` no se avanza a reparar. Salidas laterales a `IRREPARABLE`, `RECHAZADO_POR_CLIENTE` y `RECHAZADO` (este solo ADMIN/JEFE, con motivo; los tres terminan en `ENTREGADO`) y `ANULADO` (solo ADMIN/JEFE, solo desde `RECIBIDO` o `EN_DIAGNOSTICO`).
 
 ---
 
@@ -172,13 +175,14 @@ cd frontend
 pnpm install
 # frontend/.env.local  →  VITE_SUPABASE_URL=...  VITE_SUPABASE_ANON_KEY=...
 pnpm dev          # Vite en :5173
-pnpm test         # vitest (182 pruebas: services, asistente, tablero, revisiones, edge fns)
+pnpm test         # vitest (287 pruebas)
 pnpm lint         # oxlint
 pnpm build
 ```
 
-- **Pruebas SQL (requieren Docker):** `bash supabase/tests/run.sh` — levanta Postgres 17, aplica harness + migraciones + seed y corre cada script contra una base limpia; imprime `PASA n · FALLA m` por archivo y sale 1 si algo falla. `bash scripts/e2e-registro.sh` corre la prueba de punta a punta del registro.
-- **Base de datos:** la cadena canónica es `0001_auth_base` → `0002_garantias` → `0003_mfa_email` → `0004`…`0012` (hito 1: ajustes/cobertura, equipos, registros, revisiones, adjuntos, RPC y vista, huérfanos, idempotencia del ingreso). El monolito duplicado quedó archivado en `supabase/archivo/` (verificar en el SQL Editor del proyecto real: `select version from supabase_migrations.schema_migrations order by 1` debe listar exactamente esas 12 versiones). `bash scripts/verificar-migraciones.sh` lo chequea (está en CI).
+- **Pruebas SQL (requieren Docker):** `bash supabase/tests/run.sh` — levanta Postgres 17, aplica harness + migraciones + seed y corre cada script contra una base limpia; imprime `PASA n · FALLA m` por archivo y sale 1 si algo falla. `bash scripts/e2e-registro.sh` corre el flujo de la fase 2a de punta a punta. Cada archivo SQL usa una base nueva; con poca memoria se puede correr por tandas pasando los archivos como argumentos.
+- **Base de datos:** la cadena canónica es `0001_auth_base` → `0002_garantias` → `0003_mfa_email` → `0004`…`0012` (hito 1) → `0013`…`0022` (fase 2a: renombrado a órdenes, origen y desestimación, tipo de atención, `RECHAZADO`, reglas de avance, RPC de garantía, de orden y de la máquina de estados). El monolito duplicado quedó archivado en `supabase/archivo/` (verificar en el SQL Editor del proyecto real: `select version from supabase_migrations.schema_migrations order by 1`). `bash scripts/verificar-migraciones.sh` lo chequea (está en CI).
+- **Aviso de despliegue de la 0013:** incluye un repaso idempotente de adjuntos (DEFAULT de `subido_por` y la política de INSERT) por si el remoto aplicó la `0008` original. Renombra el bucket a `ordenes`; los datos existentes son de prueba y no se conservan.
 - **Edge Functions:** `supabase functions deploy mfa-enviar-codigo`, `admin-crear-usuario` y `limpiar-huerfanos`. Secretos: `RESEND_API_KEY`, `ORIGENES_PERMITIDOS`, y para la limpieza `LIMPIEZA_SECRET` + `ALTER DATABASE postgres SET app.limpieza_secret` y `app.proyecto_ref` (ver migración 0011).
 - **Correo:** Resend está en **sandbox** (`onboarding@resend.dev`): solo entrega al correo dueño de la cuenta de Resend. Para otros usuarios hace falta un dominio verificado (SPF/DKIM/DMARC) y cambiar el `from`.
 
@@ -190,7 +194,10 @@ pnpm build
 |---|---|---|---|
 | ~~D1~~ | ✅ Resuelta (hito 1) | Duplicado `20260906000001` y copia `_referencia_…` | Archivados en `supabase/archivo/` y protegidos por `verificar-migraciones.sh` (CI). Falta SOLO confirmar el historial remoto en el SQL Editor (ver §5) |
 | ~~D5~~ | ✅ Resuelta (hito 1) | Seed inexistente | `supabase/seed.sql` con 4 marcas y 8 productos; `run.sh` la valida |
-| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI y 237 aserciones SQL + 182 de frontend |
+| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 436 aserciones SQL + 287 pruebas de frontend |
+| D11 | 🟠 Media | `mfa-enviar-codigo` DESPLEGADA sigue con destinatario fijo (hotfix del sandbox de Resend); el código del repo ya envía al correo del usuario | Verificar el dominio en Resend y redesplegar; hasta entonces no redesplegar la función |
+| D12 | 🟡 Baja | Tablero y paneles del hito 1 (`/tablero`, `/jefe`, `/tecnico`, `/recepcion`) siguen montados junto a la app nueva | Retirarlos cuando se acepte la navegación de la fase 2a |
+| D13 | 🟡 Baja | La suite SQL completa necesita memoria (un contenedor por corrida) | Correr por tandas; limpiar contenedores `postgres:17` huérfanos |
 | D4 | 🟠 Media | 2FA sin cerrar: pruebas del inicio de sesión pendientes (palabras del commit `b81e632`) | Probar: código correcto, vencido, reuso, 6.º código en 15 min, refresco de página a mitad del flujo, logout |
 | D7 | 🟡 Baja | Comentarios de código mencionan archivos ya inexistentes (`authApi.js`, `src/api/client.js`) | Solo ruido; limpiar al tocar esos archivos |
 | D8 | 🟡 Baja | Mensaje de error del cliente Supabase dice `npm run dev`, el proyecto usa pnpm | `supabaseClient.js` |
@@ -199,32 +206,29 @@ pnpm build
 
 ---
 
-## 7. Qué falta desarrollar (hitо 2 y siguientes)
+## 7. Qué falta desarrollar
 
-El hito 1 quedó completo: registrar → Tablero → revisiones, con CI. Lo siguiente, priorizado:
+La fase 2a está completa. Lo siguiente, priorizado:
 
-### Pendiente del hito 1 (cierre)
+### Antes de desplegar
 
 | # | Tarea | Terminado cuando |
 |---|---|---|
-| C1 | Confirmar el historial de migraciones remoto (no hay acceso de red aquí) | Ver §5 · SQL Editor; de paso definir `app.proyecto_ref`/`app.limpieza_secret` y desplegar las 3 Edge Functions reales |
-| C2 | Probar `limpiar-huerfanos` con `?simular=1` contra el proyecto real | La simulación lista sin borrar; luego el modo real |
+| C1 | Confirmar el historial de migraciones remoto y aplicar la 0013–0022 | `schema_migrations` lista las 22 versiones; el aviso de despliegue de §5 revisado |
+| C2 | Definir `app.proyecto_ref`/`app.limpieza_secret` y desplegar las 3 Edge Functions reales; probar `limpiar-huerfanos` con `?simular=1` | La simulación lista sin borrar |
+| C3 | Verificar el dominio en Resend y redesplegar `mfa-enviar-codigo` (D11) | Un usuario distinto del dueño de la cuenta recibe el código |
 
-### Hitо 2 — alrededor del registro
+### Fases siguientes
 
 | # | Tarea | Notas |
 |---|---|---|
-| H2-1 | **Pantalla pública del cliente** (`/consulta`) | Formulario número + token → `consultar_registro()`; mensajes genéricos; respetar el freno por IP |
-| H2-2 | **Consulta de facturas de Ventas** | Fuente por CSV desde Ventas; conector: usará `confirmar_compra` (quién y cuándo ya se guarda) |
-| H2-3 | **Detalle del registro en una ruta propia** (`/registro/:id`) | Historial de estados, notas internas, adjuntos y revisiones en una sola pantalla; botón Revisar del Tablero |
-| H2-4 | **Cambio de estado y asignación de técnico** | La UI ofrece solo transiciones válidas según `transiciones_estado` y el rol |
-| H2-5 | **Avisos de vencimiento** (a correo) | Umbrales ya están en `ajustes` |
-| H2-6 | **Administración de usuarios** (ADMIN) | Listar, invitar, cambiar rol, desactivar (servicios listos, falta UI) |
-| H2-7 | **Gestión de clientes y catálogo** | marcas/productos (meses de garantía) |
-| H2-8 | **Reportes** | modelos con más fallas, tiempo medio por estado |
-| H2-9 | **Carga masiva por CSV** de registros antiguos | Necesita `registrar_ingreso` con `p_fecha_ingreso` (ya existe) |
-
----
+| 2b | Facturas de Ventas por CSV | La confirmación de una garantía `TALLER` pasaría a ser automática cuando la factura coincida |
+| 2c | Enlace público de seguimiento y alertas de vencimiento por correo | Necesita el dominio de Resend; pantalla de Notificaciones aún sin diseñar |
+| E | Entregas con datos (quién retira, cobro, plazo previsto) | Maqueta 05; faltan columnas y RPC |
+| I | Inventario (stock, mínimos, movimientos, repuestos) | Maqueta 06; fuente probable: `Catalogo-actualizado-Prime.pdf`, sin revisar |
+| R | Reportes y expedientes (PDF/Excel) | Maqueta 07 |
+| K | Clientes y avisos | Maqueta 08; necesita registro de avisos y envío de correos |
+| A | Administración de usuarios (ADMIN) | Servicios listos, falta UI |
 
 ## 8. Guía rápida para agentes de IA
 
@@ -234,4 +238,5 @@ El hito 1 quedó completo: registrar → Tablero → revisiones, con CI. Lo sigu
 - **Reglas de negocio** van en Postgres (CHECKs, triggers, RLS), no en React. La UI puede *anticipar* reglas para no ofrecer acciones inválidas, pero nunca es la única barrera.
 - **No hacer:** `signUp()` desde el navegador (usar la Edge Function) · devolver el código 2FA al cliente · guardar el token de consulta en claro · añadir `DELETE` (las órdenes se anulan) · distinguir "correo inexistente" de "contraseña mala" en mensajes · exponer `notas_internas` en consultas públicas.
 - **Antes de tocar la BD:** leer los comentarios `HALLAZGO CORREGIDO` de las migraciones; documentan por qué cada decisión es como es.
-- **Orden recomendado para empezar:** P0-1 → P1-1 → P1-2 → P1-5.
+- **Orden recomendado para empezar:** C1 → C2 → C3 (despliegue) y luego la fase 2b o la que se priorice.
+- **Cambios de estado, presupuesto y asignación:** solo por `cambiar_estado`, `registrar_presupuesto` y `asignar_tecnico`; el UPDATE directo de `estado`, `costo_reparacion` y `tecnico_asignado_id` está denegado.
