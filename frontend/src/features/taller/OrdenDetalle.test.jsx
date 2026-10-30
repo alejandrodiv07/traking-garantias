@@ -1,5 +1,6 @@
-// Detalle de la orden, SOLO LECTURA (Tarea 16 del plan, primera mitad):
-// encabezado, barra de estados y las cinco pestañas. Las acciones llegan con la 0021.
+// Detalle de la orden (Tarea 16 del plan): lectura (primera mitad) y acciones
+// por rol (segunda mitad, RPC 0021). El rol lo decide la base; aquí la UI lo
+// anticipa con el espejo de transiciones.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -11,9 +12,15 @@ const fakes = vi.hoisted(() => ({
   notasOrden: vi.fn(),
   adjuntosOrden: vi.fn(),
   listarRevisiones: vi.fn(),
+  listarTecnicos: vi.fn(),
+  cambiarEstado: vi.fn(),
+  asignarTecnico: vi.fn(),
+  registrarPresupuesto: vi.fn(),
+  rol: "JEFE_SERVICIO",
 }));
 vi.mock("./tallerService.js", () => fakes);
 vi.mock("../revisiones/revisionesService.js", () => fakes);
+vi.mock("../auth/AuthContext.jsx", () => ({ useAuth: () => ({ rol: fakes.rol }) }));
 
 import OrdenDetalle from "./OrdenDetalle.jsx";
 
@@ -51,11 +58,25 @@ const pestana = (n) => userEvent.setup().click(screen.getByRole("tab", { name: n
 const cargada = () => screen.findByRole("heading", { name: "OS-2026-0007" });
 
 beforeEach(() => {
+  fakes.rol = "JEFE_SERVICIO";
   fakes.obtenerOrden.mockReset().mockResolvedValue({ ok: true, datos: ORDEN() });
   fakes.historialOrden.mockReset().mockResolvedValue({ ok: true, datos: [] });
   fakes.notasOrden.mockReset().mockResolvedValue({ ok: true, datos: [] });
   fakes.adjuntosOrden.mockReset().mockResolvedValue({ ok: true, datos: [] });
   fakes.listarRevisiones.mockReset().mockResolvedValue({ ok: true, datos: [] });
+  fakes.listarTecnicos.mockReset().mockResolvedValue({
+    ok: true,
+    datos: [
+      { id: "t1", full_name: "Tomás Técnico" },
+      { id: "t2", full_name: "Luis López" },
+    ],
+  });
+  fakes.cambiarEstado.mockReset().mockResolvedValue({
+    ok: true,
+    datos: { orden_id: "o1", estado: "EN_REPARACION", tipo_atencion: "GARANTIA" },
+  });
+  fakes.asignarTecnico.mockReset().mockResolvedValue({ ok: true, datos: null });
+  fakes.registrarPresupuesto.mockReset().mockResolvedValue({ ok: true, datos: { tipo_atencion: "PAGO" } });
 });
 
 describe("OrdenDetalle: encabezado", () => {
@@ -80,7 +101,8 @@ describe("OrdenDetalle: encabezado", () => {
   it("dibuja la barra de estados con el tipo de atención", async () => {
     fakes.obtenerOrden.mockResolvedValue({ ok: true, datos: ORDEN({ tipo_atencion: "PAGO" }) });
     montar();
-    expect(await screen.findByText("Presupuestado")).toBeTruthy();
+    // "Presupuestado" aparece en la barra Y como opción del avance (jefatura).
+    expect((await screen.findAllByText("Presupuestado")).length).toBeGreaterThan(0);
   });
 
   it("si no existe o no se ve, muestra el error", async () => {
@@ -217,5 +239,207 @@ describe("OrdenDetalle: pestañas", () => {
     await cargada();
     await pestana("Documentos");
     expect((await screen.findByRole("alert")).textContent).toMatch(/Sin conexión/);
+  });
+});
+
+// Acciones por rol (segunda mitad): la UI anticipa la matriz de
+// transiciones_estado (espejo en dominio.js); la 0021 decide de verdad.
+const opcionesDe = async () => {
+  const cb = await screen.findByRole("combobox", { name: "Avanzar a:" });
+  return Array.from(cb.options).map((o) => o.textContent);
+};
+
+describe("OrdenDetalle: acciones por rol — Avanzar", () => {
+  it("un técnico desde En diagnóstico solo ve sus tres saltos, sin Rechazar ni Asignar", async () => {
+    fakes.rol = "TECNICO";
+    montar();
+    await cargada();
+    expect(await opcionesDe()).toEqual(["Elegir estado", "Presupuestado", "En reparación", "Irreparable"]);
+    expect(screen.queryByRole("button", { name: "Rechazar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Asignar técnico" })).toBeNull();
+  });
+
+  it("jefatura ve, además, Rechazar y Anular (y rechaza directo en la pestaña de acciones)", async () => {
+    montar();
+    await cargada();
+    expect(await opcionesDe()).toEqual([
+      "Elegir estado",
+      "Presupuestado",
+      "En reparación",
+      "Irreparable",
+      "Anulado",
+      "Rechazado",
+    ]);
+    expect(screen.getByRole("button", { name: "Rechazar" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Asignar técnico" })).toBeTruthy();
+  });
+
+  it("avanzar llama cambiar_estado con el estado elegido y refresca la orden", async () => {
+    const user = userEvent.setup();
+    fakes.obtenerOrden.mockResolvedValueOnce({ ok: true, datos: ORDEN() }).mockResolvedValueOnce({
+      ok: true,
+      datos: ORDEN({ estado: "EN_REPARACION", estado_nombre: "En reparación" }),
+    });
+    montar();
+    await cargada();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Avanzar a:" }), "En reparación");
+    await user.click(screen.getByRole("button", { name: "Avanzar" }));
+    expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", { estado: "EN_REPARACION", comentario: null });
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2);
+    expect((await screen.findAllByText("En reparación")).length).toBeGreaterThan(0);
+  });
+
+  it("el comentario opcional del avance viaja con el cambio", async () => {
+    const user = userEvent.setup();
+    montar();
+    await cargada();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Avanzar a:" }), "En reparación");
+    await user.type(screen.getByLabelText("Comentario"), "Repuesto puesto");
+    await user.click(screen.getByRole("button", { name: "Avanzar" }));
+    expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", { estado: "EN_REPARACION", comentario: "Repuesto puesto" });
+  });
+
+  it("si la base niega el avance, el problema se muestra y no se refresca", async () => {
+    const user = userEvent.setup();
+    fakes.rol = "TECNICO";
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ tecnico: "Otro Técnico" }),
+    });
+    fakes.cambiarEstado.mockResolvedValue({ ok: false, mensaje: "Solo el técnico asignado puede cambiar el estado" });
+    montar();
+    await cargada();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Avanzar a:" }), "En reparación");
+    await user.click(screen.getByRole("button", { name: "Avanzar" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Solo el técnico asignado/);
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(1);
+  });
+
+  it("una orden entregada ya no ofrece avanzar, rechazar ni asignar", async () => {
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ estado: "ENTREGADO", estado_nombre: "Entregado" }),
+    });
+    montar();
+    expect(await cargada()).toBeTruthy();
+    expect(screen.queryByRole("combobox", { name: "Avanzar a:" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Rechazar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Asignar técnico" })).toBeNull();
+  });
+});
+
+describe("OrdenDetalle: acciones por rol — Rechazar", () => {
+  it("se ofrece solo a jefatura desde RECIBIDO/EN_DIAGNOSTICO/PRESUPUESTADO", async () => {
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ estado: "EN_REPARACION", estado_nombre: "En reparación" }),
+    });
+    montar();
+    await cargada();
+    expect(screen.queryByRole("button", { name: "Rechazar" })).toBeNull();
+  });
+
+  it("abre un modal que pide el motivo y no envía menos de 10 caracteres", async () => {
+    const user = userEvent.setup();
+    montar();
+    await cargada();
+    await user.click(screen.getByRole("button", { name: "Rechazar" }));
+    const dialogo = screen.getByRole("dialog", { name: "Rechazar orden" });
+    await user.type(screen.getByPlaceholderText(/motivo/i), "equipo");
+    expect(screen.getByRole("button", { name: "Rechazar orden" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Rechazar orden" }));
+    expect(fakes.cambiarEstado).not.toHaveBeenCalled();
+    expect(dialogo).toBeVisible();
+  });
+
+  it("con un motivo de sustancia envía RECHAZADO + motivo y recarga la orden", async () => {
+    const user = userEvent.setup();
+    fakes.obtenerOrden
+      .mockResolvedValueOnce({ ok: true, datos: ORDEN() })
+      .mockResolvedValueOnce({
+        ok: true,
+        datos: ORDEN({ estado: "RECHAZADO", estado_nombre: "Rechazado", motivo_rechazo: "Equipo con humedad evidente" }),
+      });
+    montar();
+    await cargada();
+    await user.click(screen.getByRole("button", { name: "Rechazar" }));
+    await user.type(screen.getByPlaceholderText(/motivo/i), "Equipo con humedad evidente");
+    await user.click(screen.getByRole("button", { name: "Rechazar orden" }));
+    expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", {
+      estado: "RECHAZADO",
+      motivo: "Equipo con humedad evidente",
+    });
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2);
+    expect(await screen.findByRole("heading", { name: "OS-2026-0007" })).toBeTruthy();
+  });
+
+  it("si la base rechaza el cambio, el mensaje del servicio sale en el modal", async () => {
+    const user = userEvent.setup();
+    fakes.cambiarEstado.mockResolvedValue({
+      ok: false,
+      codigo: "SIN_PERMISO",
+      mensaje: "Su rol no puede cambiar el estado de la orden",
+    });
+    montar();
+    await cargada();
+    await user.click(screen.getByRole("button", { name: "Rechazar" }));
+    await user.type(screen.getByPlaceholderText(/motivo/i), "Equipo con humedad evidente");
+    await user.click(screen.getByRole("button", { name: "Rechazar orden" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Su rol no puede cambiar el estado/);
+  });
+});
+
+describe("OrdenDetalle: acciones por rol — Asignar técnico", () => {
+  it("un técnico ni lo ve; para jefatura los técnicos llegan listarTecnicos", async () => {
+    fakes.rol = "TECNICO";
+    montar();
+    await cargada();
+    expect(screen.queryByRole("button", { name: "Asignar técnico" })).toBeNull();
+    expect(fakes.listarTecnicos).not.toHaveBeenCalled();
+  });
+
+  it("el modal ofrece los técnicos activos (listarTecnicos)", async () => {
+    const user = userEvent.setup();
+    montar();
+    await cargada();
+    await user.click(screen.getByRole("button", { name: "Asignar técnico" }));
+    expect(fakes.listarTecnicos).toHaveBeenCalledTimes(1);
+    const cb = screen.getByRole("combobox", { name: "Técnico" });
+    expect(Array.from(cb.options).map((o) => o.textContent)).toEqual(["Elegir técnico", "Tomás Técnico", "Luis López"]);
+  });
+
+  it("asignar llama asignarTecnico y refresca; el error de la base se muestra", async () => {
+    const user = userEvent.setup();
+    fakes.obtenerOrden
+      .mockResolvedValueOnce({ ok: true, datos: ORDEN({ tecnico: null }) })
+      .mockResolvedValueOnce({ ok: true, datos: ORDEN({ tecnico: "Tomás Técnico" }) });
+    montar();
+    await cargada();
+    await user.click(screen.getByRole("button", { name: "Asignar técnico" }));
+    expect(screen.getByRole("button", { name: "Asignar" })).toBeDisabled();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Técnico" }), "Tomás Técnico");
+    await user.click(screen.getByRole("button", { name: "Asignar" }));
+    expect(fakes.asignarTecnico).toHaveBeenCalledWith("o1", "t1");
+    expect(fakes.obtenerOrden).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText(/Tomás Técnico/)).toBeTruthy();
+  });
+});
+
+describe("OrdenDetalle: acciones por rol — RECEPCION", () => {
+  it("con la orden Reparada, recepción solo marca Entregado y hace el cambio", async () => {
+    const user = userEvent.setup();
+    fakes.rol = "RECEPCION";
+    fakes.obtenerOrden.mockResolvedValue({
+      ok: true,
+      datos: ORDEN({ estado: "REPARADO", estado_nombre: "Reparado" }),
+    });
+    montar();
+    await cargada();
+    expect(await opcionesDe()).toEqual(["Elegir estado", "Entregado"]);
+    expect(screen.queryByRole("button", { name: "Rechazar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Asignar técnico" })).toBeNull();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Avanzar a:" }), "Entregado");
+    await user.click(screen.getByRole("button", { name: "Avanzar" }));
+    expect(fakes.cambiarEstado).toHaveBeenCalledWith("o1", { estado: "ENTREGADO", comentario: null });
   });
 });

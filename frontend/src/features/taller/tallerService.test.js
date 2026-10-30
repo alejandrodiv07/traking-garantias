@@ -22,10 +22,14 @@ vi.mock("../registro/registroService.js", async () => {
 import {
   abrirOrden,
   adjuntosOrden,
+  asignarTecnico,
+  cambiarEstado,
   historialOrden,
   leerEquipo,
+  listarTecnicos,
   notasOrden,
   obtenerOrden,
+  registrarPresupuesto,
   subirAdjuntos,
 } from "./tallerService.js";
 
@@ -184,5 +188,74 @@ describe("lecturas del detalle de la orden", () => {
     const r = await adjuntosOrden("o1");
     expect(llamadas.adjuntos).toContainEqual(["eq", "orden_id", "o1"]);
     expect(r).toMatchObject({ ok: false, codigo: "SIN_PERMISO" });
+  });
+});
+
+// Escrituras (Tarea 16, segunda mitad): la 0021 es la ÚNICA puerta para el
+// estado, el técnico y el presupuesto. El servicio manda la firma exacta.
+describe("cambiarEstado", () => {
+  it("manda la firma exacta de la 0021 y devuelve la fila del estado", async () => {
+    fakes.rpc.mockResolvedValue({
+      data: [{ orden_id: "o1", estado: "EN_REPARACION", tipo_atencion: "GARANTIA" }],
+      error: null,
+    });
+    const r = await cambiarEstado("o1", { estado: "EN_REPARACION", comentario: "Repuesto puesto" });
+    expect(fakes.rpc).toHaveBeenCalledWith("cambiar_estado", {
+      p_orden_id: "o1",
+      p_estado: "EN_REPARACION",
+      p_comentario: "Repuesto puesto",
+      p_motivo: null,
+    });
+    expect(r).toEqual({ ok: true, datos: { orden_id: "o1", estado: "EN_REPARACION", tipo_atencion: "GARANTIA" } });
+  });
+
+  it("el motivo del rechazo viaja en p_motivo", async () => {
+    fakes.rpc.mockResolvedValue({ data: [{ orden_id: "o1", estado: "RECHAZADO" }], error: null });
+    await cambiarEstado("o1", { estado: "RECHAZADO", motivo: "Equipo con humedad evidente" });
+    expect(fakes.rpc.mock.calls[0][1]).toMatchObject({
+      p_estado: "RECHAZADO",
+      p_motivo: "Equipo con humedad evidente",
+      p_comentario: null,
+    });
+  });
+
+  it("un rechazo de la base por permiso llega como SIN_PERMISO y una caída de red como SIN_CONEXION", async () => {
+    fakes.rpc.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "no permitido" } });
+    expect((await cambiarEstado("o1", { estado: "ANULADO" })).codigo).toBe("SIN_PERMISO");
+    fakes.rpc.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    expect((await cambiarEstado("o1", { estado: "ANULADO" })).codigo).toBe("SIN_CONEXION");
+  });
+});
+
+describe("asignarTecnico", () => {
+  it("manda p_orden_id y p_tecnico_id (y null para desasignar)", async () => {
+    fakes.rpc.mockResolvedValue({ data: null, error: null });
+    const r = await asignarTecnico("o1", "t1");
+    expect(fakes.rpc).toHaveBeenCalledWith("asignar_tecnico", { p_orden_id: "o1", p_tecnico_id: "t1" });
+    expect(r.ok).toBe(true);
+    await asignarTecnico("o1", null);
+    expect(fakes.rpc.mock.calls[1][1]).toMatchObject({ p_tecnico_id: null });
+  });
+});
+
+describe("registrarPresupuesto", () => {
+  it("manda p_orden_id y p_monto", async () => {
+    fakes.rpc.mockResolvedValue({ data: [{ tipo_atencion: "PAGO" }], error: null });
+    const r = await registrarPresupuesto("o1", 45);
+    expect(fakes.rpc).toHaveBeenCalledWith("registrar_presupuesto", { p_orden_id: "o1", p_monto: 45 });
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe("listarTecnicos", () => {
+  it("lee de profiles los técnicos activos con su nombre", async () => {
+    const llamadas = tablasFalsas({
+      profiles: { data: [{ id: "t1", full_name: "Tomás Técnico" }], error: null },
+    });
+    const r = await listarTecnicos();
+    expect(llamadas.profiles).toContainEqual(["eq", "role", "TECNICO"]);
+    expect(llamadas.profiles).toContainEqual(["eq", "is_active", true]);
+    expect(llamadas.profiles).toContainEqual(["select", "id, full_name"]);
+    expect(r).toEqual({ ok: true, datos: [{ id: "t1", full_name: "Tomás Técnico" }] });
   });
 });

@@ -1,5 +1,5 @@
-// Servicio del Taller (Tarea 15 del plan): abrir la orden de un equipo ya
-// registrado, leer ese equipo y subir los adjuntos de la recepción.
+// Servicio del Taller: abrir la orden de un equipo ya registrado (Tarea 15),
+// leer el detalle de la orden y las escrituras de la RPC 0021 (Tarea 16).
 import { supabase } from "../../lib/supabaseClient.js";
 import { rpc, subirAdjunto } from "../registro/registroService.js";
 
@@ -115,5 +115,45 @@ export function adjuntosOrden(ordenId) {
       .select("id, tipo, etiqueta, ruta, mime, bytes, subido_en")
       .eq("orden_id", ordenId)
       .order("subido_en", { ascending: true }),
+  );
+}
+
+// ---------------------------------------------------------------------
+// Escrituras (RPC 0021, Tarea 11 del plan): la ÚNICA puerta para mover
+// el estado, asignar técnico o fijar el presupuesto. La base decide;
+// estas funciones solo mandan la firma exacta y mapean el error.
+// ---------------------------------------------------------------------
+
+/** Cambia el estado vía `cambiar_estado`; el motivo solo se usa para RECHAZADO. */
+export async function cambiarEstado(ordenId, { estado, comentario, motivo }) {
+  const r = await rpc("cambiar_estado", {
+    p_orden_id: ordenId,
+    p_estado: estado,
+    p_comentario: comentario ?? null,
+    p_motivo: motivo ?? null,
+  });
+  return r.ok ? { ok: true, datos: r.datos?.[0] ?? null } : r;
+}
+
+/** Asigna (o desasigna con null) el técnico de la orden. ADMIN/JEFE_SERVICIO. */
+export async function asignarTecnico(ordenId, tecnicoId) {
+  const r = await rpc("asignar_tecnico", { p_orden_id: ordenId, p_tecnico_id: tecnicoId });
+  return r.ok ? { ok: true, datos: r.datos ?? null } : r;
+}
+
+/** Fija el presupuesto de un servicio pago vía `registrar_presupuesto`. */
+export async function registrarPresupuesto(ordenId, monto) {
+  const r = await rpc("registrar_presupuesto", { p_orden_id: ordenId, p_monto: monto });
+  return r.ok ? { ok: true, datos: r.datos?.[0] ?? null } : r;
+}
+
+/** Los técnicos activos para el selector de asignación (policy de profiles ya vigente). */
+export async function listarTecnicos() {
+  return lista(
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "TECNICO")
+      .eq("is_active", true),
   );
 }

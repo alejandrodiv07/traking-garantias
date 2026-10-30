@@ -67,6 +67,52 @@ export function estaAbierta(codigoEstado) {
 }
 
 /**
+ * Espejo de `public.transiciones_estado` (migraciones 20260906000002 y
+ * 20261030000016): la matriz EXACTA que impone el trigger `registrar_garantia`
+ * al UPDATE. La UI la usa para anticipar qué avances tiene sentido ofrecerle
+ * a cada rol — "la interfaz ANTICIPA, la base DECIDE": si un estado del
+ * espejo y la base llegaran a diferir, la llamada RPC de todas formas muere
+ * con el error del trigger y la pantalla lo muestra.
+ */
+export const TRANSICIONES = Object.freeze(
+  [
+    { desde: "RECIBIDO", hasta: "EN_DIAGNOSTICO", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "RECIBIDO", hasta: "ANULADO", roles: ["ADMIN", "JEFE_SERVICIO"] },
+    { desde: "RECIBIDO", hasta: "RECHAZADO", roles: ["ADMIN", "JEFE_SERVICIO"] },
+
+    { desde: "EN_DIAGNOSTICO", hasta: "PRESUPUESTADO", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "EN_DIAGNOSTICO", hasta: "EN_REPARACION", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "EN_DIAGNOSTICO", hasta: "IRREPARABLE", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "EN_DIAGNOSTICO", hasta: "ANULADO", roles: ["ADMIN", "JEFE_SERVICIO"] },
+    { desde: "EN_DIAGNOSTICO", hasta: "RECHAZADO", roles: ["ADMIN", "JEFE_SERVICIO"] },
+
+    { desde: "PRESUPUESTADO", hasta: "EN_ESPERA_REPUESTO", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "PRESUPUESTADO", hasta: "EN_REPARACION", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"] },
+    { desde: "PRESUPUESTADO", hasta: "RECHAZADO_POR_CLIENTE", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"] },
+    { desde: "PRESUPUESTADO", hasta: "IRREPARABLE", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "PRESUPUESTADO", hasta: "RECHAZADO", roles: ["ADMIN", "JEFE_SERVICIO"] },
+
+    { desde: "EN_ESPERA_REPUESTO", hasta: "EN_REPARACION", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"] },
+    { desde: "EN_ESPERA_REPUESTO", hasta: "IRREPARABLE", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "EN_ESPERA_REPUESTO", hasta: "RECHAZADO_POR_CLIENTE", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"] },
+
+    { desde: "EN_REPARACION", hasta: "REPARADO", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "EN_REPARACION", hasta: "IRREPARABLE", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+    { desde: "EN_REPARACION", hasta: "EN_ESPERA_REPUESTO", roles: ["ADMIN", "JEFE_SERVICIO", "TECNICO"] },
+
+    { desde: "REPARADO", hasta: "ENTREGADO", roles: ["ADMIN", "JEFE_SERVICIO", "RECEPCION"] },
+    { desde: "IRREPARABLE", hasta: "ENTREGADO", roles: ["ADMIN", "JEFE_SERVICIO", "RECEPCION"] },
+    { desde: "RECHAZADO_POR_CLIENTE", hasta: "ENTREGADO", roles: ["ADMIN", "JEFE_SERVICIO", "RECEPCION"] },
+    { desde: "RECHAZADO", hasta: "ENTREGADO", roles: ["ADMIN", "JEFE_SERVICIO", "RECEPCION"] },
+  ].map((t) => ({ ...t, roles: Object.freeze(t.roles) })),
+);
+
+/** Los avances posibles desde `desde` para `rol`, en el orden de la base. */
+export function transicionesDesde(desde, rol) {
+  return TRANSICIONES.filter((t) => t.desde === desde && t.roles.includes(rol)).map((t) => estado(t.hasta));
+}
+
+/**
  * Chips de filtro del tablero. Deliberadamente NO son los diez estados: una
  * fila de diez chips deja de ser un filtro y pasa a ser una segunda tabla.
  * Son los cuatro tramos donde de verdad se atasca el trabajo, más "Todas".

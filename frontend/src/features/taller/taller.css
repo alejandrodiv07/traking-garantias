@@ -196,3 +196,93 @@
   gap: 8px;
   padding-left: 18px;
 }
+
+/* Acciones por rol (RPC 0021): avanzar con la matriz filtrada, rechazar y
+   asignar técnico. El formulario hereda el estilo de los inputs del taller. */
+.od-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 12px;
+}
+
+.od-acciones p[role="alert"] {
+  width: 100%;
+  color: var(--c-error);
+  font-weight: 600;
+}
+
+.od-avanzar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.od-avanzar label,
+.od-modal label {
+  display: grid;
+  gap: 4px;
+}
+
+.od-avanzar input,
+.od-avanzar select,
+.od-avanzar button,
+.od-modal textarea,
+.od-modal select,
+.od-modal button {
+  min-height: 44px;
+}
+
+.od-avanzar button {
+  padding: 0 16px;
+  border: 1px solid var(--c-border-soft);
+  border-radius: 999px;
+  background: var(--c-surface);
+}
+
+.od-avanzar button:not([disabled]) {
+  background: var(--c-accent-bg);
+  color: var(--c-accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.od-modal {
+  width: 100%;
+  max-width: 480px;
+  padding: 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--c-radio);
+  background: var(--c-surface);
+  box-shadow: var(--c-shadow-card);
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.od-modal h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.od-modal textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.od-modal button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.od-modal button:not([disabled]) {
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: var(--c-cta);
+  color: var(--c-cta-fg);
+  font-weight: 600;
+  cursor: pointer;
+}

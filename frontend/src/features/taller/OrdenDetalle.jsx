@@ -1,20 +1,36 @@
 /**
- * Detalle de la orden, SOLO LECTURA (spec §8, Tarea 16): encabezado, barra de
- * estados y cinco pestañas. Cada pestaña lee lo suyo al abrirse, así un fallo
- * en una no tumba el resto. Las acciones (avanzar, rechazar, asignar técnico,
- * presupuesto) llegan con la 0021.
+ * Detalle de la orden (spec §8, Tarea 16): encabezado, acciones por rol y
+ * barra de estados con cinco pestañas. En las acciones la UI ANTICIPA con el
+ * espejo de `transiciones_estado` (dominio.js) y la base DECIDE dentro de la
+ * RPC 0021; en las pestañas cada una lee lo suyo al abrirse, así un fallo en
+ * una no tumba el resto.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.jsx";
+import { cobertura, estado as estadoDe, estaAbierta, transicionesDesde } from "../tablero/dominio.js";
 import HistorialRevisiones from "../revisiones/HistorialRevisiones.jsx";
-import { cobertura, estado as estadoDe } from "../tablero/dominio.js";
 import BarraEstados from "./componentes/BarraEstados.jsx";
-import { adjuntosOrden, historialOrden, notasOrden, obtenerOrden } from "./tallerService.js";
+import {
+  adjuntosOrden,
+  asignarTecnico,
+  cambiarEstado,
+  historialOrden,
+  listarTecnicos,
+  notasOrden,
+  obtenerOrden,
+} from "./tallerService.js";
 import "./taller.css";
 
 const ATENCION = { GARANTIA: "garantía", PAGO: "pago", PENDIENTE: "pendiente" };
 
 const PESTANAS = ["Resumen", "Auditoría", "Diagnóstico y presupuesto", "Documentos", "Bitácora"];
+
+/** Mismo mínimo que la base exige (`ck_rechazo_motivado`, migración 0015). */
+const MOTIVO_MIN = 10;
+
+/** Jefatura: quienes deciden el rechazo del taller y asignan técnico. */
+const JEFE = ["ADMIN", "JEFE_SERVICIO"];
 
 /** Carga una lista al montar la pestaña: { cargando } | { error } | { datos }. */
 function useLista(leer, ordenId) {
@@ -128,23 +144,207 @@ function Bitacora({ ordenId }) {
   );
 }
 
+/** Modal del detalle: un div `role="dialog"` con nombre accesible y desechable. */
+function Modal({ titulo, cerrar, children }) {
+  return (
+    <div className="od-modal" role="dialog" aria-label={titulo}>
+      <h2>{titulo}</h2>
+      {children}
+      <button type="button" onClick={cerrar}>
+        Cancelar
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Las acciones de la orden, filtradas por el rol que ANUNCIA profiles (la
+ * base lo vuelve a imponer dentro de las RPC): "Avanzar a: X" con las
+ * transiciones válidas del estado actual, "Rechazar" solo jefatura y desde
+ * los estados que la matriz admite (con motivo de al menos 10 caracteres),
+ * y "Asignar técnico" solo jefatura. Tras un cambio con éxito se recarga la
+ * orden para que la barra y la bitácora muestren el avance.
+ */
+function Acciones({ orden, rol, onCambio }) {
+  const opciones = transicionesDesde(orden.estado, rol);
+  const puedeRechazar = JEFE.includes(rol) && ["RECIBIDO", "EN_DIAGNOSTICO", "PRESUPUESTADO"].includes(orden.estado);
+
+  const [dialogo, setDialogo] = useState(null); // null | "rechazar" | "tecnico"
+  const [destino, setDestino] = useState("");
+  const [comentario, setComentario] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [tecnico, setTecnico] = useState("");
+  const [tecnicos, setTecnicos] = useState([]);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function aplicar(llamada, alTerminar) {
+    setEnviando(true);
+    setError(null);
+    const r = await llamada();
+    setEnviando(false);
+    if (r.ok) alTerminar();
+    else setError(r.mensaje || "No se pudo guardar");
+  }
+
+  function avanzar(ev) {
+    ev.preventDefault();
+    if (!destino) return;
+    return aplicar(
+      () => cambiarEstado(orden.orden_id, { estado: destino, comentario: comentario.trim() || null }),
+      () => {
+        setDestino("");
+        setComentario("");
+        onCambio();
+      },
+    );
+  }
+
+  function rechazar(ev) {
+    ev.preventDefault();
+    return aplicar(
+      () => cambiarEstado(orden.orden_id, { estado: "RECHAZADO", motivo: motivo.trim() }),
+      () => {
+        setMotivo("");
+        setDialogo(null);
+        onCambio();
+      },
+    );
+  }
+
+  function asignar(ev) {
+    ev.preventDefault();
+    if (!tecnico) return;
+    return aplicar(
+      () => asignarTecnico(orden.orden_id, tecnico),
+      () => {
+        setTecnico("");
+        setDialogo(null);
+        onCambio();
+      },
+    );
+  }
+
+  async function abrirTecnicos() {
+    setError(null);
+    const r = await listarTecnicos();
+    if (r.ok) {
+      setTecnicos(r.datos);
+      setDialogo("tecnico");
+    } else {
+      setError(r.mensaje || "No se pudo cargar la lista de técnicos");
+    }
+  }
+
+  // Cerrada (ENTREGADO, ANULADO) no se mueve, no se rechaza y no se asigna.
+  if (!estaAbierta(orden.estado)) return null;
+
+  return (
+    <div className="od-acciones">
+      {opciones.length > 0 && (
+        <form className="od-avanzar" onSubmit={avanzar}>
+          <label htmlFor="avanzar-a">
+            Avanzar a:
+            <select id="avanzar-a" value={destino} onChange={(ev) => setDestino(ev.target.value)}>
+              <option value="">Elegir estado</option>
+              {opciones.map((e) => (
+                <option key={e.codigo} value={e.codigo}>
+                  {e.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label htmlFor="avanzar-cmt">
+            Comentario
+            <input
+              id="avanzar-cmt"
+              value={comentario}
+              onChange={(ev) => setComentario(ev.target.value)}
+              placeholder="Va a la bitácora (opcional)"
+            />
+          </label>
+          <button type="submit" disabled={!destino || enviando}>
+            Avanzar
+          </button>
+        </form>
+      )}
+
+      {puedeRechazar && (
+        <button type="button" onClick={() => setDialogo("rechazar")}>
+          Rechazar
+        </button>
+      )}
+      {JEFE.includes(rol) && (
+        <button type="button" onClick={abrirTecnicos}>
+          Asignar técnico
+        </button>
+      )}
+      {error && <p role="alert">{error}</p>}
+
+      {dialogo === "rechazar" && (
+        <Modal titulo="Rechazar orden" cerrar={() => setDialogo(null)}>
+          <form onSubmit={rechazar}>
+            <label htmlFor="rechazar-motivo">
+              Motivo
+              <textarea
+                id="rechazar-motivo"
+                placeholder="Motivo del rechazo"
+                value={motivo}
+                onChange={(ev) => setMotivo(ev.target.value)}
+              />
+            </label>
+            <button type="submit" disabled={enviando || motivo.trim().length < MOTIVO_MIN}>
+              Rechazar orden
+            </button>
+          </form>
+        </Modal>
+      )}
+
+      {dialogo === "tecnico" && (
+        <Modal titulo="Asignar técnico" cerrar={() => setDialogo(null)}>
+          <form onSubmit={asignar}>
+            <label htmlFor="asignar-tecnico">
+              Técnico
+              <select id="asignar-tecnico" value={tecnico} onChange={(ev) => setTecnico(ev.target.value)}>
+                <option value="">Elegir técnico</option>
+                {tecnicos.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" disabled={enviando || !tecnico}>
+              Asignar
+            </button>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 export default function OrdenDetalle() {
   const { id } = useParams();
+  const { rol } = useAuth();
   const [orden, setOrden] = useState(null);
   const [error, setError] = useState(null);
   const [pestana, setPestana] = useState("Resumen");
 
-  useEffect(() => {
-    let vivo = true;
+  const cargar = useCallback(() => {
     obtenerOrden(id).then((r) => {
-      if (!vivo) return;
-      if (r.ok) setOrden(r.datos);
-      else setError(r.mensaje || "No se pudo cargar la orden");
+      if (r.ok) {
+        setOrden(r.datos);
+        setError(null);
+      } else {
+        setError(r.mensaje || "No se pudo cargar la orden");
+      }
     });
-    return () => {
-      vivo = false;
-    };
   }, [id]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
 
   if (error) return <p role="alert">{error}</p>;
   if (!orden) return <p role="status">Cargando orden…</p>;
@@ -162,6 +362,8 @@ export default function OrdenDetalle() {
           Atención: {ATENCION[orden.tipo_atencion] ?? orden.tipo_atencion}
         </span>
       </header>
+
+      <Acciones orden={orden} rol={rol} onCambio={cargar} />
 
       <BarraEstados
         estado={orden.estado}
