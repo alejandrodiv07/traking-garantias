@@ -2,6 +2,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 
 const fakes = vi.hoisted(() => ({
   guardarCliente: vi.fn(),
@@ -112,5 +113,86 @@ describe("PasoVerificacion", () => {
     render(<PasoVerificacion estado={estado} actualizar={() => {}} />);
     await userEvent.setup().click(screen.getAllByRole("checkbox")[0]);
     await waitFor(() => expect(screen.getByText(/se calculará al guardar/i)).toBeTruthy());
+  });
+});
+
+// Corrección D1 (hallazgo 2): la previsualización usa como fecha de ingreso EL
+// DÍA DE HOY (el momento del ingreso) — no la clave muerta fechaIngresoLocal —
+// y el checklist que viaja a la base es COMPLETO: todas las casillas de los 3
+// grupos con booleanos (sin marcar = false).
+const fechaDeHoy = () => {
+  const d = new Date();
+  const dos = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+};
+
+describe("PasoVerificacion: fecha de ingreso = hoy y checklist completo", () => {
+  it("la previsualización pide la cobertura con fechaIngreso de HOY", async () => {
+    render(<PasoVerificacion estado={{ venceEl: "2026-09-08" }} actualizar={vi.fn()} />);
+    await userEvent.setup().click(screen.getAllByRole("checkbox")[0]);
+    await waitFor(() => expect(fakes.previsualizarCobertura).toHaveBeenCalled());
+    expect(fakes.previsualizarCobertura).toHaveBeenCalledWith(
+      expect.objectContaining({ fechaIngreso: fechaDeHoy() }),
+    );
+  });
+
+  it("el checklist enviado es COMPLETO: las casillas sin marcar van en false", async () => {
+    render(<PasoVerificacion estado={{ venceEl: "2026-09-08" }} actualizar={vi.fn()} />);
+    await userEvent.setup().click(screen.getByRole("checkbox", { name: /golpes/i }));
+    await waitFor(() =>
+      expect(fakes.previsualizarCobertura).toHaveBeenCalledWith(
+        expect.objectContaining({
+          checklist: {
+            condiciones: { factura_presentada: false, titular_coincide: false },
+            equipo: {
+              serial_legible: false,
+              caja_original: false,
+              precintos_intactos: false,
+              contenido_completo: false,
+            },
+            senales: {
+              descarga_electrica: false,
+              liquidos: false,
+              altas_temperaturas: false,
+              golpes: true,
+              manipulacion_terceros: false,
+            },
+          },
+        }),
+      ),
+    );
+  });
+
+  it("desmarcar una casilla alterna de vuelta a false dentro del checklist completo", async () => {
+    // El paso es controlado: el checklist alterna de verdad cuando el estado
+    // del asistente responde a actualizar() (como en la app).
+    function Envoltura() {
+      const [estado, setEstado] = useState({ venceEl: "2026-09-08" });
+      return (
+        <PasoVerificacion
+          estado={estado}
+          actualizar={(p) => setEstado((s) => ({ ...s, ...p }))}
+        />
+      );
+    }
+    render(<Envoltura />);
+    const user = userEvent.setup();
+    const golpes = screen.getByRole("checkbox", { name: /golpes/i });
+    await user.click(golpes);
+    await waitFor(() =>
+      expect(fakes.previsualizarCobertura).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          checklist: expect.objectContaining({ senales: expect.objectContaining({ golpes: true }) }),
+        }),
+      ),
+    );
+    await user.click(golpes);
+    await waitFor(() =>
+      expect(fakes.previsualizarCobertura).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          checklist: expect.objectContaining({ senales: expect.objectContaining({ golpes: false }) }),
+        }),
+      ),
+    );
   });
 });

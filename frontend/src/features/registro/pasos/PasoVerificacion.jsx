@@ -38,6 +38,25 @@ const GRUPOS = [
   },
 ];
 
+/** El día de hoy (AAAA-MM-DD) en la zona horaria del navegador. */
+function hoyISO() {
+  const d = new Date();
+  const dos = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+}
+
+/** El checklist completo: todas las casillas de los 3 grupos con booleanos. */
+function checklistCompleto(marcado) {
+  const completo = {};
+  for (const g of GRUPOS) {
+    completo[g.clave] = {};
+    for (const [item] of g.items) {
+      completo[g.clave][item] = Boolean(marcado?.[g.clave]?.[item]);
+    }
+  }
+  return completo;
+}
+
 export default function PasoVerificacion({ estado, actualizar }) {
   const [cobertura, setCobertura] = useState(estado?.cobertura ?? null);
   const [motivo, setMotivo] = useState(estado?.motivoCobertura ?? null);
@@ -50,7 +69,8 @@ export default function PasoVerificacion({ estado, actualizar }) {
     temporizador.current = setTimeout(async () => {
       const r = await previsualizarCobertura({
         venceEl: estado?.venceEl ?? null,
-        fechaIngreso: estado?.fechaIngresoLocal ?? null,
+        // La fecha de ingreso es EL DÍA DE HOY: el momento de este ingreso.
+        fechaIngreso: hoyISO(),
         checklist: c,
       });
       if (r.ok) {
@@ -68,11 +88,14 @@ export default function PasoVerificacion({ estado, actualizar }) {
   useEffect(() => () => clearTimeout(temporizador.current), []);
 
   function alCambiar(clave, item, marcado) {
-    const nuevo = {
+    // El checklist que viaja a la base es COMPLETO: todas las casillas de los
+    // 3 grupos con booleanos (sin marcar = false). Se inicializa todo en
+    // false y esta casilla alterna la suya.
+    const marcadoAhora = {
       ...checklist,
       [clave]: { ...(checklist?.[clave] ?? {}), [item]: marcado },
     };
-    alCoberturaEnVista(nuevo);
+    alCoberturaEnVista(checklistCompleto(marcadoAhora));
   }
 
   return (
