@@ -26,9 +26,9 @@ function Destino() {
   return <p>Consulta {l.search}</p>;
 }
 
-const montar = () =>
+const montar = (ruta = "/garantias/nueva") =>
   render(
-    <MemoryRouter initialEntries={["/garantias/nueva"]}>
+    <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/garantias/nueva" element={<NuevaGarantia />} />
         <Route path="/garantias/consulta" element={<Destino />} />
@@ -146,5 +146,24 @@ describe("NuevaGarantia", () => {
     await usuario.click(screen.getByRole("button", { name: "Registrar garantía" }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/solo los fija el jefe/);
     expect(screen.queryByText(/^Consulta/)).toBeNull();
+  });
+
+  it("llegando de la Consulta (?serial=&origen=TALLER) precarga el serial y registra con origen TALLER", async () => {
+    const usuario = userEvent.setup();
+    montar("/garantias/nueva?serial=ABC-999&origen=TALLER");
+    await usuario.type(screen.getByLabelText(/Documento/), "12345678");
+    await screen.findByText(/Titular: Juan Perez/);
+    await siguiente();
+    expect(screen.getByLabelText("Serial")).toHaveValue("ABC-999");
+    await usuario.selectOptions(await screen.findByLabelText("Marca"), "Huawei");
+    await usuario.selectOptions(screen.getByLabelText("Modelo"), "p1");
+    await siguiente();
+    await siguiente();
+    await usuario.click(screen.getByRole("button", { name: "Registrar garantía" }));
+    await waitFor(() =>
+      expect(fakes.registrarGarantia).toHaveBeenCalledWith(
+        expect.objectContaining({ serial: "ABC-999", origen: "TALLER" }),
+      ),
+    );
   });
 });

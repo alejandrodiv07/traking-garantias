@@ -5,7 +5,7 @@
  * La base decide los permisos; el aviso del plazo solo adelanta su respuesta.
  */
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import PasoCliente from "../registro/pasos/PasoCliente.jsx";
 import PasoCompra from "../registro/pasos/PasoCompra.jsx";
@@ -91,11 +91,14 @@ const completo = {
   2: () => true,
 };
 
-export default function NuevaGarantia({ origen = "VENTA" }) {
+export default function NuevaGarantia({ origen: origenPorDefecto = "VENTA" }) {
   const { rol } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // La Consulta manda aquí con ?serial=…&origen=TALLER cuando no halla el equipo.
+  const origen = params.get("origen") === "TALLER" ? "TALLER" : origenPorDefecto;
   const [paso, setPaso] = useState(0);
-  const [estado, setEstado] = useState({});
+  const [estado, setEstado] = useState({ serial: params.get("serial") ?? "" });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
