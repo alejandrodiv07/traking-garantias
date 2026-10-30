@@ -34,6 +34,32 @@ describe("guardar y leer", () => {
     expect(JSON.parse(localStorage.getItem("pt.borrador." + USUARIO))).not.toContain("Foto");
     expect(borrador).toEqual({ serial: "x" });
   });
+
+  // Corrección D1 (hallazgo 6): los adjuntos viven DENTRO de una lista
+  // ({archivo: File, ...}); un File/Blob de primer nivel no es suficiente.
+  // El borrador promete JAMÁS incluir archivos: la lista entera de adjuntos
+  // queda fuera (al restaurarla, sus File han muerto y quedarían pendientes
+  // eternos que subirAdjunto rechaza por MIME vacío).
+  it("los adjuntos con File dentro tampoco pasan al borrador (ni como stubs)", () => {
+    const archivo = new File([new Uint8Array(3)], "foto.jpg", { type: "image/jpeg" });
+    guardarBorrador(USUARIO, {
+      serial: "x",
+      archivosAdjuntos: [{ id: "1", archivo, tipo: "FOTO", etiqueta: null, error: null }],
+    });
+    expect(leerBorrador(USUARIO)).toEqual({ serial: "x" });
+    expect(localStorage.getItem("pt.borrador." + USUARIO)).not.toContain("archivosAdjuntos");
+  });
+
+  it("un objeto sin archivos se guarda íntegro (el filtro es por profundidad)", () => {
+    guardarBorrador(USUARIO, {
+      serial: "x",
+      checklist: { condiciones: { factura_presentada: true } },
+    });
+    expect(leerBorrador(USUARIO)).toEqual({
+      serial: "x",
+      checklist: { condiciones: { factura_presentada: true } },
+    });
+  });
 });
 
 describe("caducidad a las 24 horas", () => {

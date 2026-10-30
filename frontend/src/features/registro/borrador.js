@@ -6,12 +6,31 @@
 const CLAVE = (userId) => `pt.borrador.${userId}`;
 const VIDA_MS = 24 * 60 * 60 * 1000;   // 24 horas
 
-/** El borrador es datos del cliente: jamás un File. */
+/** ¿Vive un File/Blob DENTRO de este valor (listas y objetos incluidos)? */
+function contieneArchivo(v, vistos = new Set()) {
+  if (!v || typeof v !== "object") return false;
+  if (v instanceof File || v instanceof Blob) return true;
+  if (vistos.has(v)) return false;
+  vistos.add(v);
+  if (Array.isArray(v)) {
+    return v.some((i) => contieneArchivo(i, vistos));
+  }
+  return Object.values(v).some((i) => contieneArchivo(i, vistos));
+}
+
+/**
+ * El borrador es datos del cliente: jamás un File. Y ojo con la profundidad:
+ * los adjuntos viven en `archivosAdjuntos` (lista de {archivo: File, ...}) —
+ * si se serializaran quedarían stubs ({archivo: {}}) que al restaurar
+ * entraban como pendientes eternos que `subirAdjunto` rechaza por MIME
+ * vacío. Todo valor que contenga un archivo a cualquier profundidad se VA.
+ */
 function limpiarArchivos(estado) {
   if (!estado || typeof estado !== "object") return {};
   const limpio = {};
   for (const [k, v] of Object.entries(estado)) {
     if (v instanceof File || v instanceof Blob) continue;
+    if (contieneArchivo(v)) continue;
     limpio[k] = v;
   }
   return limpio;
