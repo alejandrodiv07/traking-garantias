@@ -152,31 +152,34 @@ BEGIN
   EXECUTE 'RESET ROLE';
 END $$;
 
--- Cerrados: ENTREGADO sale del alcance del Tablero (rank −1)
+-- Cerrado: ENTREGADO sale del alcance del Tablero (rank −1). La fecha de
+-- entrega NO se fija a mano (el UPDATE por columnas ya no la permite): la
+-- llena el trigger del estado ENTREGADO con now(). Para que
+-- fecha_entrega >= fecha_ingreso no dependa de la hora de la corrida, se
+-- cierra el registro con 15 días en taller (ingresó el mediodía de hace
+-- 15 días: now() siempre le lleva horas de ventaja).
 DO $$
 BEGIN
   EXECUTE 'SET LOCAL ROLE authenticated';
   PERFORM set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', TRUE);
   PERFORM set_config('request.jwt.claim.session_id', '11111111-1111-1111-1111-111111111111', TRUE);
   UPDATE public.registros SET estado='EN_DIAGNOSTICO'
-   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
+   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
   UPDATE public.registros SET estado='EN_REPARACION'
-   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
+   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
   UPDATE public.registros SET estado='REPARADO'
-   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
-  -- La entrega lleva FECHA EXPLÍCITA: si la corrida ocurre antes del mediodía
-  -- local (el ingreso se sembró a las 12:00), un fecha_entrega=now() del
-  -- trigger quedaría ANTES del ingreso y volaría el
-  -- ck_entrega_posterior_al_ingreso. La fecha explícita hace la prueba
-  -- independiente de la hora de la corrida.
-  UPDATE public.registros SET estado='ENTREGADO', fecha_entrega = fecha_ingreso + interval '5 hours'
-   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-V1');
+   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
+  UPDATE public.registros SET estado='ENTREGADO'
+   WHERE id = (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='TAB-SLA15');
   EXECUTE 'RESET ROLE';
 END $$;
+SELECT pg_temp.chk('el cierre sin fecha a mano respeta entrega >= ingreso',
+  (SELECT fecha_entrega >= fecha_ingreso FROM public.registros r
+    JOIN public.equipos e ON e.id = r.equipo_id WHERE e.numero_serie='TAB-SLA15'));
 SELECT pg_temp.chk('cerrado ENTREGADO tiene rank -1',
-  (SELECT urgencia_rank = -1 FROM public.v_tablero WHERE serial='TAB-V1'));
+  (SELECT urgencia_rank = -1 FROM public.v_tablero WHERE serial='TAB-SLA15'));
 SELECT pg_temp.chk('cerrado ENTREGADO con abierto = false',
-  (SELECT NOT abierto FROM public.v_tablero WHERE serial='TAB-V1'));
+  (SELECT NOT abierto FROM public.v_tablero WHERE serial='TAB-SLA15'));
 
 -- ============ PERMISOS ============
 SELECT pg_temp.chk('X1 anon no lee la vista',
