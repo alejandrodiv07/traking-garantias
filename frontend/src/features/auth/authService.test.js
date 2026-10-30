@@ -21,9 +21,9 @@ vi.mock("../registro/borrador.js", () => ({
 import { cerrarSesion, rutaDeInicio } from "./authService.js";
 
 describe("RUTA_POR_ROL (Tarea 20 del plan)", () => {
-  it("los CUATRO roles aterrizan en /tablero", () => {
+  it("los CUATRO roles aterrizan en /garantias (la app de la fase 2a)", () => {
     for (const rol of ["ADMIN", "JEFE_SERVICIO", "TECNICO", "RECEPCION"]) {
-      expect(rutaDeInicio(rol)).toBe("/tablero");
+      expect(rutaDeInicio(rol)).toBe("/garantias");
     }
   });
 

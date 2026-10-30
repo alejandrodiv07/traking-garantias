@@ -33,10 +33,10 @@ export const Resultado = Object.freeze({
 const MENSAJE_GENERICO = "Credenciales incorrectas";
 
 export const RUTA_POR_ROL = Object.freeze({
-  ADMIN: "/tablero",
-  JEFE_SERVICIO: "/tablero",
-  TECNICO: "/tablero",
-  RECEPCION: "/tablero",
+  ADMIN: "/garantias",
+  JEFE_SERVICIO: "/garantias",
+  TECNICO: "/garantias",
+  RECEPCION: "/garantias",
 });
 
 /** Ruta de aterrizaje del rol. `/sin-acceso` si el rol es desconocido. */
