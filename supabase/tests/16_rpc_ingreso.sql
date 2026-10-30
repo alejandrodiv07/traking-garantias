@@ -39,6 +39,9 @@ BEGIN
   END IF;
 END $$;
 DELETE FROM public.profiles WHERE email='fantasma@x.com';
+-- El de 1111 entra como ADMIN (mfa en banda): estos ficheros miden el RPC,
+-- no la promoción (eso es 97/98). TZ necesita un ADMIN de veras.
+UPDATE public.profiles SET role='ADMIN' WHERE email='admin@primetelecom.com';
 
 CREATE FUNCTION pg_temp.producto_id() RETURNS uuid LANGUAGE sql AS
   $$ SELECT id FROM public.productos WHERE modelo='HG8245' $$;
@@ -66,7 +69,7 @@ SELECT * FROM public.registrar_ingreso(
     'RT5-8842-AA', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
     'No enciende, huele a quemado', 'cargador y manual',
     'FACTURA', 'F-200', DATE '2026-09-01', 7, 'Tienda C.C.', NULL, NULL,
-    '2026-09-02 14:00+00'::timestamptz);  -- ingresó el 02/09, factura del 01/09 + 7 días
+    '2026-09-02 14:00+00'::timestamptz);  -- la fecha la manda EL ADMIN únicamente: al TECNICO se le ignora
 COMMIT;
 RESET ROLE;
 
@@ -80,8 +83,8 @@ SELECT pg_temp.chk('I6 token devuelto de 32 caracteres, guardado solo el hash',
   (SELECT length(consulta_token)=32 FROM t_ing1)
   AND NOT EXISTS (SELECT 1 FROM public.registros r, t_ing1
                   WHERE extensions.digest(t_ing1.consulta_token,'sha256') <> r.consulta_token_hash));
-SELECT pg_temp.chk('I7 cobertura = EN_GARANTIA (compra 01/09 + 7 = vence 08/09)',
-  (SELECT cobertura::text='EN_GARANTIA' FROM t_ing1));
+SELECT pg_temp.chk('I7 la fecha pedida por el TECNICO se ignora (factura vieja + fecha de hoy: FUERA)',
+  (SELECT cobertura::text='FUERA_DE_GARANTIA' FROM t_ing1));
 
 -- ============ REUTILIZAR EL EQUIPO ============
 BEGIN;
@@ -140,10 +143,12 @@ SELECT pg_temp.chk('F1 sin factura: cobertura POR_DETERMINAR y vence_el NULL',
 -- Equipo con vencimiento el 2026-09-03. Ingresando a las 02:30+00 (23:30 en
 -- Caracas del día 3) la cobertura debe evaluarse con el día 3: EN_GARANTIA.
 -- A las 04:00+00 ya es el día 4: FUERA_DE_GARANTIA.
+-- La fecha de ingreso la manda solo el ADMIN (backoffice, corrida a media
+-- noche): los demás roles reciben el DEFAULT now() y no pueden cambiarla.
 BEGIN;
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
-SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+SET LOCAL request.jwt.claim.session_id = '11111111-1111-1111-1111-111111111111';
 CREATE TEMP TABLE t_tz1 AS
 SELECT * FROM public.registrar_ingreso(
     'TZ-MAÑANA', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
@@ -161,6 +166,24 @@ SELECT pg_temp.chk('TZ1 ingreso 02:30+00 evalúa el día 2026-09-03 (EN_GARANTIA
   (SELECT cobertura::text='EN_GARANTIA' FROM t_tz1));
 SELECT pg_temp.chk('TZ2 ingreso 04:00+00 evalúa el día 2026-09-04 (FUERA_DE_GARANTIA)',
   (SELECT cobertura::text='FUERA_DE_GARANTIA' FROM t_tz2));
+
+-- TZ3: un TECNICO manda una fecha pasada: se le IGNORA (silencioso) y el
+-- registro queda con fecha_ingreso ≈ now().
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+SET LOCAL request.jwt.claim.session_id = '22222222-2222-2222-2222-222222222222';
+CREATE TEMP TABLE t_tz3 AS
+SELECT * FROM public.registrar_ingreso(
+    'TZ-TECNICO', pg_temp.producto_id(), public.guardar_cliente('V','12345678','Juan Perez', NULL, NULL, NULL),
+    'No conecta a internet', NULL, 'FACTURA','TZ-F3','2026-08-27',7,NULL,NULL,NULL,
+    '2026-08-27 14:00+00'::timestamptz);
+COMMIT;
+RESET ROLE;
+SELECT pg_temp.chk('TZ3 la fecha pasada del TECNICO se ignora: queda fecha_ingreso ≈ now()',
+  (SELECT r.fecha_ingreso >= now() - interval '1 minute'
+     AND r.fecha_ingreso <= now() + interval '5 seconds'
+     FROM public.registros r WHERE r.id = (SELECT registro_id FROM t_tz3)));
 
 -- ============ HISTORIAL EN BUSCAR_EQUIPO ============
 SELECT pg_temp.chk('B3 buscar_equipo incluye el historial de registros del equipo',

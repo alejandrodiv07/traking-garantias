@@ -128,7 +128,11 @@ BEGIN
             CASE WHEN v_rol = 'TECNICO' THEN v_actor END,
             v_actor,
             extensions.digest(v_token, 'sha256'),
-            coalesce(p_fecha_ingreso, now()), p_clave_envio)
+            -- La fecha de ingreso la manda SOLO el ADMIN (backoffice, corrida
+            -- a medianoche): a los demás roles se les ignora en silencio y
+            -- reciben el DEFAULT now(). (Cierre de D4/3: esta función de la
+            -- 0012 es la que queda viva tras el DROP de la 0009.)
+            coalesce(CASE WHEN public.tiene_rol('ADMIN') THEN p_fecha_ingreso END, now()), p_clave_envio)
     RETURNING id INTO v_registro;
 
     -- ---- Primera revisión: la de recepción ----

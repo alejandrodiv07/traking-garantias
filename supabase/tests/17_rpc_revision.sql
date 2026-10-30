@@ -156,10 +156,15 @@ SELECT pg_temp.chk('C6 el motivo quedó limpio al volver a EN_GARANTIA',
   (SELECT cobertura::text='EN_GARANTIA' AND motivo_anulacion_cobertura IS NULL
    FROM public.registros WHERE id=pg_temp.reg_admin()));
 -- por el TÉCNICO, con su registro asignado
+-- C7: el TECNICO revisa SU registro. El resultado ya no es ANULADA_POR_USO
+-- (D4/3): la fecha que el TECNICO mandó en crear_como se le ignora, el
+-- registro entró HOY (fecha=now()) y la factura fija MF-1 (01/09 + 7 =
+-- vence 08/09) lleva meses vencida → FUERA_DE_GARANTIA. La revisión de su
+-- propio registro sí fue aceptada; la regla de golpes→ANULADA la cubre C2.
 SELECT pg_temp.chk('C7 TECNICO hace revisión de su propio registro',
   pg_temp.rev_como('22222222-2222-2222-2222-222222222222',
                    (SELECT r.id FROM public.registros r JOIN public.equipos e ON e.id=r.equipo_id WHERE e.numero_serie='M-TEC-1'),
-                   'TECNICA', pg_temp.checklist_golpes()) ~ '^OK:ANULADA_POR_USO');
+                   'TECNICA', pg_temp.checklist_golpes()) ~ '^OK:FUERA_DE_GARANTIA');
 
 -- ============ C8: CONFIRMAR COMPRA ============
 -- Registro sin factura: M-REC... no; creamos uno nuevo SIN factura
