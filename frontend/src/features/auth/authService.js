@@ -21,6 +21,7 @@
  * - **Perfil ausente = sesión revocada.** Ver `obtenerPerfil`.
  */
 import { supabase, recordarSesion } from "../../lib/supabaseClient.js";
+import { limpiarBorradores } from "../registro/borrador.js";
 
 export const Resultado = Object.freeze({
   OK: "OK",
@@ -232,6 +233,9 @@ export async function cerrarSesion() {
     /* silencio deliberado */
   } finally {
     recordarSesion(false);
+    // El borrador del asistente guarda datos personales del CLIENTE y las
+    // laptops del taller son compartidas: al cerrar sesión se va TODO.
+    limpiarBorradores();
   }
 }
 
