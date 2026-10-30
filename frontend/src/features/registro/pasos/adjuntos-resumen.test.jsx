@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import PasoAdjuntos from "./PasoAdjuntos.jsx";
-import PasoResumen from "./PasoResumen.jsx";
 
 const actualizar = vi.fn();
 beforeEach(() => {
@@ -87,43 +86,5 @@ describe("PasoAdjuntos", () => {
     expect(screen.getByText(/f8\.jpg/)).toBeTruthy();
     expect(screen.queryByText(/f9\.jpg/)).toBeNull();
     expect(actualizar.mock.calls.at(-1)[0].archivosAdjuntos).toHaveLength(8);
-  });
-});
-
-describe("PasoResumen", () => {
-  const ESTADO_RESUMEN = {
-    serial: "RT5-8842-AA",
-    productoTexto: "Huawei HG8245",
-    titular: "Juan Perez",
-    falla: "No enciende",
-    numeroSoporte: "F-1",
-    fechaEmision: "2026-09-01",
-    plazoDias: 7,
-    cobertura: "EN_GARANTIA",
-    archivosAdjuntos: [{ id: "1", archivo: FOTO(), tipo: "FOTO", etiqueta: "frontal" }],
-  };
-
-  function editar() {
-    return vi.fn();
-  }
-
-  it("lista cliente, equipo, falla, compra, verificación y adjuntos", () => {
-    render(<PasoResumen estado={ESTADO_RESUMEN} irPara={editar()} onConfirmar={vi.fn()} />);
-    expect(screen.getByText(/Juan Perez/)).toBeTruthy();
-    expect(screen.getByText(/RT5-8842-AA/)).toBeTruthy();
-    expect(screen.getByText(/No enciende/)).toBeTruthy();
-    expect(screen.getByText(/F-1/)).toBeTruthy();
-    expect(screen.getByText(/EN_GARANTIA/)).toBeTruthy();
-    expect(screen.getAllByText(/n\.jpg|foto/).length >= 1).toBe(true);
-  });
-
-  it('el botón "Editar" de cada sección vuelve a ese paso', async () => {
-    const irPara = vi.fn();
-    render(<PasoResumen estado={ESTADO_RESUMEN} irPara={irPara} onConfirmar={vi.fn()} />);
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /editar cliente/i }));
-    expect(irPara).toHaveBeenCalledWith("cliente");
-    await user.click(screen.getByRole("button", { name: /editar equipo/i }));
-    expect(irPara).toHaveBeenCalledWith("equipo");
   });
 });

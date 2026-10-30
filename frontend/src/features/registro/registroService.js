@@ -64,25 +64,6 @@ export async function guardarCliente(datos) {
   });
 }
 
-export async function abrirOrden(payload) {
-  return rpc("abrir_orden", {
-    p_serial: payload.serial,
-    p_producto_id: payload.productoId ?? null,
-    p_cliente_id: payload.clienteId ?? null,
-    p_falla: payload.falla,
-    p_accesorios: payload.accesorios ?? null,
-    p_tipo_soporte: payload.tipoSoporte ?? null,
-    p_numero_soporte: payload.numeroSoporte ?? null,
-    p_fecha_emision: payload.fechaEmision ?? null,
-    p_plazo_dias: payload.plazoDias ?? null,
-    p_vendedor: payload.vendedor ?? null,
-    p_checklist: payload.checklist ?? null,
-    p_observaciones: payload.observaciones ?? null,
-    // Idempotencia: la misma clave devuelve el registro original (sin token).
-    p_clave_envio: payload.claveEnvio ?? null,
-  });
-}
-
 export async function registrarRevision(ordenId, { tipo, checklist, observaciones }) {
   return rpc("registrar_revision", {
     p_orden_id: ordenId,

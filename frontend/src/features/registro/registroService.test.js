@@ -51,7 +51,6 @@ import {
   listarProductos,
   previsualizarCobertura,
   registrarRevision,
-  abrirOrden,
   subirAdjunto,
 } from "./registroService.js";
 
@@ -89,44 +88,6 @@ describe("llamadas a la base (nombres exactos de la RPC)", () => {
       p_email: "juan@correo.com",
       p_direccion: "Los Teques",
     });
-  });
-
-  it("abrirOrden pasa las claves exactas", async () => {
-    const carga = {
-      serial: "RT5-8842-AA",
-      productoId: "p1",
-      clienteId: "c1",
-      falla: "No enciende",
-      accesorios: "cargador",
-      tipoSoporte: "FACTURA",
-      numeroSoporte: "F-1",
-      fechaEmision: "2026-09-01",
-      plazoDias: 7,
-      vendedor: "Tienda",
-      checklist: { a: true },
-      observaciones: "obs",
-    };
-    await abrirOrden(carga);
-    expect(fakes.rpc).toHaveBeenCalledWith("abrir_orden", {
-      p_serial: "RT5-8842-AA",
-      p_producto_id: "p1",
-      p_cliente_id: "c1",
-      p_falla: "No enciende",
-      p_accesorios: "cargador",
-      p_tipo_soporte: "FACTURA",
-      p_numero_soporte: "F-1",
-      p_fecha_emision: "2026-09-01",
-      p_plazo_dias: 7,
-      p_vendedor: "Tienda",
-      p_checklist: { a: true },
-      p_observaciones: "obs",
-      p_clave_envio: null,
-    });
-  });
-
-  it("abrirOrden manda la clave de envío (idempotencia)", async () => {
-    await abrirOrden({ serial: "S-1", falla: "No enciende", claveEnvio: "clave-1" });
-    expect(fakes.rpc).toHaveBeenCalledWith("abrir_orden", expect.objectContaining({ p_clave_envio: "clave-1" }));
   });
 
   it("registrarRevision llama a registrar_revision", async () => {

@@ -12,6 +12,7 @@ import LoginPage from "./features/auth/LoginPage.jsx";
 import Layout from "./features/layout/Layout.jsx";
 import NuevaGarantia from "./features/garantias/NuevaGarantia.jsx";
 import Consulta from "./features/garantias/Consulta.jsx";
+import AbrirOrden from "./features/taller/AbrirOrden.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./features/auth/estado.css";
@@ -89,7 +90,7 @@ function Rutas() {
         <Route path="/garantias/nueva" element={<NuevaGarantia />} />
         <Route path="/garantias/consulta" element={<Consulta />} />
         <Route path="/taller" element={<div>Taller</div>} />
-        <Route path="/taller/nueva" element={<div>Abrir orden</div>} />
+        <Route path="/taller/nueva" element={<AbrirOrden />} />
         <Route path="/taller/:id" element={<div>Detalle de la orden</div>} />
       </Route>
 

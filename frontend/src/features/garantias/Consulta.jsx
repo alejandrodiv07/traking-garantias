@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cobertura } from "../tablero/dominio.js";
+import { AVISO_ATENCION } from "./avisos.js";
 import { buscarGarantia } from "./garantiasService.js";
 import "./garantias.css";
 
@@ -16,11 +17,6 @@ const CRITERIOS = [
   ["factura", "Factura"],
   ["orden", "Orden"],
 ];
-
-const AVISO_ATENCION = {
-  FUERA_DE_GARANTIA: "Fuera de garantía: se atenderá como servicio pago.",
-  POR_DETERMINAR: "Aviso: cobertura pendiente de confirmar, la orden quedará por determinar.",
-};
 
 const ordenAbierta = (o) => !["ENTREGADO", "ANULADO"].includes(o.estado);
 
