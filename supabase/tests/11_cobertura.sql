@@ -76,3 +76,25 @@ SELECT pg_temp.chk('V3 rechaza valores no booleanos',
   NOT public.checklist_es_valido(pg_temp.ck(NULL, NULL, '{"golpes":"sí"}')));
 SELECT pg_temp.chk('V4 NULL (sin checklist) es un uso válido',
   public.checklist_es_valido(NULL));
+
+-- ============ PRECEDENCIA NUEVA (fase 2a §4.2): desestimación y origen ============
+-- Migración 0014: la confianza de una garantía de taller exige
+-- confirmación administrativa, y una compra desestimada cierra la puerta.
+-- Los cortes nuevos van ANTES del de la fecha vencida (§4.2, pasos 1 y 3).
+-- Estas mismas aserciones viven también en 20_equipos_origen.sql (C1-C4)
+-- junto a las del resto de la tarea.
+
+-- C1 usa una fecha de vencimiento lejana y el ingreso de HOY (hoy_local):
+-- sin los cortes nuevos, el checklist perfecto daría EN_GARANTIA.
+SELECT pg_temp.chk('C1 taller sin confirmar → POR_DETERMINAR',
+  public.calcular_cobertura(DATE '2027-01-10', public.hoy_local(), pg_temp.ck(), 'TALLER', false, false)::text = 'POR_DETERMINAR');
+SELECT pg_temp.chk('C2 taller confirmada → EN_GARANTIA',
+  public.calcular_cobertura(DATE '2027-01-10', public.hoy_local(), pg_temp.ck(), 'TALLER', true, false)::text = 'EN_GARANTIA');
+SELECT pg_temp.chk('C3 desestimada → FUERA_DE_GARANTIA (checklist perfecto y fechas vigentes)',
+  public.calcular_cobertura(DATE '2027-01-10', public.hoy_local(), pg_temp.ck(), 'VENTA', false, true)::text = 'FUERA_DE_GARANTIA');
+SELECT pg_temp.chk('C4 llamada con 3 argumentos (compatibilidad) sigue dando EN_GARANTIA',
+  public.calcular_cobertura(DATE '2027-01-10', public.hoy_local(), pg_temp.ck())::text = 'EN_GARANTIA');
+-- La desestimación es el corte 1: manda aunque el equipo ni siquiera
+-- tenga fecha de vencimiento (el paso 2 ya no se alcanza).
+SELECT pg_temp.chk('C5 desestimada sin vence_el sigue en FUERA_DE_GARANTIA',
+  public.calcular_cobertura(NULL, public.hoy_local(), pg_temp.ck(), 'VENTA', false, true)::text = 'FUERA_DE_GARANTIA');
