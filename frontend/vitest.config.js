@@ -15,7 +15,11 @@ export default defineConfig({
     globals: true,
     // Las Edge Functions (Deno) se prueban aquí con `Deno` y supabase-js
     // simulados: no hay runtime Deno en esta máquina ni en CI.
-    include: ["src/**/*.test.jsx", "../supabase/functions/**/*.test.ts"],
+    include: [
+      "src/**/*.test.jsx",
+      "src/**/*.test.js",
+      "../supabase/functions/**/*.test.ts",
+    ],
     setupFiles: ["./src/test/setup.js"],
   },
 });
