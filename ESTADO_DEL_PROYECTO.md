@@ -172,7 +172,7 @@ cd frontend
 pnpm install
 # frontend/.env.local  →  VITE_SUPABASE_URL=...  VITE_SUPABASE_ANON_KEY=...
 pnpm dev          # Vite en :5173
-pnpm test         # vitest (154 pruebas: services, asistente, tablero, revisiones, edge fns)
+pnpm test         # vitest (181 pruebas: services, asistente, tablero, revisiones, edge fns)
 pnpm lint         # oxlint
 pnpm build
 ```
@@ -190,7 +190,7 @@ pnpm build
 |---|---|---|---|
 | ~~D1~~ | ✅ Resuelta (hito 1) | Duplicado `20260906000001` y copia `_referencia_…` | Archivados en `supabase/archivo/` y protegidos por `verificar-migraciones.sh` (CI). Falta SOLO confirmar el historial remoto en el SQL Editor (ver §5) |
 | ~~D5~~ | ✅ Resuelta (hito 1) | Seed inexistente | `supabase/seed.sql` con 4 marcas y 8 productos; `run.sh` la valida |
-| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI y 237 aserciones SQL + 154 de frontend |
+| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI y 237 aserciones SQL + 181 de frontend |
 | D4 | 🟠 Media | 2FA sin cerrar: pruebas del inicio de sesión pendientes (palabras del commit `b81e632`) | Probar: código correcto, vencido, reuso, 6.º código en 15 min, refresco de página a mitad del flujo, logout |
 | D7 | 🟡 Baja | Comentarios de código mencionan archivos ya inexistentes (`authApi.js`, `src/api/client.js`) | Solo ruido; limpiar al tocar esos archivos |
 | D8 | 🟡 Baja | Mensaje de error del cliente Supabase dice `npm run dev`, el proyecto usa pnpm | `supabaseClient.js` |
