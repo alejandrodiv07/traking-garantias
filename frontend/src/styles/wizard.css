@@ -151,8 +151,13 @@
 .app .wz-eqc .tx { flex: 1; min-width: 0; }
 .app .wz-eqc .tx b { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
 .app .wz-eqc .tx span { font-size: 12.5px; color: var(--text-3); }
-.app .adj-slot { display: block; margin-bottom: 14px; padding: 14px; border: 1px dashed var(--c-field-border); border-radius: 12px; font-size: 14px; font-weight: 600; }
-.app .adj-slot input[type="file"] { display: block; width: 100%; margin-top: 8px; padding: 8px; font-weight: 400; border: 1px solid var(--c-field-border); border-radius: 10px; background: var(--c-field-bg); }
+/* zona de carga: el control nativo del navegador queda oculto (accesible) y la etiqueta hace de botón */
+.app .adj-slot { display: grid; gap: 4px; justify-items: start; margin-bottom: 14px; padding: 16px; border: 1px dashed var(--c-field-border); border-radius: 12px; background: var(--surface-2); cursor: pointer; transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease); }
+.app .adj-slot:hover { border-color: var(--accent); background: var(--accent-bg); }
+.app .adj-slot:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app .adj-t { font-size: 14px; font-weight: 600; color: var(--text); }
+.app .adj-h { font-size: 12.5px; color: var(--text-3); }
+.app .adj-b { margin-top: 8px; pointer-events: none; }
 .app .adj-lista { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 6px; }
 .app .adj-lista li { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .app .adj-lista li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

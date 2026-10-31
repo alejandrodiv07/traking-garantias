@@ -70,9 +70,12 @@ export default function PasoAdjuntos({ estado, actualizar }) {
   return (
     <div className="adj">
       <label htmlFor="inputFoto" className="adj-slot">
-        Fotos (con la cámara o del archivo)
+        <span className="adj-t">Fotos (con la cámara o del archivo)</span>
+        <span className="adj-h">JPG, PNG o WEBP · hasta 8 MB cada una · 8 como tope</span>
+        <span className="btn suave chico adj-b">Elegir archivos</span>
         <input
           id="inputFoto"
+          className="sr"
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
@@ -84,9 +87,12 @@ export default function PasoAdjuntos({ estado, actualizar }) {
       </label>
 
       <label htmlFor="inputDoc" className="adj-slot">
-        Documentos (PDF, JPG o PNG)
+        <span className="adj-t">Documentos (PDF, JPG o PNG)</span>
+        <span className="adj-h">PDF, JPG o PNG · hasta 8 MB cada uno · 6 como tope</span>
+        <span className="btn suave chico adj-b">Elegir archivos</span>
         <input
           id="inputDoc"
+          className="sr"
           type="file"
           accept="application/pdf,image/jpeg,image/png"
           multiple
