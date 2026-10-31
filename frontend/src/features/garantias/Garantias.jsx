@@ -199,7 +199,7 @@ export default function Garantias() {
         <div className="card caja fichas">
           {visibles.length > 0 && (
             <div className="scroll">
-              <table>
+              <table className="t-gar">
                 <caption className="sr">Garantías registradas</caption>
                 <thead>
                   <tr>
@@ -262,14 +262,12 @@ export default function Garantias() {
                         </div>
                       </td>
                       <td data-l="Estado">
-                        <div>
+                        <div className="estado-c">
                           <span className="ins" data-t={ESTADOS[e].t}>
                             <i />
                             {ESTADOS[e].n}
                           </span>
-                          <div>
-                            <InsigniaVerificacion valor={g.verificacion} />
-                          </div>
+                          <InsigniaVerificacion valor={g.verificacion} compacta />
                         </div>
                       </td>
                       <td data-l="">

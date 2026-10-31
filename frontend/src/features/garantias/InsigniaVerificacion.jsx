@@ -6,9 +6,18 @@ const TEXTOS = {
   SIN_VENTA: ["Factura no hallada en Ventas", "neutro"],
 };
 
-export default function InsigniaVerificacion({ valor }) {
+export default function InsigniaVerificacion({ valor, compacta = false }) {
   const t = TEXTOS[valor];
   if (!t) return null;
+  // En tablas la insignia compite con la del estado: aquí va como texto con punto, sin píldora.
+  if (compacta) {
+    return (
+      <span className="ven" data-t={t[1]}>
+        <i />
+        {t[0]}
+      </span>
+    );
+  }
   return (
     <span className="ins" data-t={t[1]}>
       <i />

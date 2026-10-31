@@ -87,7 +87,7 @@ export default function Taller() {
       </ul>
 
       <section aria-label="Órdenes del taller">
-        <div className="filtros tl-filtros">
+        <div className="filtros filtros-uno">
           <div className="buscar">
             <label className="sr" htmlFor="tl-q">
               Buscar por orden, cliente, serial o factura
