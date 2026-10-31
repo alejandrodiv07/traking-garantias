@@ -57,3 +57,16 @@ describe("Login · paso 1 · mensaje de error", () => {
     expect(await screen.findByText("Credenciales incorrectas")).toBeInTheDocument();
   });
 });
+
+describe("Login · paso 1 · ubicación del error", () => {
+  it("el aviso aparece dentro de la tarjeta, antes del botón Ingresar", async () => {
+    render(<Login onSubmit={() => Promise.reject(new Error("No se pudo enviar el código de verificación."))} />);
+
+    await enviarFormulario();
+
+    const alerta = await screen.findByRole("alert");
+    const boton = screen.getByRole("button", { name: "Ingresar" });
+    // El aviso va ANTES del botón en el documento: a la vista de quien acaba de pulsarlo.
+    expect(alerta.compareDocumentPosition(boton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

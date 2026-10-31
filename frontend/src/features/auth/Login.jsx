@@ -320,6 +320,72 @@ export default function Login({
             </div>
           )}
 
+          {/* Estados: mismo diseno del artboard, renderizados solo cuando ocurren, dentro de la tarjeta y a la vista del botón. */}
+          {status && (
+            <div className="pt-states">
+              {(status === "credentials" || status === "form" || status === "code") && (
+                <div
+                  className="pt-statebox pt-err"
+                  role="alert"
+                  tabIndex={-1}
+                  ref={stateRef}
+                >
+                  <div className="pt-stitle">
+                    <IconAlert />
+                    {status === "form"
+                      ? "Faltan datos"
+                      : status === "code"
+                        ? "Código incorrecto o vencido"
+                        : (mensajeError ?? "Credenciales incorrectas")}
+                  </div>
+                  {/* El cuerpo genérico solo describe el rechazo colapsado:
+                      un mensaje propio ya explica lo que pasó. */}
+                  {status === "credentials" &&
+                    (!mensajeError || mensajeError === "Credenciales incorrectas") && (
+                      <div className="pt-sbody">
+                        No indicamos cuál de los dos falló.
+                      </div>
+                    )}
+                  {status === "form" && (
+                    <div className="pt-sbody">
+                      Escribe tu correo corporativo y una contraseña de al menos {MIN_PASSWORD} caracteres.
+                    </div>
+                  )}
+                  {status === "code" && (
+                    <div className="pt-sbody">
+                      Revisa el último correo o pide un código nuevo.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {status === "cuota" && (
+                <div className="pt-statebox pt-info" role="status" tabIndex={-1} ref={stateRef}>
+                  <div className="pt-stitle">
+                    <IconAlert />
+                    Demasiados códigos
+                  </div>
+                  <div className="pt-sbody">
+                    Espera unos minutos antes de pedir otro. Si no llega ninguno,
+                    contacta al administrador.
+                  </div>
+                </div>
+              )}
+
+              {status === "scope" && (
+                <div className="pt-statebox pt-info" role="status" tabIndex={-1} ref={stateRef}>
+                  <div className="pt-stitle">
+                    <IconAlert />
+                    Sesión válida, sin alcance
+                  </div>
+                  <div className="pt-sbody">
+                    Autenticado, pero sin garantías visibles: falta tu asignación en user_scope.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {step === 1 && (
           <form autoComplete="on" onSubmit={handleSubmit} noValidate>
             <div className="pt-fieldhead">
@@ -502,71 +568,6 @@ export default function Login({
           </span>
         </div>
 
-        {/* Estados: mismo diseno del artboard, renderizados solo cuando ocurren. */}
-        {status && (
-          <div className="pt-states">
-            {(status === "credentials" || status === "form" || status === "code") && (
-              <div
-                className="pt-statebox pt-err"
-                role="alert"
-                tabIndex={-1}
-                ref={stateRef}
-              >
-                <div className="pt-stitle">
-                  <IconAlert />
-                  {status === "form"
-                    ? "Faltan datos"
-                    : status === "code"
-                      ? "Código incorrecto o vencido"
-                      : (mensajeError ?? "Credenciales incorrectas")}
-                </div>
-                {/* El cuerpo genérico solo describe el rechazo colapsado:
-                    un mensaje propio ya explica lo que pasó. */}
-                {status === "credentials" &&
-                  (!mensajeError || mensajeError === "Credenciales incorrectas") && (
-                    <div className="pt-sbody">
-                      No indicamos cuál de los dos falló.
-                    </div>
-                  )}
-                {status === "form" && (
-                  <div className="pt-sbody">
-                    Escribe tu correo corporativo y una contraseña de al menos {MIN_PASSWORD} caracteres.
-                  </div>
-                )}
-                {status === "code" && (
-                  <div className="pt-sbody">
-                    Revisa el último correo o pide un código nuevo.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {status === "cuota" && (
-              <div className="pt-statebox pt-info" role="status" tabIndex={-1} ref={stateRef}>
-                <div className="pt-stitle">
-                  <IconAlert />
-                  Demasiados códigos
-                </div>
-                <div className="pt-sbody">
-                  Espera unos minutos antes de pedir otro. Si no llega ninguno,
-                  contacta al administrador.
-                </div>
-              </div>
-            )}
-
-            {status === "scope" && (
-              <div className="pt-statebox pt-info" role="status" tabIndex={-1} ref={stateRef}>
-                <div className="pt-stitle">
-                  <IconAlert />
-                  Sesión válida, sin alcance
-                </div>
-                <div className="pt-sbody">
-                  Autenticado, pero sin garantías visibles: falta tu asignación en user_scope.
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
