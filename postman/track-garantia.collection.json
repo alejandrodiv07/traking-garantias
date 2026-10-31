@@ -1,0 +1,1138 @@
+{
+  "info": {
+    "name": "Track Garantía — API (Supabase local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Flujo punta a punta: registrar garantía → consultar → abrir orden → rechazar → entregar, más casos negativos de rol y sesión. Requiere el entorno local (`supabase start`)."
+  },
+  "item": [
+    {
+      "name": "0 · Acceso técnico (login + OTP)",
+      "item": [
+        {
+          "name": "Login tecnico@prueba.local",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.body.raw = JSON.stringify({ email: \"tecnico@prueba.local\", password: pm.variables.get(\"password\") });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"login 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set(\"tokT\", j.access_token);",
+                  "pm.collectionVariables.set(\"uidT\", j.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/auth/v1/token?grant_type=password",
+              "host": [
+                "{{base}}/auth/v1/token?grant_type=password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico@prueba.local\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Emitir OTP (T)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OTP emitido\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/generate_mfa_code",
+              "host": [
+                "{{base}}/rest/v1/rpc/generate_mfa_code"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "Leer OTP con service_role (T)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"hay código vivo\", () => pm.expect(pm.response.json().length).to.eql(1));",
+                  "pm.collectionVariables.set(\"otpT\", pm.response.json()[0].code);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{service_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{service_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/email_mfa_codes?user_id=eq.{{uidT}}&is_used=eq.false&select=code&order=created_at.desc&limit=1",
+              "host": [
+                "{{base}}/rest/v1/email_mfa_codes?user_id=eq.{{uidT}}&is_used=eq.false&select=code&order=created_at.desc&limit=1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verificar OTP (T)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OTP aceptado\", () => pm.expect(pm.response.json()).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/verify_mfa_code",
+              "host": [
+                "{{base}}/rest/v1/rpc/verify_mfa_code"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_code\": \"{{otpT}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 · Registrar y consultar (técnico)",
+      "item": [
+        {
+          "name": "Catálogo: tomar un producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 y hay producto\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().length).to.be.above(0); });",
+                  "pm.collectionVariables.set(\"producto_id\", pm.response.json()[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/productos?select=id,modelo&activo=eq.true&limit=1",
+              "host": [
+                "{{base}}/rest/v1/productos?select=id,modelo&activo=eq.true&limit=1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Guardar cliente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"cedula\", String(10000000 + Math.floor(Math.random() * 9000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 y devuelve uuid\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.match(/^[0-9a-f-]{36}$/); });",
+                  "pm.collectionVariables.set(\"cliente_id\", pm.response.json());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/guardar_cliente",
+              "host": [
+                "{{base}}/rest/v1/rpc/guardar_cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_tipo\": \"V\",\n  \"p_documento\": \"{{cedula}}\",\n  \"p_nombre\": \"Cliente Postman\",\n  \"p_telefono\": \"04141234567\",\n  \"p_email\": \"postman@prueba.local\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registrar garantía (plazo 7, factura)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"fecha_hoy\", new Date().toISOString().slice(0, 10));",
+                  "const n = Date.now();",
+                  "pm.collectionVariables.set(\"serial\", \"PM-\" + n);",
+                  "pm.collectionVariables.set(\"factura\", \"F-\" + n);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const f = pm.response.json()[0];",
+                  "pm.test(\"equipo nuevo\", () => pm.expect(f.equipo_nuevo).to.eql(true));",
+                  "pm.test(\"vence en 7 días\", () => {",
+                  "  const esperado = new Date(); esperado.setDate(esperado.getDate() + 7);",
+                  "  const dif = Math.abs(new Date(f.vence_el) - esperado) / 86400000;",
+                  "  pm.expect(dif).to.be.below(2);",
+                  "});",
+                  "pm.collectionVariables.set(\"equipo_id\", f.equipo_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/registrar_garantia",
+              "host": [
+                "{{base}}/rest/v1/rpc/registrar_garantia"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_cliente_id\": \"{{cliente_id}}\",\n  \"p_producto_id\": \"{{producto_id}}\",\n  \"p_serial\": \"{{serial}}\",\n  \"p_tipo_soporte\": \"FACTURA\",\n  \"p_numero_soporte\": \"{{factura}}\",\n  \"p_fecha_emision\": \"{{fecha_hoy}}\",\n  \"p_plazo_dias\": 7,\n  \"p_origen\": \"VENTA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registrar el mismo serial otra vez es idempotente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"no duplica el equipo\", () => {",
+                  "  const f = pm.response.json()[0];",
+                  "  pm.expect(f.equipo_nuevo).to.eql(false);",
+                  "  pm.expect(f.equipo_id).to.eql(pm.collectionVariables.get(\"equipo_id\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/registrar_garantia",
+              "host": [
+                "{{base}}/rest/v1/rpc/registrar_garantia"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_cliente_id\": \"{{cliente_id}}\",\n  \"p_producto_id\": \"{{producto_id}}\",\n  \"p_serial\": \"{{serial}}\",\n  \"p_origen\": \"VENTA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar por serial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const f = pm.response.json()[0];",
+                  "pm.test(\"hallado y en garantía\", () => { pm.expect(f).to.be.an(\"object\"); pm.expect(f.numero_serie).to.eql(pm.collectionVariables.get(\"serial\")); });",
+                  "pm.test(\"titular correcto\", () => pm.expect(f.titular).to.eql(\"Cliente Postman\"));",
+                  "console.log(\"cobertura/campos:\", Object.keys(f).join(\",\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/buscar_equipo",
+              "host": [
+                "{{base}}/rest/v1/rpc/buscar_equipo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_serial\": \"{{serial}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar por factura",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"mismo equipo\", () => pm.expect(pm.response.json()[0].equipo_id).to.eql(pm.collectionVariables.get(\"equipo_id\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/buscar_equipo",
+              "host": [
+                "{{base}}/rest/v1/rpc/buscar_equipo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_factura\": \"{{factura}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar por cédula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"lista el equipo\", () => pm.expect(pm.response.json().map(x => x.equipo_id)).to.include(pm.collectionVariables.get(\"equipo_id\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/buscar_equipo",
+              "host": [
+                "{{base}}/rest/v1/rpc/buscar_equipo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_documento\": \"{{cedula}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar serial inexistente devuelve vacío",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 y sin filas\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.eql([]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/buscar_equipo",
+              "host": [
+                "{{base}}/rest/v1/rpc/buscar_equipo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_serial\": \"NO-EXISTE-999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Tablero de garantías lista el equipo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"una fila\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().length).to.eql(1); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/v_garantias?equipo_id=eq.{{equipo_id}}",
+              "host": [
+                "{{base}}/rest/v1/v_garantias?equipo_id=eq.{{equipo_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Abrir orden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"clave_envio\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const o = pm.response.json()[0];",
+                  "pm.test(\"numero OS-AAAA-NNNN\", () => pm.expect(o.numero_orden).to.match(/^OS-\\d{4}-\\d{4,}$/));",
+                  "pm.test(\"cobertura EN_GARANTIA\", () => pm.expect(o.cobertura).to.eql(\"EN_GARANTIA\"));",
+                  "pm.collectionVariables.set(\"orden_id\", o.orden_id);",
+                  "pm.collectionVariables.set(\"numero_orden\", o.numero_orden);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/abrir_orden",
+              "host": [
+                "{{base}}/rest/v1/rpc/abrir_orden"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_equipo_id\": \"{{equipo_id}}\",\n  \"p_falla\": \"No enciende (prueba Postman)\",\n  \"p_accesorios\": \"Cargador\",\n  \"p_clave_envio\": \"{{clave_envio}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Abrir orden con la misma clave es idempotente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"misma orden\", () => pm.expect(pm.response.json()[0].orden_id).to.eql(pm.collectionVariables.get(\"orden_id\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/abrir_orden",
+              "host": [
+                "{{base}}/rest/v1/rpc/abrir_orden"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_equipo_id\": \"{{equipo_id}}\",\n  \"p_falla\": \"No enciende (prueba Postman)\",\n  \"p_clave_envio\": \"{{clave_envio}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Consultar por número de orden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"halla el equipo\", () => pm.expect(pm.response.json()[0].equipo_id).to.eql(pm.collectionVariables.get(\"equipo_id\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/buscar_equipo",
+              "host": [
+                "{{base}}/rest/v1/rpc/buscar_equipo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_orden\": \"{{numero_orden}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Técnico NO puede rechazar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"denegado (4xx)\", () => pm.expect(pm.response.code).to.be.within(400, 499));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokT}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/cambiar_estado",
+              "host": [
+                "{{base}}/rest/v1/rpc/cambiar_estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_orden_id\": \"{{orden_id}}\",\n  \"p_estado\": \"RECHAZADO\",\n  \"p_motivo\": \"no autorizado\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Acceso jefe (login + OTP)",
+      "item": [
+        {
+          "name": "Login jefe@prueba.local",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.body.raw = JSON.stringify({ email: \"jefe@prueba.local\", password: pm.variables.get(\"password\") });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"login 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set(\"tokJ\", j.access_token);",
+                  "pm.collectionVariables.set(\"uidJ\", j.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/auth/v1/token?grant_type=password",
+              "host": [
+                "{{base}}/auth/v1/token?grant_type=password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jefe@prueba.local\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Emitir OTP (J)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OTP emitido\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokJ}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/generate_mfa_code",
+              "host": [
+                "{{base}}/rest/v1/rpc/generate_mfa_code"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "Leer OTP con service_role (J)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"hay código vivo\", () => pm.expect(pm.response.json().length).to.eql(1));",
+                  "pm.collectionVariables.set(\"otpJ\", pm.response.json()[0].code);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{service_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{service_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/email_mfa_codes?user_id=eq.{{uidJ}}&is_used=eq.false&select=code&order=created_at.desc&limit=1",
+              "host": [
+                "{{base}}/rest/v1/email_mfa_codes?user_id=eq.{{uidJ}}&is_used=eq.false&select=code&order=created_at.desc&limit=1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verificar OTP (J)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OTP aceptado\", () => pm.expect(pm.response.json()).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokJ}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/verify_mfa_code",
+              "host": [
+                "{{base}}/rest/v1/rpc/verify_mfa_code"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_code\": \"{{otpJ}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Rechazo y entrega (jefe)",
+      "item": [
+        {
+          "name": "Jefe: rechazar SIN motivo falla",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"rechazado por la base (4xx)\", () => pm.expect(pm.response.code).to.be.within(400, 499));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokJ}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/cambiar_estado",
+              "host": [
+                "{{base}}/rest/v1/rpc/cambiar_estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_orden_id\": \"{{orden_id}}\",\n  \"p_estado\": \"RECHAZADO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Jefe: rechazar CON motivo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado RECHAZADO\", () => pm.expect(pm.response.json()[0].estado).to.eql(\"RECHAZADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokJ}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/cambiar_estado",
+              "host": [
+                "{{base}}/rest/v1/rpc/cambiar_estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_orden_id\": \"{{orden_id}}\",\n  \"p_estado\": \"RECHAZADO\",\n  \"p_motivo\": \"Humedad en placa (prueba Postman)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Jefe: entregar la orden rechazada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado ENTREGADO\", () => pm.expect(pm.response.json()[0].estado).to.eql(\"ENTREGADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokJ}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/cambiar_estado",
+              "host": [
+                "{{base}}/rest/v1/rpc/cambiar_estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_orden_id\": \"{{orden_id}}\",\n  \"p_estado\": \"ENTREGADO\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 · Seguridad sin sesión",
+      "item": [
+        {
+          "name": "Sin sesión: buscar_equipo denegado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"anónimo no pasa (401/403)\", () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/rpc/buscar_equipo",
+              "host": [
+                "{{base}}/rest/v1/rpc/buscar_equipo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_serial\": \"{{serial}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Sin sesión: no lee v_garantias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"anónimo no ve filas\", () => { if (pm.response.code === 200) pm.expect(pm.response.json()).to.eql([]); else pm.expect(pm.response.code).to.be.oneOf([401, 403]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rest/v1/v_garantias",
+              "host": [
+                "{{base}}/rest/v1/v_garantias"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
