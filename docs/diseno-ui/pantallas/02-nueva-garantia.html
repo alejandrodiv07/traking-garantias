@@ -1,0 +1,636 @@
+<title>Prime Telecom Nueva Garantía</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: misma sidebar fija; en la zona de trabajo, un asistente de 5 pasos (Cliente, Productos, Compra, Documentos, Resumen)
+   con un resumen en vivo a la derecha. Estilo heredado del asistente actual: pastillas numeradas, campos de borde firme, filas "Editar". */
+:root {
+  --bg: #faf9f5; --surface: #ffffff; --surface-2: #fdfcfa; --field: #fbfaf7;
+  --border: rgba(15, 12, 8, 0.1); --border-soft: rgba(15, 12, 8, 0.06); --border-hover: rgba(15, 12, 8, 0.22);
+  --field-border: #8a857a; --field-border-hover: #5f584d; --placeholder: #6e695e;
+  --text: rgba(15, 12, 8, 0.92); --text-2: rgba(15, 12, 8, 0.64); --text-3: rgba(15, 12, 8, 0.6);
+  --accent: #d97757; --accent-text: #b85c3f; --accent-bg: rgba(217, 119, 87, 0.12);
+  --cta: #191915; --cta-hover: #2b2b26; --cta-fg: #faf9f5; --side: #191915;
+  --neutro-bg: #f1efe9; --neutro-fg: #5f584d; --neutro-dot: #a8a096;
+  --ambar-bg: #fbf0e2; --ambar-fg: #8a5a12; --ambar-dot: #c98a2e;
+  --ok-bg: #e9f0e8; --ok-fg: #3f6b46; --ok-dot: #5c8f66;
+  --mal-bg: #fbecee; --mal-fg: #a63244; --mal-dot: #c25a68; --mal-borde: rgba(166, 50, 68, 0.28);
+  --info-bg: rgba(42, 120, 214, 0.1);
+  --sombra: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
+  --sombra-flot: 0 12px 32px rgba(20, 20, 19, 0.18);
+  --velo: rgba(20, 18, 14, 0.42);
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ancho: 252px; --ancho-plegada: 76px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+    --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+    --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+    --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+    --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+    --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+    --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+    --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+    --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+    --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+    --info-bg: rgba(122, 178, 242, 0.13);
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+  --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+  --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+  --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+  --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+  --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+  --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+  --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+  --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+  --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+  --info-bg: rgba(122, 178, 242, 0.13);
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ============ Marco + sidebar ============ */
+.app { min-height: 100dvh; display: flex; }
+.side { width: var(--ancho); flex: none; position: sticky; top: 0; height: 100dvh; z-index: 40; display: flex; flex-direction: column; padding: 16px 12px 14px; background: var(--side); color: rgba(250, 249, 245, 0.72); transition: width 0.22s var(--ease); }
+.side :focus-visible { outline-color: var(--accent); }
+.app.plegada .side { width: var(--ancho-plegada); }
+.side-cab { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px 0 6px; margin-bottom: 18px; }
+.marca { width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 17px; }
+.nombre { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; color: #faf9f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibtn { width: 44px; height: 44px; flex: none; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(250, 249, 245, 0.1); border-radius: 10px; background: none; color: rgba(250, 249, 245, 0.72); transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.ibtn:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.ibtn.cerrar { display: none; }
+.nav { flex: 1; min-height: 0; overflow-y: auto; }
+.nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.enlace { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: rgba(250, 249, 245, 0.72); text-align: left; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.enlace:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.enlace svg { flex: none; }
+.enlace[aria-current="page"] { background: rgba(217, 119, 87, 0.18); color: #faf9f5; font-weight: 600; }
+.enlace[aria-current="page"] svg { color: var(--accent); }
+.enlace[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.etq { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cuenta { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.pie-side { border-top: 1px solid rgba(250, 249, 245, 0.1); padding-top: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.email { margin: 0 0 4px; padding: 0 14px; font-size: 12.5px; color: rgba(250, 249, 245, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: none; }
+.app.plegada .side-cab { flex-direction: column; gap: 12px; padding: 0; margin-bottom: 14px; }
+.app.plegada .enlace { justify-content: center; padding: 0; }
+.app.plegada .cuenta { position: absolute; top: 4px; right: 6px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 4px; }
+.cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.barra { display: none; }
+.ruta { margin: 0; font-size: 13px; color: var(--text-3); }
+.ruta a { color: var(--text-3); text-decoration: none; cursor: pointer; }
+.ruta a:hover { text-decoration: underline; color: var(--text); }
+.ruta strong { color: var(--text); font-weight: 600; }
+.main { width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 28px 56px; }
+.velo { display: none; }
+
+/* ============ Asistente ============ */
+.enc { margin: 14px 0 20px; }
+h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin: 5px 0 0; font-size: 14px; color: var(--text-2); max-width: 62ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--sombra); }
+
+.pasos { list-style: none; margin: 0; padding: 16px 20px 14px; display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border-soft); counter-reset: paso; }
+.pasos li { flex: 1 0 auto; counter-increment: paso; }
+.pasos button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease); }
+.pasos button::before { content: counter(paso); display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--neutro-bg); color: var(--neutro-fg); font-size: 11.5px; font-weight: 700; }
+.pasos button:hover:not(:disabled) { border-color: var(--border-hover); }
+.pasos button:disabled { opacity: 0.5; cursor: not-allowed; }
+.pasos li.hecho button::before { content: "✓"; background: var(--ok-bg); color: var(--ok-fg); }
+.pasos li[aria-current="step"] button { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.pasos li[aria-current="step"] button::before { background: var(--cta-fg); color: var(--cta); }
+
+.panel { padding: 22px 24px 24px; min-height: 420px; }
+.panel h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.panel .ayuda { margin: 0 0 18px; font-size: 13.5px; color: var(--text-2); max-width: 64ch; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cols .ancho { grid-column: 1 / -1; }
+.f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.f > label, .f > .lbl { font-size: 13.5px; font-weight: 500; }
+.f .op { font-weight: 400; color: var(--text-3); }
+.doc-fila { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; }
+input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="search"], select, textarea {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); color: var(--text); font-weight: 400;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+input::placeholder { color: var(--placeholder); }
+input:hover, select:hover { border-color: var(--field-border-hover); }
+input:focus-visible, select:focus-visible { outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
+[aria-invalid="true"] { border-color: var(--mal-dot) !important; }
+.err { margin: 0; font-size: 12.5px; color: var(--mal-fg); display: flex; gap: 6px; align-items: flex-start; }
+.err[hidden] { display: none; }
+.hint { margin: 0; font-size: 12.5px; color: var(--text-3); }
+
+.aviso { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; padding: 11px 13px; border-radius: 10px; font-size: 13.5px; background: var(--info-bg); color: var(--text); }
+.aviso[hidden] { display: none; }
+.aviso svg { flex: none; margin-top: 2px; }
+.aviso.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.aviso.ambar { background: var(--ambar-bg); color: var(--ambar-fg); }
+.aviso.mal { background: var(--mal-bg); color: var(--mal-fg); border: 1px solid var(--mal-borde); }
+.aviso b { font-weight: 600; }
+
+/* productos */
+.item { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; background: var(--surface-2); }
+.item-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.item-cab h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.btn { min-height: 44px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; border: 1px solid var(--border-hover); background: transparent; color: var(--text); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease); }
+.btn:hover:not(:disabled) { background: var(--neutro-bg); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.principal { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.btn.principal:hover:not(:disabled) { background: var(--cta-hover); }
+.btn.chico { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.punteado { width: 100%; border-style: dashed; color: var(--text-2); }
+
+/* segmentado (plazo) */
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: inline-flex; flex-direction: column; justify-content: center; min-width: 108px; min-height: 52px; padding: 6px 16px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); font-size: 14px; font-weight: 600; transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease); }
+.seg span small { font-weight: 400; font-size: 11.5px; color: var(--text-3); }
+.seg input:checked + span { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.seg input:checked + span small { color: inherit; opacity: 0.75; }
+.seg input:focus-visible + span { outline: 2px solid var(--cta); outline-offset: 2px; }
+.seg input:disabled + span { opacity: 0.5; cursor: not-allowed; border-style: dashed; }
+
+.vence { display: flex; align-items: center; gap: 14px; margin-top: 4px; padding: 14px 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.vence .n { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; min-width: 52px; }
+.vence p { margin: 0; font-size: 13.5px; color: var(--text-2); }
+.vence p strong { color: var(--text); font-weight: 600; }
+.vence[data-t="ok"] .n { color: var(--ok-fg); } .vence[data-t="ambar"] .n { color: var(--ambar-fg); } .vence[data-t="mal"] .n { color: var(--mal-fg); }
+
+/* documentos */
+.slot { border: 1px dashed var(--field-border); border-radius: 12px; padding: 16px; margin-bottom: 14px; transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease); }
+.slot.sobre { background: var(--accent-bg); border-color: var(--accent); }
+.slot-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.slot h3 { margin: 0; font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.slot .ayuda { margin: 2px 0 0; font-size: 12.5px; color: var(--text-3); }
+.etiq { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--neutro-bg); color: var(--neutro-fg); }
+.etiq.rec { background: var(--ambar-bg); color: var(--ambar-fg); }
+.arch { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.arch li { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.arch .ic { width: 36px; height: 36px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--neutro-bg); color: var(--neutro-fg); font-size: 10.5px; font-weight: 700; }
+.arch .tx { flex: 1; min-width: 0; }
+.arch .tx b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arch .tx small { font-size: 12px; color: var(--text-3); }
+.x { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--text-3); }
+.x:hover { background: var(--mal-bg); color: var(--mal-fg); }
+.x:focus-visible { outline: 2px solid var(--cta); }
+.slot .err { margin-top: 10px; }
+
+/* resumen */
+.res { margin: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.res > div { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 4px 16px; padding: 14px 16px; }
+.res > div + div { border-top: 1px solid var(--border-soft); }
+.res dt { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.res dd { margin: 0; overflow-wrap: anywhere; font-size: 14px; }
+.res dd .s { display: block; font-size: 12.5px; color: var(--text-3); }
+.res ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.ed { all: unset; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent-text); text-transform: none; letter-spacing: 0; padding: 4px 8px; margin: -4px -8px -4px 0; border-radius: 6px; }
+.ed:hover { text-decoration: underline; }
+.ed:focus-visible { outline: 2px solid var(--cta); }
+
+.pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--border-soft); }
+.pie .borr { font-size: 12.5px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+.pie .bt { display: flex; gap: 10px; }
+
+/* resumen en vivo */
+.vivo { padding: 18px; position: sticky; top: 22px; }
+.vivo h2 { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.vivo dl { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.vivo dt { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+.vivo dd { margin: 2px 0 0; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.vivo dd .s { display: block; font-size: 12.5px; font-weight: 400; color: var(--text-3); }
+.vivo .vacio { color: var(--text-3); font-weight: 400; }
+.ins { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.ins i { width: 7px; height: 7px; border-radius: 50%; }
+.ins[data-t="ok"] { background: var(--ok-bg); color: var(--ok-fg); } .ins[data-t="ok"] i { background: var(--ok-dot); }
+.ins[data-t="ambar"] { background: var(--ambar-bg); color: var(--ambar-fg); } .ins[data-t="ambar"] i { background: var(--ambar-dot); }
+.ins[data-t="mal"] { background: var(--mal-bg); color: var(--mal-fg); } .ins[data-t="mal"] i { background: var(--mal-dot); }
+
+/* éxito */
+.exito { text-align: center; padding: 34px 12px 8px; }
+.exito .ok { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 14px; background: var(--ok-bg); color: var(--ok-fg); }
+.exito h2 { font-size: 21px; }
+.exito .ayuda { margin: 6px auto 20px; }
+.exito ul { list-style: none; margin: 0 auto 22px; padding: 0; max-width: 460px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.exito li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; }
+.exito .bt { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 100; background: var(--side); color: #faf9f5; font-size: 13.5px; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: var(--sombra-flot); max-width: calc(100vw - 32px); }
+.toast[hidden] { display: none; }
+
+/* ============ Responsive ============ */
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .vivo { position: static; order: -1; }
+  .vivo dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .barra { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .barra .ibtn { border-color: var(--border); color: var(--text); }
+  .barra .ibtn:hover { background: var(--neutro-bg); color: var(--text); }
+  .side, .app.plegada .side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); transform: translateX(-102%); transition: transform 0.22s var(--ease); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); }
+  .side.abierta { transform: translateX(0); }
+  .app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: revert; }
+  .app.plegada .side-cab { flex-direction: row; padding: 0 4px 0 6px; margin-bottom: 18px; }
+  .app.plegada .enlace { justify-content: flex-start; padding: 0 14px; }
+  .app.plegada .cuenta { position: static; min-width: 22px; height: 22px; font-size: 12px; padding: 0 7px; }
+  .ibtn.plegar { display: none; } .ibtn.cerrar { display: grid; }
+  .velo.on { display: block; position: fixed; inset: 0; z-index: 35; background: var(--velo); }
+  .main { padding: 14px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+  .main > .ruta { display: none; }
+}
+@media (max-width: 720px) {
+  h1 { font-size: 21px; }
+  .cols, .cols3 { grid-template-columns: minmax(0, 1fr); }
+  .panel { padding: 18px 16px 20px; }
+  .pasos { padding: 12px 16px; }
+  .pasos button { padding: 6px 10px; font-size: 0; gap: 0; }
+  .pasos button::before { font-size: 12px; width: 22px; height: 22px; }
+  .pasos li[aria-current="step"] { flex: 3 0 auto; }
+  .pasos li[aria-current="step"] button { font-size: 13px; gap: 7px; }
+  .res > div { grid-template-columns: minmax(0, 1fr); }
+  .pie { padding: 12px 16px; flex-wrap: wrap; }
+  .pie .borr { width: 100%; order: 2; }
+  .pie .bt { width: 100%; }
+  .pie .bt .btn { flex: 1; }
+  .vivo dl { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Menú principal">
+    <div class="side-cab">
+      <span class="marca" aria-hidden="true">P</span>
+      <span class="nombre">Prime Telecom</span>
+      <button type="button" class="ibtn plegar" id="plegar" aria-label="Contraer menú" aria-pressed="false"></button>
+      <button type="button" class="ibtn cerrar" id="cerrar" aria-label="Cerrar menú"></button>
+    </div>
+    <nav class="nav" aria-label="Módulos"><ul id="menu"></ul></nav>
+    <div class="pie-side">
+      <p class="email" title="recepcion@primetelecom.example">recepcion@primetelecom.example</p>
+      <button type="button" class="enlace" id="salir" title="Cerrar sesión"></button>
+    </div>
+  </aside>
+  <div class="velo" id="velo"></div>
+
+  <div class="cuerpo">
+    <header class="barra">
+      <button type="button" class="ibtn" id="abrir" aria-label="Abrir menú" aria-expanded="false"></button>
+      <p class="ruta">Garantías / <strong>Nueva garantía</strong></p>
+    </header>
+    <main class="main" id="contenido">
+      <p class="ruta"><a id="volver">Garantías</a> / <strong>Nueva garantía</strong></p>
+      <div class="enc">
+        <h1>Registrar garantía</h1>
+        <p class="sub">Para equipos ya vendidos: titular, productos, factura y plazo. La revisión del equipo se hace después, al abrir una orden en Taller.</p>
+      </div>
+      <div class="grid">
+        <section class="card" id="asistente" aria-label="Asistente de registro de garantía">
+          <ol class="pasos" id="pasos" aria-label="Pasos"></ol>
+          <p class="sr" role="status" aria-live="polite" id="anuncio"></p>
+          <div class="panel" id="panel"></div>
+          <div class="pie" id="pie"></div>
+        </section>
+        <aside class="card vivo" aria-label="Resumen de la garantía" id="vivo"></aside>
+      </div>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  var HOY = new Date(2026, 9, 30);
+  var DIA = 86400000;
+  var I = {
+    garantias: '<path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
+    taller: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z"/>',
+    entregas: '<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+    inventario: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+    reportes: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-2"/>',
+    clientes: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2 .8 3.5 2.6 3.5 5.6"/>',
+    notificaciones: '<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+    izq: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m6-11-3 3 3 3"/>',
+    der: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m3-9 3 3-3 3"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    mas: '<path d="M12 5v14M5 12h14"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    alerta: '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>', check2: '<path d="m5 12 5 5 9-10"/>',
+    subir: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    nube: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7Z"/>',
+    papelera: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
+  };
+  function svg(n, s, w) { return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>'; }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  /* ---------- sidebar (igual que el tablero) ---------- */
+  var DEST = [["garantias", "Garantías"], ["taller", "Taller"], ["entregas", "Entregas"], ["inventario", "Inventario"], ["reportes", "Reportes"], ["clientes", "Clientes"], ["notificaciones", "Notificaciones"]];
+  $("menu").innerHTML = DEST.map(function (x) {
+    return '<li><button type="button" class="enlace" data-m="' + x[0] + '"' + (x[0] === "garantias" ? ' aria-current="page"' : '') + ' title="' + x[1] + '">' + svg(x[0]) + '<span class="etq">' + x[1] + '</span>' + (x[0] === "notificaciones" ? '<span class="cuenta">3<span class="sr"> sin leer</span></span>' : '') + '</button></li>';
+  }).join("");
+  $("salir").innerHTML = svg("salir", 18) + '<span class="etq">Cerrar sesión</span>';
+  $("cerrar").innerHTML = svg("x", 18); $("abrir").innerHTML = svg("menu");
+  var app = $("app"), side = $("side"), plegada = false;
+  try { plegada = localStorage.getItem("pt.plegada") === "1"; } catch (e) {}
+  function pintaPleg() { app.classList.toggle("plegada", plegada); $("plegar").innerHTML = svg(plegada ? "der" : "izq", 18); $("plegar").setAttribute("aria-label", plegada ? "Expandir menú" : "Contraer menú"); $("plegar").setAttribute("aria-pressed", String(plegada)); }
+  pintaPleg();
+  $("plegar").onclick = function () { plegada = !plegada; pintaPleg(); try { localStorage.setItem("pt.plegada", plegada ? "1" : "0"); } catch (e) {} };
+  function cajon(v) { side.classList.toggle("abierta", v); $("velo").classList.toggle("on", v); $("abrir").setAttribute("aria-expanded", String(v)); }
+  $("abrir").onclick = function () { cajon(true); }; $("cerrar").onclick = function () { cajon(false); }; $("velo").onclick = function () { cajon(false); };
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") cajon(false); });
+  var tt;
+  function aviso(t) { var el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 3200); }
+  $("menu").onclick = function (e) { var b = e.target.closest("[data-m]"); if (!b) return; if (b.dataset.m !== "garantias") aviso("«" + b.title + "» es otra pantalla del diseño."); else aviso("Volver al tablero de garantías (pantalla anterior)."); cajon(false); };
+  $("volver").onclick = function () { aviso("Volver al tablero de garantías (pantalla anterior)."); };
+  $("salir").onclick = function () { aviso("Cerrar sesión (maqueta)."); };
+
+  /* ---------- catálogo y datos de ejemplo ---------- */
+  var CATALOGO = {
+    "Huawei": [["HG8145V5", "ONT"], ["EG8145V5", "ONT"]],
+    "TP-Link": [["Archer C6", "Router"], ["Deco M5", "Mesh"], ["TL-SG1024D", "Switch"]],
+    "Ubiquiti": [["UniFi U6-Lite", "Access point"], ["EdgeRouter X", "Router"]],
+    "Grandstream": [["GRP2602", "Teléfono IP"], ["HT801", "Adaptador ATA"]]
+  };
+  var CLIENTES = {
+    "V12345678": { tipo: "V", nombre: "María Pérez", correo: "maria.perez@correo.example", tel: "0414-1234567" },
+    "J305892147": { tipo: "J", nombre: "Comercializadora Andina C.A.", correo: "compras@andina.example", tel: "0212-5550142" }
+  };
+  var SERIALES = { "GPN4471KM": "María Pérez, garantía vigente", "SW240093LM": "Distribuidora El Faro, garantía vencida" };
+  var SLOTS = [
+    { k: "factura", t: "Factura escaneada", d: "PDF, JPG o PNG. Hasta 8 MB.", mime: ["application/pdf", "image/jpeg", "image/png"], acc: "application/pdf,image/jpeg,image/png", max: 3, rec: true },
+    { k: "venta", t: "PDF de la venta y del plazo de garantía", d: "El documento con las condiciones y el plazo que firmó el cliente. PDF, JPG o PNG.", mime: ["application/pdf", "image/jpeg", "image/png"], acc: "application/pdf,image/jpeg,image/png", max: 3, rec: true },
+    { k: "fotos", t: "Fotos del equipo", d: "Opcional. Etiqueta del serial, caja o precintos. JPG, PNG o WEBP.", mime: ["image/jpeg", "image/png", "image/webp"], acc: "image/jpeg,image/png,image/webp", max: 8, rec: false }
+  ];
+  var MAXB = 8 * 1024 * 1024;
+  var NOMBRES = ["Cliente", "Productos", "Compra", "Documentos", "Resumen"];
+
+  var S = {
+    paso: 0, max: 0, enviado: false, enviando: false,
+    cli: { tipo: "V", doc: "", nombre: "", correo: "", tel: "", existente: false },
+    items: [{ marca: "", modelo: "", serial: "" }],
+    compra: { numero: "", fecha: iso(HOY), plazo: "", vendedor: "" },
+    docs: { factura: [], venta: [], fotos: [] }
+  };
+  function iso(f) { return f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0") + "-" + String(f.getDate()).padStart(2, "0"); }
+  var MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"], SEM = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+  function fecha(f) { return SEM[f.getDay()] + " " + f.getDate() + " " + MES[f.getMonth()] + " " + f.getFullYear(); }
+  function vence() {
+    var c = S.compra; if (!c.fecha || !c.plazo) return null;
+    var p = c.fecha.split("-"); var e = new Date(+p[0], +p[1] - 1, +p[2]);
+    var v = new Date(e.getTime() + Number(c.plazo) * DIA);
+    return { fecha: v, dias: Math.round((v - HOY) / DIA) };
+  }
+  function nSerial(s) { return String(s).toUpperCase().replace(/[\s-]/g, ""); }
+  function docTxt() { return S.cli.doc ? S.cli.tipo + "-" + S.cli.doc : ""; }
+  function tamano(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+
+  /* ---------- validación ---------- */
+  function validar(paso) {
+    var e = {}, c = S.cli;
+    if (paso === 0) {
+      if (c.doc.length < 5) e["f-doc"] = "El documento necesita al menos 5 dígitos.";
+      if (c.nombre.trim().length < 3) e["f-nombre"] = "Escribe el nombre o la razón social completa.";
+      if (!c.correo.trim()) e["f-correo"] = "El correo es obligatorio: ahí llegan los avisos de vencimiento.";
+      else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.correo.trim())) e["f-correo"] = "Revisa el correo: falta el @ o el dominio.";
+      if (c.tel && !/^[0-9+][0-9\s-]{6,19}$/.test(c.tel.trim())) e["f-tel"] = "El teléfono solo lleva números, + o guiones.";
+    }
+    if (paso === 1) {
+      var vistos = {};
+      S.items.forEach(function (it, i) {
+        if (!it.marca) e["f-marca-" + i] = "Elige la marca.";
+        if (it.marca && !it.modelo) e["f-modelo-" + i] = "Elige el modelo.";
+        var ns = nSerial(it.serial);
+        if (ns.length < 3) e["f-serial-" + i] = "El serial necesita al menos 3 caracteres.";
+        else if (vistos[ns] !== undefined) e["f-serial-" + i] = "Este serial ya está en la línea " + (vistos[ns] + 1) + ".";
+        else if (SERIALES[ns]) e["f-serial-" + i] = "Este serial ya tiene garantía registrada (" + SERIALES[ns] + "). Se consulta, no se registra otra vez.";
+        if (ns.length >= 3 && vistos[ns] === undefined) vistos[ns] = i;
+      });
+    }
+    if (paso === 2) {
+      var k = S.compra;
+      if (!k.numero.trim()) e["f-numero"] = "Escribe el número de la factura.";
+      if (!k.fecha) e["f-fecha"] = "Indica la fecha de emisión.";
+      else if (k.fecha > iso(HOY)) e["f-fecha"] = "La factura no puede tener fecha futura.";
+      else if (k.fecha < "2000-01-01") e["f-fecha"] = "La fecha es anterior al 2000: revísala.";
+      if (!k.plazo) e["f-plazo"] = "Elige el plazo de garantía.";
+    }
+    return e;
+  }
+  function pintaErrores(e, ambito) {
+    var primero = null;
+    (ambito || document).querySelectorAll("[data-err]").forEach(function (p) {
+      var id = p.getAttribute("data-err"), inp = document.getElementById(id);
+      if (e[id]) { p.innerHTML = svg("alerta", 14, 2) + "<span>" + esc(e[id]) + "</span>"; p.hidden = false; if (inp) { inp.setAttribute("aria-invalid", "true"); inp.setAttribute("aria-describedby", "e-" + id); } if (!primero && inp) primero = inp; }
+      else { p.hidden = true; if (inp) { inp.removeAttribute("aria-invalid"); } }
+    });
+    if (primero) primero.focus();
+    return !primero;
+  }
+  function errp(id) { return '<p class="err" id="e-' + id + '" data-err="' + id + '" role="alert" hidden></p>'; }
+
+  /* ---------- pasos ---------- */
+  function vCliente() {
+    var c = S.cli;
+    return '<h2>Cliente</h2><p class="ayuda">Quien aparece en la factura. Si ya compró antes, sus datos se traen solos al escribir el documento.</p>' +
+      '<div class="aviso ok" id="ex" ' + (c.existente ? "" : "hidden") + '>' + svg("check", 18) + '<span><b>Cliente existente.</b> Se usan sus datos guardados; puedes corregirlos aquí.</span></div>' +
+      '<div class="cols">' +
+      '<div class="f"><label for="f-doc">Cédula, RIF o pasaporte</label><div class="doc-fila"><select id="f-tipo" aria-label="Tipo de documento" data-k="cli.tipo">' + ["V:V · Cédula", "E:E · Extranjero", "J:J · RIF jurídico", "G:G · RIF gobierno", "P:P · Pasaporte"].map(function (o) { var p = o.split(":"); return '<option value="' + p[0] + '"' + (c.tipo === p[0] ? " selected" : "") + '>' + p[1] + '</option>'; }).join("") + '</select>' +
+      '<input id="f-doc" type="text" inputmode="numeric" autocomplete="off" value="' + esc(c.doc) + '" placeholder="12345678" data-k="cli.doc"></div>' + errp("f-doc") + '<p class="hint">Prueba con V-12345678 para ver un cliente existente.</p></div>' +
+      '<div class="f"><label for="f-nombre">Nombre o razón social</label><input id="f-nombre" type="text" autocomplete="off" value="' + esc(c.nombre) + '" data-k="cli.nombre">' + errp("f-nombre") + '</div>' +
+      '<div class="f"><label for="f-correo">Correo electrónico</label><input id="f-correo" type="email" autocomplete="off" value="' + esc(c.correo) + '" placeholder="cliente@correo.com" data-k="cli.correo">' + errp("f-correo") + '<p class="hint">A este correo se envían los avisos de vencimiento.</p></div>' +
+      '<div class="f"><label for="f-tel">Teléfono <span class="op">(opcional)</span></label><input id="f-tel" type="tel" autocomplete="off" value="' + esc(c.tel) + '" placeholder="0414-0000000" data-k="cli.tel">' + errp("f-tel") + '</div></div>';
+  }
+  function marcas(sel) { return '<option value="">Elige…</option>' + Object.keys(CATALOGO).map(function (m) { return '<option' + (m === sel ? " selected" : "") + '>' + m + '</option>'; }).join(""); }
+  function modelos(marca, sel) { return '<option value="">' + (marca ? "Elige…" : "Primero la marca") + '</option>' + (CATALOGO[marca] || []).map(function (m) { return '<option value="' + m[0] + '"' + (m[0] === sel ? " selected" : "") + '>' + m[0] + ' · ' + m[1] + '</option>'; }).join(""); }
+  function vItem(it, i) {
+    return '<div class="item" data-it="' + i + '"><div class="item-cab"><h3>Producto ' + (i + 1) + '</h3>' + (S.items.length > 1 ? '<button type="button" class="btn chico" data-quitar="' + i + '">' + svg("papelera", 15) + 'Quitar<span class="sr"> producto ' + (i + 1) + '</span></button>' : '') + '</div><div class="cols3">' +
+      '<div class="f"><label for="f-marca-' + i + '">Marca</label><select id="f-marca-' + i + '" data-i="' + i + '" data-f="marca">' + marcas(it.marca) + '</select>' + errp("f-marca-" + i) + '</div>' +
+      '<div class="f"><label for="f-modelo-' + i + '">Modelo</label><select id="f-modelo-' + i + '" data-i="' + i + '" data-f="modelo"' + (it.marca ? "" : " disabled") + '>' + modelos(it.marca, it.modelo) + '</select>' + errp("f-modelo-" + i) + '</div>' +
+      '<div class="f"><label for="f-serial-' + i + '">Serial del equipo</label><input id="f-serial-' + i + '" type="text" autocomplete="off" class="mono" value="' + esc(it.serial) + '" placeholder="Escanea o escribe" data-i="' + i + '" data-f="serial">' + errp("f-serial-" + i) + '</div></div></div>';
+  }
+  function vProductos() {
+    return '<h2>Productos comprados</h2><p class="ayuda">Un producto por línea, cada uno con su serial. Todos comparten la misma factura y plazo, y cada equipo queda con su propia garantía.</p><div id="items">' + S.items.map(vItem).join("") + '</div>' +
+      '<button type="button" class="btn punteado" id="otro">' + svg("mas", 16, 2) + 'Agregar otro producto de la misma factura</button>';
+  }
+  function vCompra() {
+    var k = S.compra;
+    return '<h2>Compra y plazo de garantía</h2><p class="ayuda">Los datos de la factura. El plazo es el que indica la venta; la garantía corre desde la fecha de emisión.</p>' +
+      '<div class="cols"><div class="f"><label for="f-numero">Número de factura</label><input id="f-numero" type="text" autocomplete="off" class="mono" value="' + esc(k.numero) + '" placeholder="F-004512" data-k="compra.numero">' + errp("f-numero") + '</div>' +
+      '<div class="f"><label for="f-fecha">Fecha de emisión</label><input id="f-fecha" type="date" value="' + esc(k.fecha) + '" max="' + iso(HOY) + '" data-k="compra.fecha">' + errp("f-fecha") + '</div>' +
+      '<div class="f ancho"><span class="lbl" id="l-plazo">Plazo de garantía</span><div class="seg" role="radiogroup" aria-labelledby="l-plazo" id="f-plazo">' +
+      [7, 15].map(function (d) { return '<label><input type="radio" name="plazo" value="' + d + '"' + (String(k.plazo) === String(d) ? " checked" : "") + ' data-k="compra.plazo"><span>' + d + ' días<small>' + (d === 7 ? "estándar" : "extendido") + '</small></span></label>'; }).join("") +
+      '<label title="Otros plazos los autoriza Jefatura de servicio o Administración"><input type="radio" name="plazo" value="otro" disabled><span>' + 'Otro plazo<small>' + 'requiere Jefatura</small></span></label></div>' + errp("f-plazo") + '</div>' +
+      '<div class="f ancho"><div class="vence" id="vence" aria-live="polite"></div></div>' +
+      '<div class="f ancho"><label for="f-vend">Vendedor <span class="op">(opcional)</span></label><input id="f-vend" type="text" autocomplete="off" value="' + esc(k.vendedor) + '" placeholder="Quién hizo la venta" data-k="compra.vendedor"></div></div>';
+  }
+  function vDocs() {
+    return '<h2>Documentos y fotos</h2><p class="ayuda">Adjunta la factura escaneada y el PDF con las condiciones de la venta. Quedan vinculados a cada garantía y se pueden consultar desde el taller.</p>' +
+      SLOTS.map(function (s) {
+        return '<div class="slot" data-slot="' + s.k + '"><div class="slot-cab"><div><h3>' + s.t + ' <span class="etiq' + (s.rec ? " rec" : "") + '">' + (s.rec ? "Recomendado" : "Opcional") + '</span></h3><p class="ayuda">' + s.d + '</p></div>' +
+          '<button type="button" class="btn chico" data-sub="' + s.k + '">' + svg("subir", 15) + 'Elegir archivo</button><input type="file" class="sr" id="in-' + s.k + '" accept="' + s.acc + '" multiple tabindex="-1" aria-label="' + s.t + '"></div>' +
+          '<ul class="arch" id="ar-' + s.k + '"></ul><p class="err" id="e-doc-' + s.k + '" role="alert" hidden></p></div>';
+      }).join("");
+  }
+  function itemsTxt() { return S.items.map(function (it) { return '<li><b>' + esc(it.marca) + ' ' + esc(it.modelo) + '</b><span class="s mono">' + esc(it.serial.toUpperCase()) + '</span></li>'; }).join(""); }
+  function vResumen() {
+    var v = vence(), nd = S.docs.factura.length + S.docs.venta.length + S.docs.fotos.length;
+    var falta = !S.docs.factura.length || !S.docs.venta.length;
+    return '<h2>Revisa antes de registrar</h2><p class="ayuda">Si algo no cuadra, usa Editar en esa sección.</p>' +
+      '<div class="aviso ' + (v && v.dias < 0 ? "mal" : "info") + '">' + svg(v && v.dias < 0 ? "alerta" : "info", 18) + '<span>' + (v && v.dias < 0 ? '<b>Esta garantía ya está vencida.</b> Se registra igual, y los ingresos al taller se atenderán como servicio pago.' : 'Se crearán <b>' + S.items.length + (S.items.length === 1 ? ' garantía' : ' garantías') + '</b>, una por equipo, todas con la misma factura y plazo.') + '</span></div>' +
+      (falta ? '<div class="aviso ambar">' + svg("alerta", 18) + '<span>Falta ' + [!S.docs.factura.length ? "la factura escaneada" : "", !S.docs.venta.length ? "el PDF de la venta" : ""].filter(Boolean).join(" y ") + '. Puedes registrar sin ' + (S.docs.factura.length + S.docs.venta.length === 0 ? "ellos" : "él") + ' y adjuntarlo después.</span></div>' : '') +
+      '<dl class="res">' +
+      '<div><dt>Cliente <button type="button" class="ed" data-ir="0">Editar</button></dt><dd>' + esc(S.cli.nombre) + '<span class="s mono">' + esc(docTxt()) + '</span><span class="s">' + esc(S.cli.correo) + (S.cli.tel ? " · " + esc(S.cli.tel) : "") + '</span></dd></div>' +
+      '<div><dt>Productos <button type="button" class="ed" data-ir="1">Editar</button></dt><dd><ul>' + itemsTxt() + '</ul></dd></div>' +
+      '<div><dt>Compra <button type="button" class="ed" data-ir="2">Editar</button></dt><dd><span class="mono">' + esc(S.compra.numero) + '</span><span class="s">Emitida el ' + fecha(new Date(S.compra.fecha.replace(/-/g, "/"))) + ' · plazo ' + S.compra.plazo + ' días</span><span class="s">' + (v ? "Vence el " + fecha(v.fecha) + (v.dias >= 0 ? " (quedan " + v.dias + " días)" : "") : "") + '</span>' + (S.compra.vendedor ? '<span class="s">Vendedor: ' + esc(S.compra.vendedor) + '</span>' : '') + '</dd></div>' +
+      '<div><dt>Documentos <button type="button" class="ed" data-ir="3">Editar</button></dt><dd>' + (nd ? nd + (nd === 1 ? " archivo" : " archivos") + '<span class="s">Factura: ' + S.docs.factura.length + ' · PDF de la venta: ' + S.docs.venta.length + ' · Fotos: ' + S.docs.fotos.length + '</span>' : '<span class="s">Sin archivos adjuntos</span>') + '</dd></div></dl>';
+  }
+  function vExito() {
+    var v = vence();
+    return '<div class="exito"><div class="ok">' + svg("check2", 28, 2.2) + '</div><h2>' + (S.items.length === 1 ? "Garantía registrada" : S.items.length + " garantías registradas") + '</h2><p class="ayuda">Ya se pueden consultar por serial, cédula o número de factura. ' + esc(S.cli.nombre) + ' recibirá los avisos en ' + esc(S.cli.correo) + '.</p><ul>' +
+      S.items.map(function (it) { return '<li><span><b>' + esc(it.marca) + ' ' + esc(it.modelo) + '</b><br><span class="mono">' + esc(it.serial.toUpperCase()) + '</span></span><span class="ins" data-t="' + (v && v.dias < 0 ? "mal" : v && v.dias <= 3 ? "ambar" : "ok") + '"><i></i>' + (v && v.dias < 0 ? "Vencida" : "Vence " + v.fecha.getDate() + " " + MES[v.fecha.getMonth()]) + '</span></li>'; }).join("") +
+      '</ul><div class="bt"><button type="button" class="btn" id="reiniciar">Registrar otra garantía</button><button type="button" class="btn principal" id="alTablero">Ver en el tablero</button></div></div>';
+  }
+
+  /* ---------- render ---------- */
+  var VISTAS = [vCliente, vProductos, vCompra, vDocs, vResumen];
+  function render() {
+    $("pasos").innerHTML = NOMBRES.map(function (n, i) {
+      return '<li class="' + (i < S.paso || (S.enviado) ? "hecho" : "") + '"' + (i === S.paso && !S.enviado ? ' aria-current="step"' : '') + '><button type="button" data-p="' + i + '"' + (i > S.max || S.enviado ? " disabled" : "") + '>' + n + '</button></li>';
+    }).join("");
+    $("panel").innerHTML = S.enviado ? vExito() : VISTAS[S.paso]();
+    $("anuncio").textContent = S.enviado ? "Garantía registrada" : "Paso " + (S.paso + 1) + " de 5: " + NOMBRES[S.paso];
+    var ult = S.paso === 4;
+    $("pie").innerHTML = S.enviado ? "" :
+      '<span class="borr" id="borr">' + svg("nube", 15) + 'Borrador guardado en este equipo por 24 h</span><div class="bt"><button type="button" class="btn" id="atras"' + (S.paso === 0 ? " disabled" : "") + '>Atrás</button>' +
+      '<button type="button" class="btn principal" id="sig"' + (S.enviando ? " disabled" : "") + '>' + (ult ? (S.enviando ? "Registrando…" : "Registrar " + (S.items.length === 1 ? "garantía" : S.items.length + " garantías")) : "Siguiente") + '</button></div>';
+    if (S.paso === 2 && !S.enviado) pintaVence();
+    if (S.paso === 3 && !S.enviado) SLOTS.forEach(function (s) { pintaArch(s.k); });
+    pintaVivo();
+    if (!S.enviado) { var p = $("panel").querySelector("input:not([type=file]),select"); if (p && S.paso !== 3 && S.paso !== 4 && !p.value) p.focus({ preventScroll: true }); }
+  }
+  function pintaVence() {
+    var v = vence(), box = $("vence"); if (!box) return;
+    if (!v) { box.dataset.t = ""; box.innerHTML = '<span class="n">–</span><p>Elige la fecha y el plazo para ver cuándo vence la garantía.</p>'; return; }
+    var t = v.dias < 0 ? "mal" : v.dias <= 3 ? "ambar" : "ok"; box.dataset.t = t;
+    box.innerHTML = '<span class="n">' + (v.dias < 0 ? Math.abs(v.dias) : v.dias) + '</span><p>' + (v.dias < 0 ? '<strong>Venció hace ' + Math.abs(v.dias) + ' días</strong> (' + fecha(v.fecha) + '). Se registra, pero se atenderá como servicio pago.' : '<strong>' + (v.dias === 0 ? "Vence hoy" : v.dias === 1 ? "Queda 1 día" : "Quedan " + v.dias + " días") + '</strong> · vence el ' + fecha(v.fecha) + (v.dias <= 3 ? ". Conviene avisar al cliente." : ".")) + '</p>';
+  }
+  function pintaArch(k) {
+    var ul = $("ar-" + k); if (!ul) return;
+    ul.innerHTML = S.docs[k].map(function (a, i) {
+      var ext = (a.name.split(".").pop() || "").toUpperCase().slice(0, 4);
+      return '<li><span class="ic">' + esc(ext) + '</span><span class="tx"><b title="' + esc(a.name) + '">' + esc(a.name) + '</b><small>' + tamano(a.size) + '</small></span><button type="button" class="x" data-q="' + k + ':' + i + '" aria-label="Quitar ' + esc(a.name) + '">' + svg("x", 16, 2) + '</button></li>';
+    }).join("");
+  }
+  function pintaVivo() {
+    var c = S.cli, k = S.compra, v = vence();
+    var prods = S.items.filter(function (i) { return i.marca || i.serial; });
+    var nd = S.docs.factura.length + S.docs.venta.length + S.docs.fotos.length;
+    $("vivo").innerHTML = '<h2>Resumen en vivo</h2><dl>' +
+      '<div><dt>Cliente</dt><dd>' + (c.nombre ? esc(c.nombre) + '<span class="s mono">' + esc(docTxt()) + '</span>' : '<span class="vacio">Sin completar</span>') + '</dd></div>' +
+      '<div><dt>Productos</dt><dd>' + (prods.length ? prods.map(function (i) { return esc((i.marca + " " + i.modelo).trim() || "Sin modelo") + '<span class="s mono">' + esc(i.serial.toUpperCase() || "sin serial") + '</span>'; }).join("") : '<span class="vacio">Sin completar</span>') + '</dd></div>' +
+      '<div><dt>Factura</dt><dd>' + (k.numero ? '<span class="mono">' + esc(k.numero) + '</span>' : '<span class="vacio">Sin completar</span>') + '</dd></div>' +
+      '<div><dt>Garantía</dt><dd>' + (v ? '<span class="ins" data-t="' + (v.dias < 0 ? "mal" : v.dias <= 3 ? "ambar" : "ok") + '"><i></i>' + (v.dias < 0 ? "Vencida" : "Vigente") + '</span><span class="s">' + (v.dias < 0 ? "venció " : "vence ") + fecha(v.fecha) + '</span>' : '<span class="vacio">Falta el plazo</span>') + '</dd></div>' +
+      '<div><dt>Documentos</dt><dd>' + (nd ? nd + (nd === 1 ? " archivo" : " archivos") : '<span class="vacio">Ninguno todavía</span>') + '</dd></div></dl>';
+  }
+  var tb;
+  function borrador() { var b = $("borr"); if (!b) return; b.innerHTML = svg("nube", 15) + "Guardando…"; clearTimeout(tb); tb = setTimeout(function () { var x = $("borr"); if (x) x.innerHTML = svg("nube", 15) + "Borrador guardado en este equipo por 24 h"; }, 700); }
+
+  /* ---------- eventos ---------- */
+  function fijar(path, val) { var p = path.split("."); S[p[0]][p[1]] = val; }
+  $("panel").addEventListener("input", function (e) {
+    var t = e.target;
+    if (t.dataset.k) {
+      var v = t.value;
+      if (t.dataset.k === "cli.doc") {
+        var m = v.toUpperCase().match(/^\s*([VEJGP])?[\s-]*([0-9]*)/);
+        if (m && m[1]) { S.cli.tipo = m[1]; $("f-tipo").value = m[1]; }
+        v = m ? m[2] : v.replace(/\D/g, ""); t.value = v;
+      }
+      fijar(t.dataset.k, v);
+      if (t.dataset.k === "cli.doc" || t.dataset.k === "cli.tipo") buscaCliente();
+      if (t.dataset.k.indexOf("compra.") === 0) pintaVence();
+    } else if (t.dataset.i !== undefined) {
+      var i = +t.dataset.i, f = t.dataset.f; S.items[i][f] = t.value;
+      if (f === "marca") { S.items[i].modelo = ""; var mo = $("f-modelo-" + i); mo.innerHTML = modelos(t.value, ""); mo.disabled = !t.value; }
+    } else return;
+    if (t.id) { var er = document.querySelector('[data-err="' + t.id + '"]'); if (er) { er.hidden = true; t.removeAttribute("aria-invalid"); } }
+    pintaVivo(); borrador();
+  });
+  $("panel").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.matches('input[type="file"]')) { agregar(t.id.replace("in-", ""), t.files); t.value = ""; }
+    else if (t.dataset.k) { fijar(t.dataset.k, t.value); if (t.dataset.k === "cli.tipo") buscaCliente(); if (t.dataset.k.indexOf("compra.") === 0) { pintaVence(); var er = $("e-f-plazo"); if (er && t.dataset.k === "compra.plazo") er.hidden = true; } pintaVivo(); borrador(); }
+  });
+  function buscaCliente() {
+    var c = S.cli, f = CLIENTES[c.tipo + c.doc], ex = $("ex");
+    if (f) { c.nombre = f.nombre; c.correo = f.correo; c.tel = f.tel; c.existente = true; $("f-nombre").value = c.nombre; $("f-correo").value = c.correo; $("f-tel").value = c.tel; }
+    else c.existente = false;
+    if (ex) ex.hidden = !c.existente;
+  }
+  $("panel").addEventListener("click", function (e) {
+    var b;
+    if ((b = e.target.closest("[data-quitar]"))) { S.items.splice(+b.dataset.quitar, 1); $("items").innerHTML = S.items.map(vItem).join(""); pintaVivo(); borrador(); return; }
+    if (e.target.closest("#otro")) { S.items.push({ marca: "", modelo: "", serial: "" }); $("items").innerHTML = S.items.map(vItem).join(""); var n = S.items.length - 1; $("f-marca-" + n).focus(); pintaVivo(); return; }
+    if ((b = e.target.closest("[data-sub]"))) { $("in-" + b.dataset.sub).click(); return; }
+    if ((b = e.target.closest("[data-q]"))) { var p = b.dataset.q.split(":"); S.docs[p[0]].splice(+p[1], 1); pintaArch(p[0]); pintaVivo(); borrador(); return; }
+    if ((b = e.target.closest("[data-ir]"))) { S.paso = +b.dataset.ir; render(); return; }
+    if (e.target.closest("#reiniciar")) { S = { paso: 0, max: 0, enviado: false, enviando: false, cli: { tipo: "V", doc: "", nombre: "", correo: "", tel: "", existente: false }, items: [{ marca: "", modelo: "", serial: "" }], compra: { numero: "", fecha: iso(HOY), plazo: "", vendedor: "" }, docs: { factura: [], venta: [], fotos: [] } }; render(); return; }
+    if (e.target.closest("#alTablero")) aviso("Vuelve al tablero de garantías (pantalla anterior).");
+  });
+  function agregar(k, files) {
+    var s = SLOTS.filter(function (x) { return x.k === k; })[0], msg = "";
+    Array.prototype.forEach.call(files, function (f) {
+      if (s.mime.indexOf(f.type) < 0) msg = "«" + f.name + "»: formato no admitido. Usa " + (k === "fotos" ? "JPG, PNG o WEBP" : "PDF, JPG o PNG") + ".";
+      else if (f.size > MAXB) msg = "«" + f.name + "» pesa " + tamano(f.size) + ". El máximo es 8 MB.";
+      else if (S.docs[k].length >= s.max) msg = "Máximo " + s.max + " archivos en esta sección.";
+      else S.docs[k].push({ name: f.name, size: f.size });
+    });
+    var er = $("e-doc-" + k); er.hidden = !msg; er.innerHTML = msg ? svg("alerta", 14, 2) + "<span>" + esc(msg) + "</span>" : "";
+    pintaArch(k); pintaVivo(); borrador();
+  }
+  ["dragover", "dragleave", "drop"].forEach(function (ev) {
+    $("panel").addEventListener(ev, function (e) {
+      var sl = e.target.closest && e.target.closest(".slot"); if (!sl) return;
+      e.preventDefault();
+      if (ev === "dragover") sl.classList.add("sobre"); else sl.classList.remove("sobre");
+      if (ev === "drop") agregar(sl.dataset.slot, e.dataTransfer.files);
+    });
+  });
+  $("pasos").onclick = function (e) { var b = e.target.closest("[data-p]"); if (!b || b.disabled) return; var n = +b.dataset.p; if (n > S.paso) { var er = validar(S.paso); if (Object.keys(er).length) { pintaErrores(er, $("panel")); return; } } S.paso = n; render(); };
+  $("pie").onclick = function (e) {
+    if (e.target.closest("#atras")) { S.paso = Math.max(0, S.paso - 1); render(); return; }
+    if (!e.target.closest("#sig")) return;
+    var er = validar(S.paso);
+    if (Object.keys(er).length) { pintaErrores(er, $("panel")); return; }
+    if (S.paso < 4) { S.paso++; S.max = Math.max(S.max, S.paso); render(); window.scrollTo({ top: 0 }); return; }
+    S.enviando = true; render();
+    setTimeout(function () { S.enviando = false; S.enviado = true; render(); window.scrollTo({ top: 0 }); }, 900);
+  };
+  render();
+})();
+</script>

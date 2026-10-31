@@ -1,0 +1,557 @@
+<title>Prime Telecom Consulta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+
+/* Layout: misma sidebar fija; en la zona de trabajo, un asistente de 5 pasos (Cliente, Productos, Compra, Documentos, Resumen)
+   con un resumen en vivo a la derecha. Estilo heredado del asistente actual: pastillas numeradas, campos de borde firme, filas "Editar". */
+:root {
+  --bg: #faf9f5; --surface: #ffffff; --surface-2: #fdfcfa; --field: #fbfaf7;
+  --border: rgba(15, 12, 8, 0.1); --border-soft: rgba(15, 12, 8, 0.06); --border-hover: rgba(15, 12, 8, 0.22);
+  --field-border: #8a857a; --field-border-hover: #5f584d; --placeholder: #6e695e;
+  --text: rgba(15, 12, 8, 0.92); --text-2: rgba(15, 12, 8, 0.64); --text-3: rgba(15, 12, 8, 0.6);
+  --accent: #d97757; --accent-text: #b85c3f; --accent-bg: rgba(217, 119, 87, 0.12);
+  --cta: #191915; --cta-hover: #2b2b26; --cta-fg: #faf9f5; --side: #191915;
+  --neutro-bg: #f1efe9; --neutro-fg: #5f584d; --neutro-dot: #a8a096;
+  --ambar-bg: #fbf0e2; --ambar-fg: #8a5a12; --ambar-dot: #c98a2e;
+  --ok-bg: #e9f0e8; --ok-fg: #3f6b46; --ok-dot: #5c8f66;
+  --mal-bg: #fbecee; --mal-fg: #a63244; --mal-dot: #c25a68; --mal-borde: rgba(166, 50, 68, 0.28);
+  --info-bg: rgba(42, 120, 214, 0.1);
+  --sombra: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
+  --sombra-flot: 0 12px 32px rgba(20, 20, 19, 0.18);
+  --velo: rgba(20, 18, 14, 0.42);
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ancho: 252px; --ancho-plegada: 76px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+    --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+    --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+    --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+    --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+    --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+    --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+    --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+    --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+    --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+    --info-bg: rgba(122, 178, 242, 0.13);
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+  --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+  --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+  --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+  --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+  --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+  --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+  --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+  --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+  --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+  --info-bg: rgba(122, 178, 242, 0.13);
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ============ Marco + sidebar ============ */
+.app { min-height: 100dvh; display: flex; }
+.side { width: var(--ancho); flex: none; position: sticky; top: 0; height: 100dvh; z-index: 40; display: flex; flex-direction: column; padding: 16px 12px 14px; background: var(--side); color: rgba(250, 249, 245, 0.72); transition: width 0.22s var(--ease); }
+.side :focus-visible { outline-color: var(--accent); }
+.app.plegada .side { width: var(--ancho-plegada); }
+.side-cab { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px 0 6px; margin-bottom: 18px; }
+.marca { width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 17px; }
+.nombre { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; color: #faf9f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibtn { width: 44px; height: 44px; flex: none; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(250, 249, 245, 0.1); border-radius: 10px; background: none; color: rgba(250, 249, 245, 0.72); transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.ibtn:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.ibtn.cerrar { display: none; }
+.nav { flex: 1; min-height: 0; overflow-y: auto; }
+.nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.enlace { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: rgba(250, 249, 245, 0.72); text-align: left; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.enlace:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.enlace svg { flex: none; }
+.enlace[aria-current="page"] { background: rgba(217, 119, 87, 0.18); color: #faf9f5; font-weight: 600; }
+.enlace[aria-current="page"] svg { color: var(--accent); }
+.enlace[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.etq { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cuenta { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.pie-side { border-top: 1px solid rgba(250, 249, 245, 0.1); padding-top: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.email { margin: 0 0 4px; padding: 0 14px; font-size: 12.5px; color: rgba(250, 249, 245, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: none; }
+.app.plegada .side-cab { flex-direction: column; gap: 12px; padding: 0; margin-bottom: 14px; }
+.app.plegada .enlace { justify-content: center; padding: 0; }
+.app.plegada .cuenta { position: absolute; top: 4px; right: 6px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 4px; }
+.cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.barra { display: none; }
+.ruta { margin: 0; font-size: 13px; color: var(--text-3); }
+.ruta a { color: var(--text-3); text-decoration: none; cursor: pointer; }
+.ruta a:hover { text-decoration: underline; color: var(--text); }
+.ruta strong { color: var(--text); font-weight: 600; }
+.main { width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 28px 56px; }
+.velo { display: none; }
+
+
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .barra { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .barra .ibtn { border-color: var(--border); color: var(--text); }
+  .barra .ibtn:hover { background: var(--neutro-bg); color: var(--text); }
+  .side, .app.plegada .side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); transform: translateX(-102%); transition: transform 0.22s var(--ease); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); }
+  .side.abierta { transform: translateX(0); }
+  .app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: revert; }
+  .app.plegada .side-cab { flex-direction: row; padding: 0 4px 0 6px; margin-bottom: 18px; }
+  .app.plegada .enlace { justify-content: flex-start; padding: 0 14px; }
+  .app.plegada .cuenta { position: static; min-width: 22px; height: 22px; font-size: 12px; padding: 0 7px; }
+  .ibtn.plegar { display: none; } .ibtn.cerrar { display: grid; }
+  .velo.on { display: block; position: fixed; inset: 0; z-index: 35; background: var(--velo); }
+  .main { padding: 14px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+  .main > .ruta { display: none; }
+}
+/* ============ Piezas comunes ============ */
+.enc { margin: 14px 0 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin: 5px 0 0; font-size: 14px; color: var(--text-2); max-width: 62ch; }
+.topline { display: flex; align-items: center; gap: 12px; }
+.topline .ruta { flex: 1; }
+.rol { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); }
+.rol select { width: auto; min-height: 36px; padding: 4px 10px; border-radius: 8px; font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--sombra); padding: 20px; }
+.card + .card { margin-top: 16px; }
+.card-t { margin: 0 0 12px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.card-h { margin: 0 0 14px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mono2 { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.btn { min-height: 44px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; border: 1px solid var(--border-hover); background: transparent; color: var(--text); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease); }
+.btn:hover:not(:disabled) { background: var(--neutro-bg); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.principal { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.btn.principal:hover:not(:disabled) { background: var(--cta-hover); }
+.btn.chico { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.peligro { color: var(--mal-fg); border-color: var(--mal-borde); }
+.btn.peligro:hover:not(:disabled) { background: var(--mal-bg); }
+.btn.ancho { width: 100%; }
+.btn.punteado { width: 100%; border-style: dashed; color: var(--text-2); }
+.acciones { display: flex; flex-direction: column; gap: 10px; }
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="search"], input[type="number"], select, textarea {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); color: var(--text); font-weight: 400;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--placeholder); }
+input:hover, select:hover, textarea:hover { border-color: var(--field-border-hover); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+[aria-invalid="true"] { border-color: var(--mal-dot) !important; }
+.f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.f > label, .f > .lbl { font-size: 13.5px; font-weight: 500; }
+.op { font-weight: 400; color: var(--text-3); }
+.err { margin: 0; font-size: 12.5px; color: var(--mal-fg); display: flex; gap: 6px; align-items: flex-start; }
+.err[hidden] { display: none; }
+.hint { margin: 0; font-size: 12.5px; color: var(--text-3); }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cols .ancho { grid-column: 1 / -1; }
+
+.aviso { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 11px 13px; border-radius: 10px; font-size: 13.5px; background: var(--info-bg); color: var(--text); }
+.aviso[hidden] { display: none; }
+.aviso svg { flex: none; margin-top: 2px; }
+.aviso.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.aviso.ambar { background: var(--ambar-bg); color: var(--ambar-fg); }
+.aviso.mal { background: var(--mal-bg); color: var(--mal-fg); border: 1px solid var(--mal-borde); }
+.aviso b { font-weight: 600; }
+.aviso .lk { all: unset; cursor: pointer; font-weight: 600; text-decoration: underline; border-radius: 4px; }
+.aviso .lk:focus-visible { outline: 2px solid var(--cta); }
+
+.ins { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; line-height: 1.3; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.ins i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.ins[data-t="ok"] { background: var(--ok-bg); color: var(--ok-fg); } .ins[data-t="ok"] i { background: var(--ok-dot); }
+.ins[data-t="ambar"] { background: var(--ambar-bg); color: var(--ambar-fg); } .ins[data-t="ambar"] i { background: var(--ambar-dot); }
+.ins[data-t="mal"] { background: var(--mal-bg); color: var(--mal-fg); } .ins[data-t="mal"] i { background: var(--mal-dot); }
+.ins[data-t="neutro"] { background: var(--neutro-bg); color: var(--neutro-fg); } .ins[data-t="neutro"] i { background: var(--neutro-dot); }
+.ins.lg { font-size: 13.5px; padding: 6px 14px; }
+.etiq { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--neutro-bg); color: var(--neutro-fg); }
+
+.avatar { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--accent-bg); color: var(--accent-text); border: 1px solid rgba(217, 119, 87, 0.28); }
+.dl2 { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13.5px; }
+.dl2 dt { color: var(--text-3); }
+.dl2 dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+
+.barra-prog { height: 10px; border-radius: 999px; background: var(--neutro-bg); overflow: hidden; }
+.barra-prog i { display: block; height: 100%; border-radius: 999px; background: var(--ok-dot); transition: width 0.5s var(--ease); }
+.barra-prog[data-t="ambar"] i { background: var(--ambar-dot); }
+.barra-prog[data-t="mal"] i { background: var(--mal-dot); }
+.barra-prog[data-t="neutro"] i { background: var(--neutro-dot); }
+.prog-cab { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+.prog-cab span:first-child { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.prog-cab b { font-size: 13px; font-variant-numeric: tabular-nums; }
+.prog-cab b[data-t="ok"] { color: var(--ok-fg); } .prog-cab b[data-t="ambar"] { color: var(--ambar-fg); } .prog-cab b[data-t="mal"] { color: var(--mal-fg); } .prog-cab b[data-t="neutro"] { color: var(--neutro-fg); }
+.prog-pie { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12.5px; color: var(--text-3); }
+
+.arch { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.arch li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+.arch .ic { width: 36px; height: 36px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent-text); }
+.arch .ic.img { background: var(--ok-bg); color: var(--ok-fg); }
+.arch .tx { flex: 1; min-width: 0; }
+.arch .tx b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arch .tx small { font-size: 12px; color: var(--text-3); }
+.ibt { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--text-3); flex: none; }
+.ibt:hover { background: var(--neutro-bg); color: var(--text); }
+.ibt:focus-visible { outline: 2px solid var(--cta); }
+.cand { font-size: 12px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; }
+.vacio-t { margin: 0; font-size: 13.5px; color: var(--text-3); }
+
+.tabla-w { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; }
+.tabla th { text-align: left; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 12px 16px; white-space: nowrap; }
+.tabla td { padding: 13px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; text-align: left; }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover { background: var(--surface-2); }
+.num { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent-text); white-space: nowrap; letter-spacing: -0.01em; }
+.lk2 { all: unset; cursor: pointer; border-radius: 6px; }
+.lk2:hover { text-decoration: underline; }
+.lk2:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+.p { font-size: 14px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.s { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 100; background: var(--side); color: #faf9f5; font-size: 13.5px; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: var(--sombra-flot); max-width: calc(100vw - 32px); }
+.toast[hidden] { display: none; }
+@media (max-width: 720px) { h1 { font-size: 21px; } .cols { grid-template-columns: minmax(0, 1fr); } .card { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+/* Consulta: buscador, ficha del equipo con período de cobertura, documentos y órdenes; a la derecha titular y acciones. */
+.busca { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin-bottom: 8px; }
+.busca-c { position: relative; min-width: 0; }
+.busca-c svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.busca-c:focus-within svg { color: var(--accent); }
+.busca-c input { height: 50px; padding-left: 44px; font-size: 15.5px; font-family: var(--mono); letter-spacing: -0.01em; border-radius: 12px; }
+.busca .btn { height: 50px; padding: 0 28px; }
+.prueba { margin: 8px 0 20px; font-size: 12.5px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.prueba button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 12px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-2); }
+.prueba button:hover { border-color: var(--border-hover); color: var(--text); }
+.prueba button:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+#e-q { margin: 0 0 8px; }
+
+.dos { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+.eq-cab { display: flex; gap: 16px; align-items: flex-start; }
+.eq-ico { width: 56px; height: 56px; flex: none; border-radius: 14px; display: grid; place-items: center; background: var(--neutro-bg); color: var(--neutro-fg); }
+.eq-tit { flex: 1; min-width: 0; }
+.eq-tit h2 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.eq-tit .m { margin: 2px 0 0; font-size: 13.5px; color: var(--text-2); }
+.datos { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 14px 0 0; }
+.datos div { min-width: 0; }
+.datos dt { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.datos dd { margin: 1px 0 0; font-size: 14px; font-weight: 600; font-family: var(--mono); letter-spacing: -0.01em; }
+.sep { height: 1px; background: var(--border-soft); margin: 18px 0; }
+.motivo { margin: 14px 0 0; }
+
+.ords { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ords li { display: grid; grid-template-columns: 128px minmax(0, 1fr) auto 64px; gap: 14px; align-items: center; padding: 11px 14px; border: 1px solid var(--border-soft); border-radius: 10px; }
+.ords .f1 { font-size: 13.5px; overflow-wrap: anywhere; }
+.ords .fe { font-size: 12.5px; color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
+
+.elige { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.elige button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.elige button:hover { border-color: var(--border-hover); background: var(--surface-2); }
+.elige button:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+
+.cli-cab { display: flex; gap: 12px; align-items: center; }
+.cli-cab b { display: block; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.cli-cab small { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+.cont { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--text-2); }
+.cont li { display: flex; gap: 10px; align-items: center; overflow-wrap: anywhere; min-width: 0; }
+.cont svg { flex: none; color: var(--text-3); }
+
+.conf { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.conf[hidden] { display: none; }
+.conf p { margin: 0 0 10px; font-size: 13px; color: var(--text-2); }
+.conf .bt { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.nota-rol { margin: 8px 0 0; font-size: 12px; color: var(--text-3); display: flex; gap: 6px; align-items: center; }
+
+.vacio-c { text-align: center; padding: 40px 20px; }
+.vacio-c svg { color: var(--text-3); }
+.vacio-c h2 { margin: 12px 0 4px; font-size: 17px; font-weight: 700; }
+.vacio-c p { margin: 0 auto 18px; max-width: 52ch; font-size: 13.5px; color: var(--text-2); }
+.vacio-c .bt { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+@media (max-width: 1000px) { .dos { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .busca { grid-template-columns: minmax(0, 1fr); }
+  .ords li { grid-template-columns: minmax(0, 1fr) auto; }
+  .ords .fe { text-align: left; }
+  .eq-cab { flex-wrap: wrap; }
+  .eq-cab > .ins { order: 3; }
+}
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Menú principal">
+    <div class="side-cab">
+      <span class="marca" aria-hidden="true">P</span>
+      <span class="nombre">Prime Telecom</span>
+      <button type="button" class="ibtn plegar" id="plegar" aria-label="Contraer menú" aria-pressed="false"></button>
+      <button type="button" class="ibtn cerrar" id="cerrar" aria-label="Cerrar menú"></button>
+    </div>
+    <nav class="nav" aria-label="Módulos"><ul id="menu"></ul></nav>
+    <div class="pie-side">
+      <p class="email" title="recepcion@primetelecom.example">recepcion@primetelecom.example</p>
+      <button type="button" class="enlace" id="salir" title="Cerrar sesión"></button>
+    </div>
+  </aside>
+  <div class="velo" id="velo"></div>
+
+  <div class="cuerpo">
+    <header class="barra">
+      <button type="button" class="ibtn" id="abrir" aria-label="Abrir menú" aria-expanded="false"></button>
+      <p class="ruta">Garantías / <strong>Consulta</strong></p>
+    </header>
+    <main class="main" id="contenido">
+      <div class="topline">
+        <p class="ruta"><a id="volver">Garantías</a> / <strong>Consulta</strong></p>
+        <label class="rol">Ver como <select id="rol" aria-label="Rol de prueba"><option value="REC">Recepción</option><option value="JEF">Jefatura de servicio</option></select></label>
+      </div>
+      <div class="enc">
+        <div>
+          <h1>Consulta de garantía</h1>
+          <p class="sub">Localiza un equipo por serial, cédula/RIF, n.º de factura o n.º de orden.</p>
+        </div>
+      </div>
+
+      <form class="busca" id="form" role="search">
+        <div class="busca-c">
+          <label class="sr" for="q">Serial, cédula o RIF, factura o número de orden</label>
+          <span id="lupa"></span>
+          <input id="q" type="search" autocomplete="off" value="RT5-8842-AA" placeholder="Serial, cédula/RIF, n.º de factura o n.º de orden">
+        </div>
+        <button type="submit" class="btn principal">Buscar</button>
+      </form>
+      <p class="err" id="e-q" role="alert" hidden></p>
+      <p class="prueba">Ejemplos: <span id="ejemplos"></span></p>
+
+      <p class="sr" role="status" aria-live="polite" id="anuncio"></p>
+      <div id="res"></div>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  var HOY = new Date(2026, 9, 30);
+  var DIA = 86400000;
+  var I = {
+    garantias: '<path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
+    taller: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z"/>',
+    entregas: '<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+    inventario: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+    reportes: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-2"/>',
+    clientes: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2 .8 3.5 2.6 3.5 5.6"/>',
+    notificaciones: '<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+    izq: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m6-11-3 3 3 3"/>',
+    der: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m3-9 3 3-3 3"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    mas: '<path d="M12 5v14M5 12h14"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    alerta: '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>', check2: '<path d="m5 12 5 5 9-10"/>',
+    subir: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    nube: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7Z"/>',
+    papelera: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
+  };
+  function svg(n, s, w) { return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>'; }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  /* ---------- sidebar (igual que el tablero) ---------- */
+  var DEST = [["garantias", "Garantías"], ["taller", "Taller"], ["entregas", "Entregas"], ["inventario", "Inventario"], ["reportes", "Reportes"], ["clientes", "Clientes"], ["notificaciones", "Notificaciones"]];
+  $("menu").innerHTML = DEST.map(function (x) {
+    return '<li><button type="button" class="enlace" data-m="' + x[0] + '"' + (x[0] === "garantias" ? ' aria-current="page"' : '') + ' title="' + x[1] + '">' + svg(x[0]) + '<span class="etq">' + x[1] + '</span>' + (x[0] === "notificaciones" ? '<span class="cuenta">3<span class="sr"> sin leer</span></span>' : '') + '</button></li>';
+  }).join("");
+  $("salir").innerHTML = svg("salir", 18) + '<span class="etq">Cerrar sesión</span>';
+  $("cerrar").innerHTML = svg("x", 18); $("abrir").innerHTML = svg("menu");
+  var app = $("app"), side = $("side"), plegada = false;
+  try { plegada = localStorage.getItem("pt.plegada") === "1"; } catch (e) {}
+  function pintaPleg() { app.classList.toggle("plegada", plegada); $("plegar").innerHTML = svg(plegada ? "der" : "izq", 18); $("plegar").setAttribute("aria-label", plegada ? "Expandir menú" : "Contraer menú"); $("plegar").setAttribute("aria-pressed", String(plegada)); }
+  pintaPleg();
+  $("plegar").onclick = function () { plegada = !plegada; pintaPleg(); try { localStorage.setItem("pt.plegada", plegada ? "1" : "0"); } catch (e) {} };
+  function cajon(v) { side.classList.toggle("abierta", v); $("velo").classList.toggle("on", v); $("abrir").setAttribute("aria-expanded", String(v)); }
+  $("abrir").onclick = function () { cajon(true); }; $("cerrar").onclick = function () { cajon(false); }; $("velo").onclick = function () { cajon(false); };
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") cajon(false); });
+  var tt;
+  function aviso(t) { var el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 3200); }
+  $("menu").onclick = function (e) { var b = e.target.closest("[data-m]"); if (!b) return; if (b.dataset.m !== "garantias") aviso("«" + b.title + "» es otra pantalla del diseño."); else aviso("Volver al tablero de garantías (pantalla anterior)."); cajon(false); };
+  $("volver").onclick = function () { aviso("Volver al tablero de garantías (pantalla anterior)."); };
+  $("salir").onclick = function () { aviso("Cerrar sesión (maqueta)."); };
+
+  
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- Consulta ---------- */
+  I.lupa = '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>';
+  I.archivo = '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/>';
+  I.imagen = '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>';
+  I.baja = '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>';
+  I.caja = '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>';
+  I.persona = '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>';
+  I.correo = '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>';
+  I.tel = '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>';
+  I.escudo = '<path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6l-8-3Z"/>';
+  var MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fl(f) { return f.getDate() + " " + MES[f.getMonth()] + " " + f.getFullYear(); }
+  function fd(y, m, d) { return new Date(y, m - 1, d); }
+  function norm(s) { return String(s).toUpperCase().replace(/[\s.-]/g, ""); }
+
+  var EST = {
+    RECIBIDO: ["Recibido", "neutro"], EN_DIAGNOSTICO: ["En diagnóstico", "ambar"], EN_REPARACION: ["En reparación", "ambar"],
+    REPARADO: ["Reparado", "ok"], ENTREGADO: ["Entregado", "ok"], RECHAZADO: ["Rechazado", "mal"], ANULADO: ["Anulado", "neutro"]
+  };
+  var ANDINA = { tipo: "J", doc: "30589214-7", nombre: "Comercializadora Andina C.A.", contacto: "Luisa Fernández", correo: "compras@andina.com.ve", tel: "+58 212 555 0142" };
+  var EQ = [
+    { serial: "RT5-8842-AA", marca: "EA2 Technology", modelo: "Router Industrial EA2-RT500", cat: "Conectividad industrial", cli: ANDINA, factura: "F-004519", emision: fd(2026, 10, 29), plazo: 15, origen: "VENTA", confirmada: true, desest: null,
+      docs: [["factura-F-004519.pdf", "Factura escaneada", "PDF"], ["venta-F-004519.pdf", "PDF de la venta y plazo", "PDF"]],
+      ordenes: [{ num: "OS-2026-0150", falla: "No enciende tras corte eléctrico", estado: "EN_DIAGNOSTICO", f: fd(2026, 10, 30) }] },
+    { serial: "SW24-1120-AB", marca: "NetCore", modelo: "Switch 24p Gigabit SW-24G", cat: "Conmutación", cli: ANDINA, factura: "F-004519", emision: fd(2026, 10, 29), plazo: 15, origen: "VENTA", confirmada: true, desest: null,
+      docs: [["factura-F-004519.pdf", "Factura escaneada", "PDF"]], ordenes: [] },
+    { serial: "GPN-4471-KM", marca: "Huawei", modelo: "ONT Fibra GPON G-140W", cat: "Acceso de fibra", cli: { tipo: "V", doc: "12345678", nombre: "María Pérez", contacto: "María Pérez", correo: "maria.perez@correo.example", tel: "+58 414 123 4567" }, factura: "F-004512", emision: fd(2026, 10, 25), plazo: 7, origen: "VENTA", confirmada: true, desest: null,
+      docs: [["factura-F-004512.pdf", "Factura escaneada", "PDF"]], ordenes: [] },
+    { serial: "SW24-0093-LM", marca: "NetCore", modelo: "Switch 24p Gigabit SW-24G", cat: "Conmutación", cli: { tipo: "J", doc: "40551220-3", nombre: "Distribuidora El Faro", contacto: "Pedro Salazar", correo: "admin@elfaro.example", tel: "+58 212 555 0188" }, factura: "F-004488", emision: fd(2026, 10, 20), plazo: 7, origen: "VENTA", confirmada: true, desest: null,
+      docs: [["factura-F-004488.pdf", "Factura escaneada", "PDF"], ["foto-serial.jpg", "Foto del serial", "JPG"]],
+      ordenes: [{ num: "OS-2026-0139", falla: "Puertos 5 a 8 sin enlace", estado: "ENTREGADO", f: fd(2026, 10, 26) }] },
+    { serial: "PW90-7781-ZZ", marca: "VoltEdge", modelo: "Fuente de Poder 90W", cat: "Energía", cli: { tipo: "J", doc: "31002948-1", nombre: "Telecom del Sur S.A.", contacto: "Rafael Brito", correo: "soporte@telecomsur.example", tel: "+58 241 555 0121" }, factura: "F-003871", emision: fd(2026, 10, 26), plazo: 7, origen: "TALLER", confirmada: false, desest: null,
+      docs: [["factura-presentada.jpg", "Factura presentada en taller", "JPG"]],
+      ordenes: [{ num: "OS-2026-0149", falla: "No entrega voltaje", estado: "RECIBIDO", f: fd(2026, 10, 30) }] }
+  ];
+  var ABIERTAS = ["RECIBIDO", "EN_DIAGNOSTICO", "EN_REPARACION", "REPARADO"];
+
+  function estadoDe(e) {
+    var v = new Date(e.emision.getTime() + e.plazo * DIA), dias = Math.round((v - HOY) / DIA);
+    var total = e.plazo, usados = Math.min(total, Math.max(0, total - dias));
+    var r = { vence: v, dias: dias, pct: Math.round(usados / total * 100) };
+    if (e.desest) { r.k = "desest"; r.t = "mal"; r.txt = "Compra desestimada"; r.lab = "Fuera de garantía"; }
+    else if (e.origen === "TALLER" && !e.confirmada) { r.k = "confirmar"; r.t = "neutro"; r.txt = "Por confirmar"; r.lab = "Pendiente de confirmar"; }
+    else if (dias < 0) { r.k = "vencida"; r.t = "mal"; r.txt = "Garantía vencida"; r.lab = "Venció hace " + Math.abs(dias) + (Math.abs(dias) === 1 ? " día" : " días"); r.pct = 100; }
+    else { r.k = "vigente"; r.t = dias <= 3 ? "ambar" : "ok"; r.txt = "Garantía vigente"; r.lab = dias === 0 ? "Vence hoy" : dias + (dias === 1 ? " día restante" : " días restantes"); r.tonoBadge = "ok"; }
+    return r;
+  }
+  function ini(n) { var p = n.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "").trim().split(/\s+/); return ((p[0] || "?")[0] + (p.length > 1 ? p[1][0] : "")).toUpperCase(); }
+
+  var rol = "REC", actual = null, abierto = false, lista = [];
+  function buscar(q) {
+    var n = norm(q), dig = n.replace(/\D/g, "");
+    var soloDoc = /^[VEJGP]?\d{5,}$/.test(n);
+    return EQ.filter(function (e) {
+      if (norm(e.serial).indexOf(n) >= 0) return true;
+      if (norm(e.factura).indexOf(n) >= 0) return true;
+      if (e.ordenes.some(function (o) { return norm(o.num).indexOf(n) >= 0; })) return true;
+      if (soloDoc && (e.cli.tipo + norm(e.cli.doc)).indexOf(n) >= 0) return true;
+      if (soloDoc && dig.length >= 5 && norm(e.cli.doc).indexOf(dig) >= 0 && /^\d+$/.test(n)) return true;
+      return false;
+    });
+  }
+  function errq(m) { var p = $("e-q"); p.hidden = !m; p.innerHTML = m ? svg("alerta", 14, 2) + "<span>" + esc(m) + "</span>" : ""; $("q").setAttribute("aria-invalid", m ? "true" : "false"); if (!m) $("q").removeAttribute("aria-invalid"); }
+  function consultar(q) {
+    q = q.trim(); abierto = false;
+    if (q.length < 3) { errq("Escribe al menos 3 caracteres: serial, cédula o RIF, factura u orden."); return; }
+    errq("");
+    lista = buscar(q);
+    if (!lista.length) { actual = null; vNo(q); $("anuncio").textContent = "Sin resultados para " + q; }
+    else if (lista.length === 1) { actual = lista[0]; vEquipo(); $("anuncio").textContent = "Garantía de " + actual.serial + ": " + estadoDe(actual).txt; }
+    else { actual = null; vLista(q); $("anuncio").textContent = lista.length + " equipos encontrados"; }
+  }
+
+  function vNo(q) {
+    $("res").innerHTML = '<div class="card vacio-c">' + svg("escudo", 36, 1.5) + '<h2>No hay garantía registrada para «' + esc(q) + '»</h2><p>Revisa que el serial, la cédula o el RIF y la factura estén bien escritos. Si el equipo se vendió pero no se registró, puedes registrarlo ahora: quedará por confirmar hasta que Jefatura lo valide con la venta.</p><div class="bt"><button type="button" class="btn" id="rev">Revisar la búsqueda</button><button type="button" class="btn principal" id="regahora">Registrar ahora</button></div></div>';
+    $("rev").onclick = function () { $("q").focus(); $("q").select(); };
+    $("regahora").onclick = function () { aviso("Abre el registro de garantía con origen Taller; exige adjuntar la factura que trae el cliente."); };
+  }
+  function vLista(q) {
+    $("res").innerHTML = '<div class="card"><h2 class="card-h">' + lista.length + ' equipos coinciden con «' + esc(q) + '»</h2><ul class="elige">' + lista.map(function (e, i) {
+      var s = estadoDe(e);
+      return '<li><button type="button" data-i="' + i + '"><span><span class="p">' + esc(e.modelo) + '</span><span class="s mono2" style="display:block">' + esc(e.serial) + ' · ' + esc(e.cli.nombre) + '</span></span><span class="ins" data-t="' + s.t + '"><i></i>' + s.txt + '</span></button></li>';
+    }).join("") + '</ul></div>';
+    $("res").querySelectorAll("[data-i]").forEach(function (b) { b.onclick = function () { actual = lista[+b.dataset.i]; vEquipo(); }; });
+  }
+
+  function accionesHtml(e, s) {
+    var jef = rol === "JEF", out = '';
+    var abiertas = e.ordenes.filter(function (o) { return ABIERTAS.indexOf(o.estado) >= 0; });
+    out += '<button type="button" class="btn principal ancho" id="bAbrir" aria-expanded="' + abierto + '" aria-controls="conf">Abrir orden de servicio</button>';
+    var msg = {
+      vigente: "La garantía está vigente" + (s.dias <= 3 ? " y vence pronto (" + (s.dias === 0 ? "hoy" : "en " + s.dias + " d") + ")" : "") + ". Se abre la orden y el equipo se revisa en la recepción.",
+      vencida: "La garantía venció hace " + Math.abs(s.dias) + " días: la orden se atenderá como <b>servicio pago</b>.",
+      confirmar: "La compra todavía no está confirmada: la cobertura queda <b>pendiente</b>. Adjunta la factura que trae el cliente.",
+      desest: "La compra fue desestimada: la orden se atenderá como <b>servicio pago</b>."
+    }[s.k];
+    out += '<div class="conf" id="conf"' + (abierto ? "" : " hidden") + '><p>' + msg + '</p><button type="button" class="btn principal chico" id="bCont">Continuar a Taller</button></div>';
+    if (e.origen === "TALLER" && !e.confirmada && !e.desest) {
+      out += '<button type="button" class="btn ancho" id="bConf"' + (jef ? "" : " disabled") + '>Confirmar compra</button>' +
+        '<button type="button" class="btn peligro ancho" id="bDes"' + (jef ? "" : " disabled") + '>Desestimar compra</button>' +
+        '<div class="conf" id="boxDes" hidden><div class="f"><label for="mot">Motivo (mínimo 10 caracteres)</label><textarea id="mot" rows="3"></textarea><p class="err" id="e-mot" role="alert" hidden></p></div><div class="bt"><button type="button" class="btn peligro chico" id="bDesOk">Desestimar</button><button type="button" class="btn chico" id="bDesNo">Cancelar</button></div></div>' +
+        (jef ? '' : '<p class="nota-rol">' + svg("lock", 13) + 'Confirmar o desestimar lo hace Jefatura o Administración.</p>');
+    }
+    return { html: out, abiertas: abiertas };
+  }
+
+  function vEquipo() {
+    var e = actual, s = estadoDe(e), c = e.cli;
+    var ac = accionesHtml(e, s);
+    var avisos = '';
+    if (s.k === "confirmar") avisos += '<div class="aviso">' + svg("info", 18) + '<span><b>Registrada en taller.</b> La compra no se ha confirmado contra la venta real; hasta entonces la cobertura queda por determinar.</span></div>';
+    if (s.k === "desest") avisos += '<div class="aviso mal">' + svg("alerta", 18) + '<span><b>Compra desestimada.</b> Motivo: ' + esc(e.desest) + '</span></div>';
+    if (ac.abiertas.length) avisos += '<div class="aviso ambar">' + svg("alerta", 18) + '<span>Este equipo ya tiene la orden <b>' + ac.abiertas[0].num + '</b> abierta (' + EST[ac.abiertas[0].estado][0] + '). Abre otra solo si es un ingreso nuevo.</span></div>';
+    var bt = s.t;
+    $("res").innerHTML = '<div class="dos"><div>' + avisos +
+      '<section class="card" aria-label="Equipo"><div class="eq-cab"><span class="eq-ico">' + svg("caja", 26) + '</span><div class="eq-tit"><h2>' + esc(e.modelo) + '</h2><p class="m">' + esc(e.marca) + ' · ' + esc(e.cat) + (e.origen === "TALLER" ? ' · <span class="etiq">Registrada en taller</span>' : '') + '</p></div><span class="ins lg" data-t="' + (s.k === "vigente" ? "ok" : s.t) + '"><i></i>' + s.txt + '</span></div>' +
+      '<dl class="datos"><div><dt>Serial</dt><dd>' + esc(e.serial) + '</dd></div><div><dt>Factura</dt><dd>' + esc(e.factura) + '</dd></div><div><dt>Comprado</dt><dd>' + fl(e.emision) + '</dd></div><div><dt>Plazo</dt><dd>' + e.plazo + ' días</dd></div></dl>' +
+      '<div class="sep"></div><div class="prog-cab"><span>Período de cobertura</span><b data-t="' + bt + '">' + s.lab + '</b></div>' +
+      '<div class="barra-prog" data-t="' + bt + '" role="progressbar" aria-valuemin="0" aria-valuemax="' + e.plazo + '" aria-valuenow="' + Math.round(s.pct / 100 * e.plazo) + '" aria-label="Período de cobertura consumido"><i id="pb"></i></div>' +
+      '<div class="prog-pie"><span>Inicio · ' + fl(e.emision) + '</span><span>Fin · ' + fl(s.vence) + '</span></div></section>' +
+      '<section class="card" aria-label="Documentos vinculados"><h2 class="card-h">Documentos vinculados <span class="cand">' + svg("lock", 13) + 'Descarga protegida por rol</span></h2>' +
+      (e.docs.length ? '<ul class="arch">' + e.docs.map(function (d, i) { var img = d[2] !== "PDF"; return '<li><span class="ic' + (img ? " img" : "") + '">' + svg(img ? "imagen" : "archivo", 18) + '</span><span class="tx"><b title="' + esc(d[0]) + '">' + esc(d[0]) + '</b><small>' + esc(d[1]) + ' · ' + d[2] + '</small></span><button type="button" class="ibt" data-d="' + i + '" aria-label="Descargar ' + esc(d[0]) + '">' + svg("baja", 18) + '</button></li>'; }).join("") + '</ul>' : '<p class="vacio-t">Sin documentos vinculados. Adjunta la factura desde la orden o el registro.</p>') + '</section>' +
+      '<section class="card" aria-label="Órdenes de servicio del equipo"><h2 class="card-h">Órdenes de servicio del equipo</h2>' +
+      (e.ordenes.length ? '<ul class="ords">' + e.ordenes.map(function (o) { var t = EST[o.estado]; return '<li><button type="button" class="lk2 num" data-o="' + o.num + '">' + o.num + '</button><span class="f1">' + esc(o.falla) + '</span><span class="ins" data-t="' + t[1] + '"><i></i>' + t[0] + '</span><span class="fe">' + o.f.getDate() + " " + MES[o.f.getMonth()] + '</span></li>'; }).join("") + '</ul>' : '<p class="vacio-t">Este equipo no ha entrado al taller.</p>') + '</section></div>' +
+      '<aside><section class="card" aria-label="Cliente"><h2 class="card-t">Cliente</h2><div class="cli-cab"><span class="avatar" aria-hidden="true">' + ini(c.nombre) + '</span><div><b>' + esc(c.nombre) + '</b><small>' + c.tipo + '-' + esc(c.doc) + '</small></div></div><ul class="cont"><li>' + svg("persona", 16) + esc(c.contacto) + '</li><li>' + svg("correo", 16) + esc(c.correo) + '</li><li>' + svg("tel", 16) + esc(c.tel) + '</li></ul></section>' +
+      '<section class="card" aria-label="Acciones"><h2 class="card-t">Acciones</h2><div class="acciones">' + ac.html + '</div></section></aside></div>';
+    var pb = $("pb"); pb.style.width = "0%"; requestAnimationFrame(function () { requestAnimationFrame(function () { pb.style.width = s.pct + "%"; }); });
+    ligar(e, s);
+  }
+  function ligar(e, s) {
+    var r = $("res");
+    r.querySelectorAll("[data-d]").forEach(function (b) { b.onclick = function () { aviso("Descarga de «" + e.docs[+b.dataset.d][0] + "»: se valida la sesión y el rol (maqueta)."); }; });
+    r.querySelectorAll("[data-o]").forEach(function (b) { b.onclick = function () { aviso("Abre el detalle de la orden " + b.dataset.o + " en Taller."); }; });
+    $("bAbrir").onclick = function () { abierto = !abierto; $("conf").hidden = !abierto; this.setAttribute("aria-expanded", String(abierto)); };
+    $("bCont").onclick = function () { aviso("Abre Taller → Nueva orden con este equipo ya cargado."); };
+    if ($("bConf")) {
+      $("bConf").onclick = function () { e.confirmada = true; vEquipo(); aviso("Compra confirmada. La cobertura de las órdenes abiertas se recalcula."); };
+      $("bDes").onclick = function () { $("boxDes").hidden = false; $("mot").focus(); };
+      $("bDesNo").onclick = function () { $("boxDes").hidden = true; };
+      $("bDesOk").onclick = function () {
+        var v = $("mot").value.trim(), er = $("e-mot");
+        if (v.length < 10) { er.hidden = false; er.innerHTML = svg("alerta", 14, 2) + "<span>Explica el motivo con al menos 10 caracteres (" + v.length + "/10).</span>"; $("mot").setAttribute("aria-invalid", "true"); $("mot").focus(); return; }
+        e.desest = v; vEquipo(); aviso("Compra desestimada. Las órdenes abiertas pasan a servicio pago.");
+      };
+    }
+  }
+
+  $("rol").onchange = function (ev) { rol = ev.target.value; if (actual) vEquipo(); };
+  $("lupa").innerHTML = svg("lupa", 18);
+  $("form").onsubmit = function (ev) { ev.preventDefault(); consultar($("q").value); };
+  $("q").addEventListener("input", function () { errq(""); });
+  $("ejemplos").innerHTML = [["RT5-8842-AA", "vigente"], ["GPN-4471-KM", "por vencer"], ["SW24-0093-LM", "vencida"], ["PW90-7781-ZZ", "por confirmar"], ["F-004519", "2 equipos"], ["V-12345678", "cédula"], ["OS-2026-0139", "orden"], ["ZZ-0000", "no existe"]].map(function (x) { return '<button type="button" data-e="' + x[0] + '" title="' + x[1] + '">' + x[0] + '</button>'; }).join("");
+  $("ejemplos").onclick = function (ev) { var b = ev.target.closest("[data-e]"); if (b) { $("q").value = b.dataset.e; consultar(b.dataset.e); } };
+  $("menu").onclick = function (ev) { var b = ev.target.closest("[data-m]"); if (!b) return; aviso(b.dataset.m === "garantias" ? "Vuelve al tablero de garantías." : "«" + b.title + "» es otra pantalla del diseño."); cajon(false); };
+  $("volver").onclick = function () { aviso("Vuelve al tablero de garantías."); };
+  consultar($("q").value);
+
+})();
+</script>

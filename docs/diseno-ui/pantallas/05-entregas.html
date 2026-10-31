@@ -1,0 +1,626 @@
+<title>Prime Telecom Entregas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+
+/* Layout: misma sidebar fija; en la zona de trabajo, un asistente de 5 pasos (Cliente, Productos, Compra, Documentos, Resumen)
+   con un resumen en vivo a la derecha. Estilo heredado del asistente actual: pastillas numeradas, campos de borde firme, filas "Editar". */
+:root {
+  --bg: #faf9f5; --surface: #ffffff; --surface-2: #fdfcfa; --field: #fbfaf7;
+  --border: rgba(15, 12, 8, 0.1); --border-soft: rgba(15, 12, 8, 0.06); --border-hover: rgba(15, 12, 8, 0.22);
+  --field-border: #8a857a; --field-border-hover: #5f584d; --placeholder: #6e695e;
+  --text: rgba(15, 12, 8, 0.92); --text-2: rgba(15, 12, 8, 0.64); --text-3: rgba(15, 12, 8, 0.6);
+  --accent: #d97757; --accent-text: #b85c3f; --accent-bg: rgba(217, 119, 87, 0.12);
+  --cta: #191915; --cta-hover: #2b2b26; --cta-fg: #faf9f5; --side: #191915;
+  --neutro-bg: #f1efe9; --neutro-fg: #5f584d; --neutro-dot: #a8a096;
+  --ambar-bg: #fbf0e2; --ambar-fg: #8a5a12; --ambar-dot: #c98a2e;
+  --ok-bg: #e9f0e8; --ok-fg: #3f6b46; --ok-dot: #5c8f66;
+  --mal-bg: #fbecee; --mal-fg: #a63244; --mal-dot: #c25a68; --mal-borde: rgba(166, 50, 68, 0.28);
+  --info-bg: rgba(42, 120, 214, 0.1);
+  --sombra: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
+  --sombra-flot: 0 12px 32px rgba(20, 20, 19, 0.18);
+  --velo: rgba(20, 18, 14, 0.42);
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ancho: 252px; --ancho-plegada: 76px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+    --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+    --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+    --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+    --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+    --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+    --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+    --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+    --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+    --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+    --info-bg: rgba(122, 178, 242, 0.13);
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+  --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+  --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+  --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+  --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+  --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+  --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+  --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+  --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+  --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+  --info-bg: rgba(122, 178, 242, 0.13);
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ============ Marco + sidebar ============ */
+.app { min-height: 100dvh; display: flex; }
+.side { width: var(--ancho); flex: none; position: sticky; top: 0; height: 100dvh; z-index: 40; display: flex; flex-direction: column; padding: 16px 12px 14px; background: var(--side); color: rgba(250, 249, 245, 0.72); transition: width 0.22s var(--ease); }
+.side :focus-visible { outline-color: var(--accent); }
+.app.plegada .side { width: var(--ancho-plegada); }
+.side-cab { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px 0 6px; margin-bottom: 18px; }
+.marca { width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 17px; }
+.nombre { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; color: #faf9f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibtn { width: 44px; height: 44px; flex: none; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(250, 249, 245, 0.1); border-radius: 10px; background: none; color: rgba(250, 249, 245, 0.72); transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.ibtn:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.ibtn.cerrar { display: none; }
+.nav { flex: 1; min-height: 0; overflow-y: auto; }
+.nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.enlace { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: rgba(250, 249, 245, 0.72); text-align: left; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.enlace:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.enlace svg { flex: none; }
+.enlace[aria-current="page"] { background: rgba(217, 119, 87, 0.18); color: #faf9f5; font-weight: 600; }
+.enlace[aria-current="page"] svg { color: var(--accent); }
+.enlace[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.etq { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cuenta { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.pie-side { border-top: 1px solid rgba(250, 249, 245, 0.1); padding-top: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.email { margin: 0 0 4px; padding: 0 14px; font-size: 12.5px; color: rgba(250, 249, 245, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: none; }
+.app.plegada .side-cab { flex-direction: column; gap: 12px; padding: 0; margin-bottom: 14px; }
+.app.plegada .enlace { justify-content: center; padding: 0; }
+.app.plegada .cuenta { position: absolute; top: 4px; right: 6px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 4px; }
+.cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.barra { display: none; }
+.ruta { margin: 0; font-size: 13px; color: var(--text-3); }
+.ruta a { color: var(--text-3); text-decoration: none; cursor: pointer; }
+.ruta a:hover { text-decoration: underline; color: var(--text); }
+.ruta strong { color: var(--text); font-weight: 600; }
+.main { width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 28px 56px; }
+.velo { display: none; }
+
+
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .barra { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .barra .ibtn { border-color: var(--border); color: var(--text); }
+  .barra .ibtn:hover { background: var(--neutro-bg); color: var(--text); }
+  .side, .app.plegada .side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); transform: translateX(-102%); transition: transform 0.22s var(--ease); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); }
+  .side.abierta { transform: translateX(0); }
+  .app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: revert; }
+  .app.plegada .side-cab { flex-direction: row; padding: 0 4px 0 6px; margin-bottom: 18px; }
+  .app.plegada .enlace { justify-content: flex-start; padding: 0 14px; }
+  .app.plegada .cuenta { position: static; min-width: 22px; height: 22px; font-size: 12px; padding: 0 7px; }
+  .ibtn.plegar { display: none; } .ibtn.cerrar { display: grid; }
+  .velo.on { display: block; position: fixed; inset: 0; z-index: 35; background: var(--velo); }
+  .main { padding: 14px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+  .main > .ruta { display: none; }
+}
+/* ============ Piezas comunes ============ */
+.enc { margin: 14px 0 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin: 5px 0 0; font-size: 14px; color: var(--text-2); max-width: 62ch; }
+.topline { display: flex; align-items: center; gap: 12px; }
+.topline .ruta { flex: 1; }
+.rol { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); }
+.rol select { width: auto; min-height: 36px; padding: 4px 10px; border-radius: 8px; font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--sombra); padding: 20px; }
+.card + .card { margin-top: 16px; }
+.card-t { margin: 0 0 12px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.card-h { margin: 0 0 14px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mono2 { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.btn { min-height: 44px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; border: 1px solid var(--border-hover); background: transparent; color: var(--text); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease); }
+.btn:hover:not(:disabled) { background: var(--neutro-bg); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.principal { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.btn.principal:hover:not(:disabled) { background: var(--cta-hover); }
+.btn.chico { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.peligro { color: var(--mal-fg); border-color: var(--mal-borde); }
+.btn.peligro:hover:not(:disabled) { background: var(--mal-bg); }
+.btn.ancho { width: 100%; }
+.btn.punteado { width: 100%; border-style: dashed; color: var(--text-2); }
+.acciones { display: flex; flex-direction: column; gap: 10px; }
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="search"], input[type="number"], select, textarea {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); color: var(--text); font-weight: 400;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--placeholder); }
+input:hover, select:hover, textarea:hover { border-color: var(--field-border-hover); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+[aria-invalid="true"] { border-color: var(--mal-dot) !important; }
+.f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.f > label, .f > .lbl { font-size: 13.5px; font-weight: 500; }
+.op { font-weight: 400; color: var(--text-3); }
+.err { margin: 0; font-size: 12.5px; color: var(--mal-fg); display: flex; gap: 6px; align-items: flex-start; }
+.err[hidden] { display: none; }
+.hint { margin: 0; font-size: 12.5px; color: var(--text-3); }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cols .ancho { grid-column: 1 / -1; }
+
+.aviso { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 11px 13px; border-radius: 10px; font-size: 13.5px; background: var(--info-bg); color: var(--text); }
+.aviso[hidden] { display: none; }
+.aviso svg { flex: none; margin-top: 2px; }
+.aviso.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.aviso.ambar { background: var(--ambar-bg); color: var(--ambar-fg); }
+.aviso.mal { background: var(--mal-bg); color: var(--mal-fg); border: 1px solid var(--mal-borde); }
+.aviso b { font-weight: 600; }
+.aviso .lk { all: unset; cursor: pointer; font-weight: 600; text-decoration: underline; border-radius: 4px; }
+.aviso .lk:focus-visible { outline: 2px solid var(--cta); }
+
+.ins { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; line-height: 1.3; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.ins i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.ins[data-t="ok"] { background: var(--ok-bg); color: var(--ok-fg); } .ins[data-t="ok"] i { background: var(--ok-dot); }
+.ins[data-t="ambar"] { background: var(--ambar-bg); color: var(--ambar-fg); } .ins[data-t="ambar"] i { background: var(--ambar-dot); }
+.ins[data-t="mal"] { background: var(--mal-bg); color: var(--mal-fg); } .ins[data-t="mal"] i { background: var(--mal-dot); }
+.ins[data-t="neutro"] { background: var(--neutro-bg); color: var(--neutro-fg); } .ins[data-t="neutro"] i { background: var(--neutro-dot); }
+.ins.lg { font-size: 13.5px; padding: 6px 14px; }
+.etiq { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--neutro-bg); color: var(--neutro-fg); }
+
+.avatar { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--accent-bg); color: var(--accent-text); border: 1px solid rgba(217, 119, 87, 0.28); }
+.dl2 { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13.5px; }
+.dl2 dt { color: var(--text-3); }
+.dl2 dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+
+.barra-prog { height: 10px; border-radius: 999px; background: var(--neutro-bg); overflow: hidden; }
+.barra-prog i { display: block; height: 100%; border-radius: 999px; background: var(--ok-dot); transition: width 0.5s var(--ease); }
+.barra-prog[data-t="ambar"] i { background: var(--ambar-dot); }
+.barra-prog[data-t="mal"] i { background: var(--mal-dot); }
+.barra-prog[data-t="neutro"] i { background: var(--neutro-dot); }
+.prog-cab { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+.prog-cab span:first-child { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.prog-cab b { font-size: 13px; font-variant-numeric: tabular-nums; }
+.prog-cab b[data-t="ok"] { color: var(--ok-fg); } .prog-cab b[data-t="ambar"] { color: var(--ambar-fg); } .prog-cab b[data-t="mal"] { color: var(--mal-fg); } .prog-cab b[data-t="neutro"] { color: var(--neutro-fg); }
+.prog-pie { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12.5px; color: var(--text-3); }
+
+.arch { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.arch li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+.arch .ic { width: 36px; height: 36px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent-text); }
+.arch .ic.img { background: var(--ok-bg); color: var(--ok-fg); }
+.arch .tx { flex: 1; min-width: 0; }
+.arch .tx b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arch .tx small { font-size: 12px; color: var(--text-3); }
+.ibt { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--text-3); flex: none; }
+.ibt:hover { background: var(--neutro-bg); color: var(--text); }
+.ibt:focus-visible { outline: 2px solid var(--cta); }
+.cand { font-size: 12px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; }
+.vacio-t { margin: 0; font-size: 13.5px; color: var(--text-3); }
+
+.tabla-w { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; }
+.tabla th { text-align: left; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 12px 16px; white-space: nowrap; }
+.tabla td { padding: 13px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; text-align: left; }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover { background: var(--surface-2); }
+.num { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent-text); white-space: nowrap; letter-spacing: -0.01em; }
+.lk2 { all: unset; cursor: pointer; border-radius: 6px; }
+.lk2:hover { text-decoration: underline; }
+.lk2:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+.p { font-size: 14px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.s { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 100; background: var(--side); color: #faf9f5; font-size: 13.5px; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: var(--sombra-flot); max-width: calc(100vw - 32px); }
+.toast[hidden] { display: none; }
+@media (max-width: 720px) { h1 { font-size: 21px; } .cols { grid-template-columns: minmax(0, 1fr); } .card { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+
+/* ============ Diálogo ============ */
+.mfondo { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: var(--velo); overflow-y: auto; }
+.mfondo[hidden] { display: none; }
+.modal { width: min(540px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--sombra-flot); }
+.modal.ancho { width: min(820px, 100%); }
+.modal-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 0; }
+.modal-cab h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.modal-cab p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-2); }
+.modal-cuerpo { padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; }
+.modal-pie { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px 20px; border-top: 1px solid var(--border-soft); flex-wrap: wrap; }
+.xbtn { all: unset; cursor: pointer; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; color: var(--text-3); flex: none; }
+.xbtn:hover { background: var(--neutro-bg); color: var(--text); }
+.xbtn:focus-visible { outline: 2px solid var(--cta); }
+.ck2 { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; cursor: pointer; }
+.ck2 input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--cta); flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 600; cursor: pointer; }
+.chip:hover { border-color: var(--border-hover); color: var(--text); }
+.chip[aria-pressed="true"] { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.chip .q { font-variant-numeric: tabular-nums; opacity: 0.7; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin: 0 0 20px; padding: 0; list-style: none; }
+.kpi { padding: 18px; margin: 0 !important; }
+.kpi h2 { margin: 0; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); }
+.kpi .v { margin: 8px 0 4px; font-size: 30px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kpi .n { margin: 0; font-size: 12.5px; color: var(--text-2); }
+.kpi.ambar .v { color: var(--ambar-fg); } .kpi.mal .v { color: var(--mal-fg); } .kpi.ok .v { color: var(--ok-fg); }
+.buscar { position: relative; min-width: 0; }
+.buscar svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.buscar input { height: 46px; padding-left: 44px; border-radius: 12px; }
+/* Entregas: cuatro columnas (en proceso, listos para retirar, por devolver sin reparar, entregados). Cada tarjeta es una orden de Taller. */
+.filtros-e { display: grid; grid-template-columns: minmax(0, 1fr) 170px 170px; gap: 12px; align-items: end; margin-bottom: 18px; }
+.tablero { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; min-width: 0; }
+.col-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 2px 12px; }
+.col-h h2 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.col-h h2 i { width: 9px; height: 9px; border-radius: 50%; }
+.col[data-c="proceso"] h2 { color: var(--ambar-fg); } .col[data-c="proceso"] h2 i { background: var(--ambar-dot); }
+.col[data-c="listo"] h2 { color: var(--accent-text); } .col[data-c="listo"] h2 i { background: var(--accent); }
+.col[data-c="devolver"] h2 { color: var(--mal-fg); } .col[data-c="devolver"] h2 i { background: var(--mal-dot); }
+.col[data-c="entregado"] h2 { color: var(--ok-fg); } .col[data-c="entregado"] h2 i { background: var(--ok-dot); }
+.cnt { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--neutro-bg); color: var(--neutro-fg); font-variant-numeric: tabular-nums; }
+.col-l { display: flex; flex-direction: column; gap: 12px; }
+.vacio-col { margin: 6px 2px; font-size: 13px; color: var(--text-3); }
+.tarj { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: var(--sombra); }
+.tarj-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.tarj .p { font-size: 15px; font-weight: 700; }
+.tarj .tel { font-size: 12.5px; color: var(--text-3); margin: 1px 0 0; font-variant-numeric: tabular-nums; }
+.tarj .eq { margin: 8px 0 0; font-size: 13.5px; color: var(--text-2); overflow-wrap: anywhere; }
+.tarj .eq b { font-family: var(--mono); font-weight: 600; font-size: 12.5px; color: var(--text); letter-spacing: -0.01em; }
+.linea { display: flex; align-items: flex-start; gap: 7px; margin: 8px 0 0; font-size: 12.5px; color: var(--text-2); }
+.linea svg { flex: none; margin-top: 2px; }
+.linea[data-t="mal"] { color: var(--mal-fg); font-weight: 600; } .linea[data-t="ambar"] { color: var(--ambar-fg); font-weight: 600; } .linea[data-t="ok"] { color: var(--ok-fg); }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.acts .btn { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.cobro { display: inline-flex; margin-top: 8px; }
+.resumen-e { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border-soft); }
+.resumen-e dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: 13.5px; }
+.resumen-e dt { color: var(--text-3); } .resumen-e dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.lista-acc { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; }
+.lista-acc .t { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.f2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1280px) { .tablero { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .tablero { grid-template-columns: minmax(0, 1fr); } .filtros-e { grid-template-columns: 1fr 1fr; } .filtros-e .buscar { grid-column: 1 / -1; } .f2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* Tarjetas con progreso (cuadrícula) */
+.chips { margin-bottom: 16px; }
+.grid-e { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; align-items: stretch; }
+.tarj2 { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--sombra); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tarj2[data-col="listo"] { border-color: var(--accent); }
+.t-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.chs { display: flex; flex-wrap: wrap; gap: 6px; }
+.mnw { position: relative; flex: none; }
+.mn { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--text-3); margin: -4px -4px 0 0; }
+.mn:hover { background: var(--neutro-bg); color: var(--text); }
+.mn:focus-visible { outline: 2px solid var(--cta); }
+.menu { position: absolute; right: 0; top: 34px; z-index: 20; min-width: 190px; padding: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--sombra-flot); display: flex; flex-direction: column; }
+.menu[hidden] { display: none; }
+.menu button { all: unset; box-sizing: border-box; cursor: pointer; padding: 10px 12px; border-radius: 8px; font-size: 13.5px; }
+.menu button:hover, .menu button:focus-visible { background: var(--neutro-bg); }
+.menu button:focus-visible { outline: 2px solid var(--cta); }
+.t-nom { margin: 2px 0 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.t-id { margin: -6px 0 0; font-size: 12.5px; color: var(--text-3); }
+.prg-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; font-size: 12.5px; color: var(--text-2); }
+.prg-cab b { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text); }
+.prg-seg { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
+.prg-seg li { flex: 1; height: 8px; border-radius: 999px; background: var(--neutro-bg); }
+.prg-seg li.on { background: var(--ambar-dot); }
+.prg[data-t="listo"] .prg-seg li.on { background: var(--accent); }
+.prg[data-t="ok"] .prg-seg li.on { background: var(--ok-dot); }
+.prg[data-t="mal"] .prg-seg li.on { background: var(--mal-dot); }
+.prg-seg li.now { box-shadow: 0 0 0 3px var(--accent-bg); }
+.t-info { flex: 1; display: flex; flex-direction: column; }
+.t-info .linea:first-child { margin-top: 0; }
+.t-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-soft); flex-wrap: wrap; }
+.t-pie .btn { min-height: 38px; padding: 0 14px; font-size: 13px; }
+.t-cli { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.t-cli .avatar { width: 34px; height: 34px; font-size: 12px; }
+.t-cli b { display: block; font-size: 13.5px; overflow-wrap: anywhere; }
+.t-cli small { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Menú principal">
+    <div class="side-cab">
+      <span class="marca" aria-hidden="true">P</span>
+      <span class="nombre">Prime Telecom</span>
+      <button type="button" class="ibtn plegar" id="plegar" aria-label="Contraer menú" aria-pressed="false"></button>
+      <button type="button" class="ibtn cerrar" id="cerrar" aria-label="Cerrar menú"></button>
+    </div>
+    <nav class="nav" aria-label="Módulos"><ul id="menu"></ul></nav>
+    <div class="pie-side">
+      <p class="email" title="recepcion@primetelecom.example">recepcion@primetelecom.example</p>
+      <button type="button" class="enlace" id="salir" title="Cerrar sesión"></button>
+    </div>
+  </aside>
+  <div class="velo" id="velo"></div>
+
+  <div class="cuerpo">
+    <header class="barra">
+      <button type="button" class="ibtn" id="abrir" aria-label="Abrir menú" aria-expanded="false"></button>
+      <p class="ruta">Entregas</p>
+    </header>
+    <main class="main" id="contenido">
+      <div class="topline">
+        <p class="ruta"><a id="volver">Prime Telecom</a> / <strong>Entregas</strong></p>
+        <label class="rol">Ver como <select id="rol" aria-label="Rol de prueba"><option value="REC">Recepción</option><option value="TEC">Técnico</option><option value="JEF">Jefatura de servicio</option></select></label>
+      </div>
+      <div class="enc">
+        <div>
+          <h1>Entregas</h1>
+          <p class="sub">Los equipos que salen del taller: plazo previsto, listos para retirar, por devolver sin reparar y ya entregados.</p>
+        </div>
+      </div>
+      <ul class="kpis" id="kpis"></ul>
+      <div class="filtros-e">
+        <div class="buscar"><label class="sr" for="q">Buscar entrega</label><span id="lupa"></span><input id="q" type="search" autocomplete="off" placeholder="Buscar por n.º de orden, cliente, serial o quien retiró…"></div>
+        <div class="f"><label for="desde">Entregadas desde</label><input id="desde" type="date"></div>
+        <div class="f"><label for="hasta">Hasta</label><input id="hasta" type="date"></div>
+      </div>
+      <p class="sr" role="status" aria-live="polite" id="anuncio"></p>
+      <div class="chips" role="group" aria-label="Filtrar por etapa" id="chipsE"></div>
+      <div class="grid-e" id="tablero"></div>
+    </main>
+  </div>
+</div>
+<div class="mfondo" id="mf" hidden><div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mt"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  var HOY = new Date(2026, 9, 30);
+  var DIA = 86400000;
+  var I = {
+    garantias: '<path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
+    taller: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z"/>',
+    entregas: '<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+    inventario: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+    reportes: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-2"/>',
+    clientes: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2 .8 3.5 2.6 3.5 5.6"/>',
+    notificaciones: '<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+    izq: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m6-11-3 3 3 3"/>',
+    der: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m3-9 3 3-3 3"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    mas: '<path d="M12 5v14M5 12h14"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    alerta: '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>', check2: '<path d="m5 12 5 5 9-10"/>',
+    subir: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    nube: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7Z"/>',
+    papelera: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
+  };
+  function svg(n, s, w) { return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>'; }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  /* ---------- sidebar (igual que el tablero) ---------- */
+  var DEST = [["garantias", "Garantías"], ["taller", "Taller"], ["entregas", "Entregas"], ["inventario", "Inventario"], ["reportes", "Reportes"], ["clientes", "Clientes"], ["notificaciones", "Notificaciones"]];
+  $("menu").innerHTML = DEST.map(function (x) {
+    return '<li><button type="button" class="enlace" data-m="' + x[0] + '"' + (x[0] === "entregas" ? ' aria-current="page"' : '') + ' title="' + x[1] + '">' + svg(x[0]) + '<span class="etq">' + x[1] + '</span>' + (x[0] === "notificaciones" ? '<span class="cuenta">3<span class="sr"> sin leer</span></span>' : '') + '</button></li>';
+  }).join("");
+  $("salir").innerHTML = svg("salir", 18) + '<span class="etq">Cerrar sesión</span>';
+  $("cerrar").innerHTML = svg("x", 18); $("abrir").innerHTML = svg("menu");
+  var app = $("app"), side = $("side"), plegada = false;
+  try { plegada = localStorage.getItem("pt.plegada") === "1"; } catch (e) {}
+  function pintaPleg() { app.classList.toggle("plegada", plegada); $("plegar").innerHTML = svg(plegada ? "der" : "izq", 18); $("plegar").setAttribute("aria-label", plegada ? "Expandir menú" : "Contraer menú"); $("plegar").setAttribute("aria-pressed", String(plegada)); }
+  pintaPleg();
+  $("plegar").onclick = function () { plegada = !plegada; pintaPleg(); try { localStorage.setItem("pt.plegada", plegada ? "1" : "0"); } catch (e) {} };
+  function cajon(v) { side.classList.toggle("abierta", v); $("velo").classList.toggle("on", v); $("abrir").setAttribute("aria-expanded", String(v)); }
+  $("abrir").onclick = function () { cajon(true); }; $("cerrar").onclick = function () { cajon(false); }; $("velo").onclick = function () { cajon(false); };
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") cajon(false); });
+  var tt;
+  function aviso(t) { var el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 3200); }
+  $("menu").onclick = function (e) { var b = e.target.closest("[data-m]"); if (!b) return; if (b.dataset.m !== "garantias") aviso("«" + b.title + "» es otra pantalla del diseño."); else aviso("Volver al tablero de garantías (pantalla anterior)."); cajon(false); };
+  $("volver").onclick = function () { aviso("Volver al tablero de garantías (pantalla anterior)."); };
+  $("salir").onclick = function () { aviso("Cerrar sesión (maqueta)."); };
+
+  
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- Entregas ---------- */
+  I.lupa = '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>';
+  I.reloj = '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>';
+  I.persona = '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>';
+  I.camion = '<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>';
+  I.puntos = '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>';
+  I.cobro = '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>';
+  var MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fc(f) { return f.getDate() + " " + MES[f.getMonth()]; }
+  function fh(f) { return fc(f) + " · " + String(f.getHours()).padStart(2, "0") + ":" + String(f.getMinutes()).padStart(2, "0"); }
+  function dd(m, d, h, mi) { return new Date(2026, m - 1, d, h || 0, mi || 0); }
+  function norm(s) { return String(s).toUpperCase().replace(/[\s.-]/g, ""); }
+  function dias(a, b) { return Math.round((b - a) / DIA); }
+  var AHORA = dd(10, 30, 16, 5), HOYD = dd(10, 30);
+  var ROLN = { REC: "Recepción", TEC: "Técnico", JEF: "Jefatura de servicio" };
+  var rol = "REC";
+  function can(a) { return ({ entregar: ["REC", "JEF"], plazo: ["TEC", "JEF"], avisar: ["REC", "TEC", "JEF"] })[a].indexOf(rol) >= 0; }
+
+  var EST = { RECIBIDO: "Recibido", EN_DIAGNOSTICO: "En diagnóstico", PRESUPUESTADO: "Presupuestado", EN_ESPERA_REPUESTO: "En espera de repuesto", EN_REPARACION: "En reparación", REPARADO: "Reparado", IRREPARABLE: "Irreparable", RECHAZADO: "Rechazado", RECHAZADO_POR_CLIENTE: "Rechazado por cliente", ENTREGADO: "Entregado" };
+  function it(num, cli, tel, modelo, serial, atn, estado, extra) {
+    var o = { num: num, cli: cli, tel: tel, modelo: modelo, serial: serial, atn: atn, estado: estado, plazo: null, tec: null, acc: ["Cargador / adaptador"], monto: null, pagado: false, listoDesde: null, avisado: false, ent: null };
+    for (var k in extra) o[k] = extra[k]; return o;
+  }
+  var ITEMS = [
+    it("OS-2026-0150", "Comercializadora Andina C.A.", "+58 212 555 0142", "Router Industrial EA2-RT500", "RT5-8842-AA", "GARANTIA", "EN_DIAGNOSTICO", { plazo: dd(11, 3), tec: "Andrés Rojas" }),
+    it("OS-2026-0148", "Inversiones Delta", "+58 212 555 0170", "Cámara IP 4MP Bullet", "CAM-3390-PL", "GARANTIA", "EN_REPARACION", { plazo: dd(11, 2), tec: "Daniela Vera", acc: ["Base o soporte"] }),
+    it("OS-2026-0146", "Carlos Méndez", "+58 412 555 0133", "Decodificador HD DX-20", "DEC-7712-HD", "GARANTIA", "EN_REPARACION", { plazo: dd(10, 28), tec: "Luis Castillo", acc: ["Control remoto", "Cable HDMI"] }),
+    it("OS-2026-0152", "Marta Salas", "+58 414 555 0102", "Router Doméstico AC1200", "RT2-1180-NN", "PENDIENTE", "RECIBIDO", {}),
+    it("OS-2026-0147", "Ana Gutiérrez", "+58 424 555 0111", "Repetidor WiFi Mesh MX3", "MX3-0561-BC", "GARANTIA", "REPARADO", { plazo: dd(10, 29), tec: "Luis Castillo", listoDesde: dd(10, 28), avisado: true, acc: ["Cargador / adaptador", "Antena"] }),
+    it("OS-2026-0143", "Redes Caribe C.A.", "+58 212 555 0166", "Repetidor WiFi Mesh MX3", "MX3-9987-RM", "GARANTIA", "REPARADO", { plazo: dd(10, 31), tec: "Daniela Vera", listoDesde: dd(10, 30) }),
+    it("OS-2026-0141", "Gloria Ruiz", "+58 416 555 0147", "Teléfono IP T-210", "TEL-5521-VX", "PAGO", "REPARADO", { plazo: dd(10, 29), tec: "Andrés Rojas", listoDesde: dd(10, 29), monto: 40, acc: ["Base o soporte"] }),
+    it("OS-2026-0145", "Telecom del Sur S.A.", "+58 241 555 0121", "Fuente de Poder 90W", "PW90-7781-ZZ", "PAGO", "IRREPARABLE", { tec: "Andrés Rojas", acc: [] }),
+    it("OS-2026-0142", "José Ramírez", "+58 416 555 0190", "ONT Fibra GPON G-140W", "OLT-1120-TT", "PAGO", "RECHAZADO_POR_CLIENTE", { monto: 85, tec: "Andrés Rojas" }),
+    it("OS-2026-0139", "Distribuidora El Faro", "+58 212 555 0188", "Switch 24p Gigabit SW-24G", "SW24-0093-LM", "GARANTIA", "ENTREGADO", { ent: { f: dd(10, 26, 12, 20), retira: "Pedro Salazar", doc: "V-11223344", cond: "Reparado", recibio: "Recepción", obs: "" } }),
+    it("OS-2026-0138", "Redes Caribe C.A.", "+58 212 555 0166", "Repetidor WiFi Mesh MX3", "MX3-4410-RM", "GARANTIA", "ENTREGADO", { ent: { f: dd(10, 24, 10, 45), retira: "Ana Mora", doc: "V-17665544", cond: "Reparado", recibio: "Recepción", obs: "Retiró con la caja original." } }),
+    it("OS-2026-0136", "Luis Aguilar", "+58 414 555 0124", "Módulo Sensor IoT EA2", "S12-2210-QP", "PAGO", "ENTREGADO", { ent: { f: dd(10, 22, 15, 10), retira: "Luis Aguilar", doc: "V-19887654", cond: "Sin reparar", recibio: "Jefatura de servicio", obs: "El cliente no aprobó el presupuesto." } })
+  ];
+  var COLS = [["proceso", "En proceso", ["RECIBIDO", "EN_DIAGNOSTICO", "PRESUPUESTADO", "EN_ESPERA_REPUESTO", "EN_REPARACION"], "Aún en el taller; aquí se registra el plazo previsto."], ["listo", "Listos para retirar", ["REPARADO"]], ["devolver", "Por devolver sin reparar", ["IRREPARABLE", "RECHAZADO", "RECHAZADO_POR_CLIENTE"]], ["entregado", "Entregados", ["ENTREGADO"]]];
+  var F = { q: "", desde: "", hasta: "", col: "todos" };
+  var disparador = null;
+
+  function iso(f) { return f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0") + "-" + String(f.getDate()).padStart(2, "0"); }
+  function pasa(o, col) {
+    var n = norm(F.q);
+    if (n && norm(o.num + o.cli + o.serial + (o.ent ? o.ent.retira : "")).indexOf(n) < 0) return false;
+    if (col === "entregado" && o.ent) { if (F.desde && iso(o.ent.f) < F.desde) return false; if (F.hasta && iso(o.ent.f) > F.hasta) return false; }
+    return true;
+  }
+  function badge(t, par) { return '<span class="ins" data-t="' + par + '"><i></i>' + t + '</span>'; }
+  function lineaProceso(o) {
+    if (!o.plazo) return '<p class="linea">' + svg("reloj", 15) + 'Sin plazo previsto de entrega.</p>';
+    var d = dias(HOYD, o.plazo);
+    if (d < 0) return '<p class="linea" data-t="mal">' + svg("alerta", 15) + 'Retrasada ' + Math.abs(d) + (Math.abs(d) === 1 ? " día" : " días") + ' (el plazo era el ' + fc(o.plazo) + ').</p>';
+    return '<p class="linea" data-t="' + (d <= 1 ? "ambar" : "") + '">' + svg("reloj", 15) + 'Plazo previsto ' + fc(o.plazo) + ' · ' + (d === 0 ? "hoy" : d === 1 ? "mañana" : "en " + d + " días") + '.</p>';
+  }
+  function pasosDe(o) {
+    var s = ["RECIBIDO", "EN_DIAGNOSTICO"];
+    if (o.atn === "PAGO" || o.estado === "PRESUPUESTADO" || o.estado === "RECHAZADO_POR_CLIENTE") s.push("PRESUPUESTADO");
+    return s.concat(["EN_REPARACION", "REPARADO", "ENTREGADO"]);
+  }
+  function progreso(o) {
+    var s = pasosDe(o), map = { IRREPARABLE: "EN_DIAGNOSTICO", RECHAZADO: "EN_DIAGNOSTICO", RECHAZADO_POR_CLIENTE: "PRESUPUESTADO", EN_ESPERA_REPUESTO: "EN_REPARACION" };
+    var k = map[o.estado] || o.estado, i = s.indexOf(k); if (i < 0) i = 0;
+    return { s: s, i: i, adverso: !!map[o.estado] && o.estado !== "EN_ESPERA_REPUESTO" };
+  }
+  var COLN = { proceso: "En proceso", listo: "Listo para retirar", devolver: "Por devolver", entregado: "Entregado" };
+  function colDe(o) { return COLS.filter(function (c) { return c[2].indexOf(o.estado) >= 0; })[0][0]; }
+  function barra(o, col) {
+    var p = progreso(o), n = p.s.length, hecho = col === "entregado" ? n : p.i + 1, tono = p.adverso ? "mal" : col === "entregado" ? "ok" : col === "listo" ? "listo" : "proceso";
+    var txt = p.adverso ? "Se detuvo en: " + EST[p.s[p.i]] : col === "entregado" ? "Proceso completo" : "Paso " + (p.i + 1) + " de " + n + " · " + EST[p.s[p.i]];
+    return '<div class="prg" data-t="' + tono + '"><div class="prg-cab"><span>' + txt + '</span><b>' + Math.round(hecho / n * 100) + '%</b></div><ol class="prg-seg" role="progressbar" aria-label="Progreso de la orden" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + hecho + '">' + p.s.map(function (k, i) { return '<li class="' + (i < hecho ? "on" : "") + (i === p.i && col !== "entregado" ? " now" : "") + '" title="' + EST[k] + '"></li>'; }).join("") + '</ol></div>';
+  }
+  function menuItems(o, col) {
+    var m = '<button type="button" role="menuitem" data-ver="' + o.num + '">Ver orden en Taller</button>';
+    if (col === "proceso" && can("plazo")) m += '<button type="button" role="menuitem" data-plazo="' + o.num + '">' + (o.plazo ? "Editar plazo" : "Fijar plazo") + '</button>';
+    if (col === "listo" && !o.avisado && can("avisar")) m += '<button type="button" role="menuitem" data-avisar="' + o.num + '">Avisar al cliente</button>';
+    return m;
+  }
+  function ini(n) { var p = n.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "").trim().split(/\s+/); return ((p[0] || "?")[0] + (p.length > 1 ? p[1][0] : "")).toUpperCase(); }
+  function tarjeta(o, col) {
+    var atn = { GARANTIA: ["Garantía", "ok"], PAGO: ["Servicio pago", "neutro"], PENDIENTE: ["Atención pendiente", "ambar"] }[o.atn];
+    var info = "", accion = "";
+    if (col === "proceso") { info = '<p class="linea">' + svg("camion", 15) + EST[o.estado] + (o.tec ? ' · ' + esc(o.tec) : '') + '</p>' + lineaProceso(o); accion = '<button type="button" class="btn" data-plazo="' + o.num + '"' + (can("plazo") ? "" : " disabled") + '>' + (o.plazo ? "Editar plazo" : "Fijar plazo") + '</button>'; }
+    if (col === "listo") {
+      var e = dias(o.listoDesde, HOYD);
+      info = '<p class="linea" data-t="' + (e >= 5 ? "mal" : e >= 3 ? "ambar" : "ok") + '">' + svg("check", 15) + 'Listo desde el ' + fc(o.listoDesde) + ' · ' + (e === 0 ? "hoy" : e + (e === 1 ? " día esperando" : " días esperando")) + '</p>' +
+        (o.atn === "PAGO" && o.monto && !o.pagado ? '<span class="ins cobro" data-t="ambar"><i></i>Cobro pendiente USD ' + o.monto.toFixed(2) + '</span>' : '') + (o.avisado ? '<p class="linea" data-t="ok">' + svg("check", 15) + 'Cliente avisado</p>' : '');
+      accion = '<button type="button" class="btn principal" data-ent="' + o.num + '"' + (can("entregar") ? "" : " disabled") + '>Marcar entregado</button>';
+    }
+    if (col === "devolver") {
+      var mot = o.estado === "IRREPARABLE" ? "Irreparable según el diagnóstico." : o.estado === "RECHAZADO_POR_CLIENTE" ? "El cliente rechazó el presupuesto de USD " + o.monto.toFixed(2) + "." : "El taller rechazó la orden.";
+      info = '<p class="linea" data-t="mal">' + svg("alerta", 15) + mot + ' Se devuelve sin reparar.</p>';
+      accion = '<button type="button" class="btn principal" data-ent="' + o.num + '"' + (can("entregar") ? "" : " disabled") + '>Marcar entregado</button>';
+    }
+    if (col === "entregado") {
+      var en = o.ent;
+      info = '<p class="linea" data-t="ok">' + svg("check", 15) + 'Entregado el ' + fh(en.f) + '</p><p class="linea">' + svg("persona", 15) + 'Retiró ' + esc(en.retira) + ' (' + esc(en.doc) + ')</p>' + (en.cond === "Sin reparar" ? '<span class="ins cobro" data-t="mal"><i></i>Devuelto sin reparar</span>' : '') + (en.obs ? '<p class="linea">' + esc(en.obs) + '</p>' : '');
+      accion = '<span class="cand">Entregó: ' + esc(en.recibio) + '</span>';
+    }
+    return '<article class="tarj2" data-col="' + col + '" aria-label="Orden ' + o.num + '"><div class="t-top"><span class="chs"><span class="ins" data-t="' + (col === "entregado" ? "ok" : col === "devolver" ? "mal" : col === "listo" ? "ok" : "ambar") + '"><i></i>' + COLN[col] + '</span><span class="ins" data-t="' + atn[1] + '"><i></i>' + atn[0] + '</span></span>' +
+      '<span class="mnw"><button type="button" class="mn" data-mn="' + o.num + '" aria-haspopup="menu" aria-expanded="false" aria-label="Más acciones de ' + o.num + '">' + svg("puntos", 18) + '</button><div class="menu" role="menu" hidden>' + menuItems(o, col) + '</div></span></div>' +
+      '<h3 class="t-nom">' + esc(o.modelo) + '</h3><p class="t-id"><button type="button" class="lk2 num" data-ver="' + o.num + '">' + o.num + '</button> · <span class="mono2">' + esc(o.serial) + '</span></p>' +
+      barra(o, col) + '<div class="t-info">' + info + '</div>' +
+      '<div class="t-pie"><div class="t-cli"><span class="avatar" aria-hidden="true">' + ini(o.cli) + '</span><div><b>' + esc(o.cli) + '</b><small>' + esc(o.tel) + '</small></div></div>' + accion + '</div></article>';
+  }
+  function render() {
+    var listo = ITEMS.filter(function (o) { return o.estado === "REPARADO"; }).length;
+    var atras = ITEMS.filter(function (o) { return COLS[0][2].indexOf(o.estado) >= 0 && o.plazo && o.plazo < HOYD; }).length;
+    var dev = ITEMS.filter(function (o) { return COLS[2][2].indexOf(o.estado) >= 0; }).length;
+    var ent = ITEMS.filter(function (o) { return o.estado === "ENTREGADO"; }).length;
+    $("kpis").innerHTML = '<li class="card kpi ok"><h2>Listos para retirar</h2><p class="v">' + listo + '</p><p class="n">esperando al cliente</p></li><li class="card kpi mal"><h2>Con retraso</h2><p class="v">' + atras + '</p><p class="n">pasó el plazo previsto</p></li><li class="card kpi ambar"><h2>Por devolver</h2><p class="v">' + dev + '</p><p class="n">sin reparar</p></li><li class="card kpi"><h2>Entregados</h2><p class="v">' + ent + '</p><p class="n">este mes</p></li>';
+    var base = ITEMS.filter(function (o) { return pasa(o, colDe(o)); });
+    var cn = { todos: base.length }; COLS.forEach(function (c) { cn[c[0]] = base.filter(function (o) { return colDe(o) === c[0]; }).length; });
+    $("chipsE").innerHTML = [["todos", "Todas"]].concat(COLS.map(function (c) { return [c[0], c[1]]; })).map(function (c) { return '<button type="button" class="chip" data-f="' + c[0] + '" aria-pressed="' + (F.col === c[0]) + '">' + c[1] + ' <span class="q">' + cn[c[0]] + '</span></button>'; }).join("");
+    var orden = { proceso: 0, listo: 1, devolver: 2, entregado: 3 };
+    var l = base.filter(function (o) { return F.col === "todos" || colDe(o) === F.col; }).sort(function (a, b) {
+      var ca = colDe(a), cb = colDe(b); if (ca !== cb) return orden[ca] - orden[cb];
+      if (ca === "entregado") return b.ent.f - a.ent.f;
+      if (ca === "proceso") return (a.plazo ? a.plazo.getTime() : 9e15) - (b.plazo ? b.plazo.getTime() : 9e15);
+      return 0;
+    });
+    $("tablero").innerHTML = l.length ? l.map(function (o) { return tarjeta(o, colDe(o)); }).join("") : '<p class="vacio-col" style="grid-column:1/-1;padding:30px;text-align:center">No hay entregas con esos criterios.</p>';
+    $("anuncio").textContent = l.length + " entregas visibles";
+    ligar();
+  }
+  function porNum(n) { return ITEMS.filter(function (o) { return o.num === n; })[0]; }
+  function cierraMenus() { document.querySelectorAll(".menu").forEach(function (m) { m.hidden = true; }); document.querySelectorAll("[data-mn]").forEach(function (b) { b.setAttribute("aria-expanded", "false"); }); }
+  document.addEventListener("click", function (e) { if (!e.target.closest(".mnw")) cierraMenus(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") cierraMenus(); });
+  function ligar() {
+    document.querySelectorAll("[data-mn]").forEach(function (b) { b.onclick = function () { var m = b.nextElementSibling, abre = m.hidden; cierraMenus(); m.hidden = !abre; b.setAttribute("aria-expanded", String(abre)); if (abre) { var p = m.querySelector("button"); if (p) p.focus(); } }; });
+    document.querySelectorAll("#chipsE [data-f]").forEach(function (b) { b.onclick = function () { F.col = b.dataset.f; render(); }; });
+    document.querySelectorAll("[data-ver]").forEach(function (b) { b.onclick = function () { aviso("Abre el detalle de " + b.dataset.ver + " en Taller."); }; });
+    document.querySelectorAll("[data-avisar]").forEach(function (b) { b.onclick = function () { var o = porNum(b.dataset.avisar); o.avisado = true; render(); aviso("Aviso enviado a " + o.cli + ". Queda registrado en Notificaciones."); }; });
+    document.querySelectorAll("[data-plazo]").forEach(function (b) { b.onclick = function () { dPlazo(porNum(b.dataset.plazo), b); }; });
+    document.querySelectorAll("[data-ent]").forEach(function (b) { b.onclick = function () { dEntrega(porNum(b.dataset.ent), b); }; });
+  }
+
+  /* ---------- diálogos ---------- */
+  function abrir(html, trig) {
+    disparador = trig; $("modal").innerHTML = html; $("mf").hidden = false;
+    var p = $("modal").querySelector("input:not([type=hidden]),select,textarea,button.btn"); if (p) p.focus();
+  }
+  function cerrar() { $("mf").hidden = true; $("modal").innerHTML = ""; if (disparador && document.contains(disparador)) disparador.focus(); disparador = null; }
+  $("mf").addEventListener("mousedown", function (e) { if (e.target === $("mf")) cerrar(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("mf").hidden) cerrar(); });
+  function errp(id) { return '<p class="err" id="e-' + id + '" data-err="' + id + '" role="alert" hidden></p>'; }
+  function setErr(id, m) { var p = document.querySelector('[data-err="' + id + '"]'), i = $(id); if (!p) return; p.hidden = !m; p.innerHTML = m ? svg("alerta", 14, 2) + "<span>" + esc(m) + "</span>" : ""; if (i) { if (m) i.setAttribute("aria-invalid", "true"); else i.removeAttribute("aria-invalid"); } }
+  function cab(t, s) { return '<div class="modal-cab"><div><h2 id="mt">' + t + '</h2>' + (s ? '<p>' + s + '</p>' : '') + '</div><button type="button" class="xbtn" id="mx" aria-label="Cerrar">' + svg("x", 18) + '</button></div>'; }
+
+  function dPlazo(o, trig) {
+    abrir(cab("Plazo previsto de entrega", o.num + " · " + esc(o.modelo)) + '<div class="modal-cuerpo"><div class="f"><label for="pf">Fecha prevista</label><input id="pf" type="date" min="' + iso(HOYD) + '" value="' + (o.plazo ? iso(o.plazo) : "") + '">' + errp("pf") + '<p class="hint">Se le comunica al cliente y se usa para detectar retrasos.</p></div></div><div class="modal-pie"><button type="button" class="btn" id="mc">Cancelar</button><button type="button" class="btn principal" id="mok">Guardar plazo</button></div>', trig);
+    $("mx").onclick = $("mc").onclick = cerrar;
+    $("mok").onclick = function () {
+      var v = $("pf").value; if (!v) { setErr("pf", "Elige la fecha prevista."); $("pf").focus(); return; }
+      if (v < iso(HOYD)) { setErr("pf", "La fecha no puede ser anterior a hoy."); $("pf").focus(); return; }
+      var p = v.split("-"); o.plazo = new Date(+p[0], +p[1] - 1, +p[2]); cerrar(); render(); aviso("Plazo previsto: " + fc(o.plazo) + ".");
+    };
+  }
+  function dEntrega(o, trig) {
+    var sin = o.estado !== "REPARADO", cobrar = o.atn === "PAGO" && o.monto && !o.pagado;
+    abrir(cab("Registrar entrega", o.num + " · " + esc(o.cli)) +
+      '<div class="modal-cuerpo"><div class="resumen-e"><dl><dt>Equipo</dt><dd>' + esc(o.modelo) + '</dd><dt>Serial</dt><dd class="mono2">' + esc(o.serial) + '</dd><dt>Condición</dt><dd>' + (sin ? "Se devuelve sin reparar" : "Reparado") + '</dd></dl></div>' +
+      '<div class="f2"><div class="f"><label for="ret">Quién retira</label><input id="ret" type="text" autocomplete="off" placeholder="Nombre completo">' + errp("ret") + '</div><div class="f"><label for="doc">Cédula o RIF</label><input id="doc" type="text" autocomplete="off" placeholder="V-12345678">' + errp("doc") + '</div></div>' +
+      '<div class="f"><label for="cuando">Fecha y hora de entrega</label><input id="cuando" type="datetime-local" value="2026-10-30T16:05" max="2026-10-30T23:59">' + errp("cuando") + '</div>' +
+      (o.acc.length ? '<div class="lista-acc"><span class="t">Accesorios que se devuelven</span>' + o.acc.map(function (a, i) { return '<label class="ck2"><input type="checkbox" class="acc" value="' + i + '"><span>' + esc(a) + '</span></label>'; }).join("") + errp("acc") + '</div>' : '') +
+      (cobrar ? '<label class="ck2"><input type="checkbox" id="pago"><span>Cobro recibido: <b>USD ' + o.monto.toFixed(2) + '</b></span></label>' + errp("pago") : '') +
+      '<div class="f"><label for="obs">Observaciones <span class="op">(opcional)</span></label><textarea id="obs" rows="2"></textarea></div></div>' +
+      '<div class="modal-pie"><button type="button" class="btn" id="mc">Cancelar</button><button type="button" class="btn principal" id="mok">Confirmar entrega</button></div>', trig);
+    $("mx").onclick = $("mc").onclick = cerrar;
+    $("mok").onclick = function () {
+      var ok = true, ret = $("ret").value.trim(), doc = $("doc").value.trim(), cu = $("cuando").value;
+      setErr("ret", ret.length < 3 ? "Escribe el nombre de quien retira." : ""); if (ret.length < 3) ok = false;
+      var dig = doc.replace(/\D/g, ""); setErr("doc", dig.length < 5 ? "La cédula o el RIF necesita al menos 5 dígitos." : ""); if (dig.length < 5) ok = false;
+      var fut = !cu || new Date(cu) > AHORA; setErr("cuando", fut ? "La fecha de entrega no puede ser futura." : ""); if (fut) ok = false;
+      var acc = document.querySelectorAll(".acc"), falta = Array.prototype.some.call(acc, function (c) { return !c.checked; });
+      if (acc.length) { setErr("acc", falta ? "Marca todos los accesorios que se entregan de vuelta." : ""); if (falta) ok = false; }
+      if (cobrar) { var pg = $("pago").checked; setErr("pago", pg ? "" : "Confirma que se recibió el cobro antes de entregar."); if (!pg) ok = false; }
+      if (!ok) { var b = $("modal").querySelector('[aria-invalid="true"]'); if (b) b.focus(); else { var e = $("modal").querySelector(".err:not([hidden])"); if (e) e.scrollIntoView({ block: "center" }); } return; }
+      o.ent = { f: new Date(cu), retira: ret, doc: doc.toUpperCase(), cond: sin ? "Sin reparar" : "Reparado", recibio: ROLN[rol], obs: $("obs").value.trim() };
+      if (cobrar) o.pagado = true; o.estado = "ENTREGADO"; cerrar(); render(); aviso("Entrega de " + o.num + " registrada.");
+    };
+  }
+
+  $("rol").onchange = function (e) { rol = e.target.value; render(); };
+  $("lupa").innerHTML = svg("lupa", 18);
+  $("q").addEventListener("input", function (e) { F.q = e.target.value; render(); });
+  $("desde").onchange = function (e) { F.desde = e.target.value; render(); };
+  $("hasta").onchange = function (e) { F.hasta = e.target.value; render(); };
+  $("menu").onclick = function (ev) { var b = ev.target.closest("[data-m]"); if (!b) return; if (b.dataset.m !== "entregas") aviso("«" + b.title + "» es otra pantalla del diseño."); cajon(false); };
+  $("volver").onclick = function () { aviso("Vuelve al inicio (tablero de garantías)."); };
+  render();
+
+})();
+</script>

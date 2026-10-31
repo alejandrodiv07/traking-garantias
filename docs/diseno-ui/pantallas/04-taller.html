@@ -1,0 +1,924 @@
+<title>Prime Telecom Taller</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+
+/* Layout: misma sidebar fija; en la zona de trabajo, un asistente de 5 pasos (Cliente, Productos, Compra, Documentos, Resumen)
+   con un resumen en vivo a la derecha. Estilo heredado del asistente actual: pastillas numeradas, campos de borde firme, filas "Editar". */
+:root {
+  --bg: #faf9f5; --surface: #ffffff; --surface-2: #fdfcfa; --field: #fbfaf7;
+  --border: rgba(15, 12, 8, 0.1); --border-soft: rgba(15, 12, 8, 0.06); --border-hover: rgba(15, 12, 8, 0.22);
+  --field-border: #8a857a; --field-border-hover: #5f584d; --placeholder: #6e695e;
+  --text: rgba(15, 12, 8, 0.92); --text-2: rgba(15, 12, 8, 0.64); --text-3: rgba(15, 12, 8, 0.6);
+  --accent: #d97757; --accent-text: #b85c3f; --accent-bg: rgba(217, 119, 87, 0.12);
+  --cta: #191915; --cta-hover: #2b2b26; --cta-fg: #faf9f5; --side: #191915;
+  --neutro-bg: #f1efe9; --neutro-fg: #5f584d; --neutro-dot: #a8a096;
+  --ambar-bg: #fbf0e2; --ambar-fg: #8a5a12; --ambar-dot: #c98a2e;
+  --ok-bg: #e9f0e8; --ok-fg: #3f6b46; --ok-dot: #5c8f66;
+  --mal-bg: #fbecee; --mal-fg: #a63244; --mal-dot: #c25a68; --mal-borde: rgba(166, 50, 68, 0.28);
+  --info-bg: rgba(42, 120, 214, 0.1);
+  --sombra: 0 1px 2px rgba(20, 20, 19, 0.04), 0 1px 3px rgba(20, 20, 19, 0.05);
+  --sombra-flot: 0 12px 32px rgba(20, 20, 19, 0.18);
+  --velo: rgba(20, 18, 14, 0.42);
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ancho: 252px; --ancho-plegada: 76px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+    --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+    --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+    --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+    --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+    --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+    --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+    --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+    --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+    --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+    --info-bg: rgba(122, 178, 242, 0.13);
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16150f; --surface: #201e19; --surface-2: #1b1a15; --field: #1a1914;
+  --border: rgba(250, 249, 245, 0.13); --border-soft: rgba(250, 249, 245, 0.07); --border-hover: rgba(250, 249, 245, 0.28);
+  --field-border: #8f897d; --field-border-hover: #c2bcae; --placeholder: #8f897d;
+  --text: rgba(250, 249, 245, 0.93); --text-2: rgba(250, 249, 245, 0.7); --text-3: rgba(250, 249, 245, 0.64);
+  --accent: #e0896b; --accent-text: #f0a287; --accent-bg: rgba(224, 137, 107, 0.16);
+  --cta: #ece9e1; --cta-hover: #ffffff; --cta-fg: #191915; --side: #0d0c09;
+  --neutro-bg: #2a2822; --neutro-fg: #cfc9bb; --neutro-dot: #8d8679;
+  --ambar-bg: #3a2c14; --ambar-fg: #f0c27a; --ambar-dot: #d99a3a;
+  --ok-bg: #1f3023; --ok-fg: #94cf9f; --ok-dot: #6aa575;
+  --mal-bg: #3a1c22; --mal-fg: #f4a3b0; --mal-dot: #d4707f; --mal-borde: rgba(242, 154, 168, 0.3);
+  --info-bg: rgba(122, 178, 242, 0.13);
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --sombra-flot: 0 12px 32px rgba(0, 0, 0, 0.55); --velo: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ============ Marco + sidebar ============ */
+.app { min-height: 100dvh; display: flex; }
+.side { width: var(--ancho); flex: none; position: sticky; top: 0; height: 100dvh; z-index: 40; display: flex; flex-direction: column; padding: 16px 12px 14px; background: var(--side); color: rgba(250, 249, 245, 0.72); transition: width 0.22s var(--ease); }
+.side :focus-visible { outline-color: var(--accent); }
+.app.plegada .side { width: var(--ancho-plegada); }
+.side-cab { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px 0 6px; margin-bottom: 18px; }
+.marca { width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 17px; }
+.nombre { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; color: #faf9f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibtn { width: 44px; height: 44px; flex: none; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(250, 249, 245, 0.1); border-radius: 10px; background: none; color: rgba(250, 249, 245, 0.72); transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.ibtn:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.ibtn.cerrar { display: none; }
+.nav { flex: 1; min-height: 0; overflow-y: auto; }
+.nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.enlace { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: rgba(250, 249, 245, 0.72); text-align: left; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: background-color 0.18s var(--ease), color 0.18s var(--ease); }
+.enlace:hover { background: rgba(250, 249, 245, 0.07); color: #faf9f5; }
+.enlace svg { flex: none; }
+.enlace[aria-current="page"] { background: rgba(217, 119, 87, 0.18); color: #faf9f5; font-weight: 600; }
+.enlace[aria-current="page"] svg { color: var(--accent); }
+.enlace[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.etq { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cuenta { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.pie-side { border-top: 1px solid rgba(250, 249, 245, 0.1); padding-top: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.email { margin: 0 0 4px; padding: 0 14px; font-size: 12.5px; color: rgba(250, 249, 245, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: none; }
+.app.plegada .side-cab { flex-direction: column; gap: 12px; padding: 0; margin-bottom: 14px; }
+.app.plegada .enlace { justify-content: center; padding: 0; }
+.app.plegada .cuenta { position: absolute; top: 4px; right: 6px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 4px; }
+.cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.barra { display: none; }
+.ruta { margin: 0; font-size: 13px; color: var(--text-3); }
+.ruta a { color: var(--text-3); text-decoration: none; cursor: pointer; }
+.ruta a:hover { text-decoration: underline; color: var(--text); }
+.ruta strong { color: var(--text); font-weight: 600; }
+.main { width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 28px 56px; }
+.velo { display: none; }
+
+
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .barra { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .barra .ibtn { border-color: var(--border); color: var(--text); }
+  .barra .ibtn:hover { background: var(--neutro-bg); color: var(--text); }
+  .side, .app.plegada .side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); transform: translateX(-102%); transition: transform 0.22s var(--ease); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); }
+  .side.abierta { transform: translateX(0); }
+  .app.plegada .nombre, .app.plegada .etq, .app.plegada .email { display: revert; }
+  .app.plegada .side-cab { flex-direction: row; padding: 0 4px 0 6px; margin-bottom: 18px; }
+  .app.plegada .enlace { justify-content: flex-start; padding: 0 14px; }
+  .app.plegada .cuenta { position: static; min-width: 22px; height: 22px; font-size: 12px; padding: 0 7px; }
+  .ibtn.plegar { display: none; } .ibtn.cerrar { display: grid; }
+  .velo.on { display: block; position: fixed; inset: 0; z-index: 35; background: var(--velo); }
+  .main { padding: 14px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+  .main > .ruta { display: none; }
+}
+/* ============ Piezas comunes ============ */
+.enc { margin: 14px 0 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin: 5px 0 0; font-size: 14px; color: var(--text-2); max-width: 62ch; }
+.topline { display: flex; align-items: center; gap: 12px; }
+.topline .ruta { flex: 1; }
+.rol { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); }
+.rol select { width: auto; min-height: 36px; padding: 4px 10px; border-radius: 8px; font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--sombra); padding: 20px; }
+.card + .card { margin-top: 16px; }
+.card-t { margin: 0 0 12px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.card-h { margin: 0 0 14px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mono2 { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.btn { min-height: 44px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; border: 1px solid var(--border-hover); background: transparent; color: var(--text); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease); }
+.btn:hover:not(:disabled) { background: var(--neutro-bg); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.principal { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.btn.principal:hover:not(:disabled) { background: var(--cta-hover); }
+.btn.chico { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.peligro { color: var(--mal-fg); border-color: var(--mal-borde); }
+.btn.peligro:hover:not(:disabled) { background: var(--mal-bg); }
+.btn.ancho { width: 100%; }
+.btn.punteado { width: 100%; border-style: dashed; color: var(--text-2); }
+.acciones { display: flex; flex-direction: column; gap: 10px; }
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="search"], input[type="number"], select, textarea {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); color: var(--text); font-weight: 400;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--placeholder); }
+input:hover, select:hover, textarea:hover { border-color: var(--field-border-hover); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+[aria-invalid="true"] { border-color: var(--mal-dot) !important; }
+.f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.f > label, .f > .lbl { font-size: 13.5px; font-weight: 500; }
+.op { font-weight: 400; color: var(--text-3); }
+.err { margin: 0; font-size: 12.5px; color: var(--mal-fg); display: flex; gap: 6px; align-items: flex-start; }
+.err[hidden] { display: none; }
+.hint { margin: 0; font-size: 12.5px; color: var(--text-3); }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cols .ancho { grid-column: 1 / -1; }
+
+.aviso { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 11px 13px; border-radius: 10px; font-size: 13.5px; background: var(--info-bg); color: var(--text); }
+.aviso[hidden] { display: none; }
+.aviso svg { flex: none; margin-top: 2px; }
+.aviso.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.aviso.ambar { background: var(--ambar-bg); color: var(--ambar-fg); }
+.aviso.mal { background: var(--mal-bg); color: var(--mal-fg); border: 1px solid var(--mal-borde); }
+.aviso b { font-weight: 600; }
+.aviso .lk { all: unset; cursor: pointer; font-weight: 600; text-decoration: underline; border-radius: 4px; }
+.aviso .lk:focus-visible { outline: 2px solid var(--cta); }
+
+.ins { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; line-height: 1.3; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.ins i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.ins[data-t="ok"] { background: var(--ok-bg); color: var(--ok-fg); } .ins[data-t="ok"] i { background: var(--ok-dot); }
+.ins[data-t="ambar"] { background: var(--ambar-bg); color: var(--ambar-fg); } .ins[data-t="ambar"] i { background: var(--ambar-dot); }
+.ins[data-t="mal"] { background: var(--mal-bg); color: var(--mal-fg); } .ins[data-t="mal"] i { background: var(--mal-dot); }
+.ins[data-t="neutro"] { background: var(--neutro-bg); color: var(--neutro-fg); } .ins[data-t="neutro"] i { background: var(--neutro-dot); }
+.ins.lg { font-size: 13.5px; padding: 6px 14px; }
+.etiq { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--neutro-bg); color: var(--neutro-fg); }
+
+.avatar { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--accent-bg); color: var(--accent-text); border: 1px solid rgba(217, 119, 87, 0.28); }
+.dl2 { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13.5px; }
+.dl2 dt { color: var(--text-3); }
+.dl2 dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+
+.barra-prog { height: 10px; border-radius: 999px; background: var(--neutro-bg); overflow: hidden; }
+.barra-prog i { display: block; height: 100%; border-radius: 999px; background: var(--ok-dot); transition: width 0.5s var(--ease); }
+.barra-prog[data-t="ambar"] i { background: var(--ambar-dot); }
+.barra-prog[data-t="mal"] i { background: var(--mal-dot); }
+.barra-prog[data-t="neutro"] i { background: var(--neutro-dot); }
+.prog-cab { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+.prog-cab span:first-child { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.prog-cab b { font-size: 13px; font-variant-numeric: tabular-nums; }
+.prog-cab b[data-t="ok"] { color: var(--ok-fg); } .prog-cab b[data-t="ambar"] { color: var(--ambar-fg); } .prog-cab b[data-t="mal"] { color: var(--mal-fg); } .prog-cab b[data-t="neutro"] { color: var(--neutro-fg); }
+.prog-pie { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12.5px; color: var(--text-3); }
+
+.arch { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.arch li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+.arch .ic { width: 36px; height: 36px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent-text); }
+.arch .ic.img { background: var(--ok-bg); color: var(--ok-fg); }
+.arch .tx { flex: 1; min-width: 0; }
+.arch .tx b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arch .tx small { font-size: 12px; color: var(--text-3); }
+.ibt { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--text-3); flex: none; }
+.ibt:hover { background: var(--neutro-bg); color: var(--text); }
+.ibt:focus-visible { outline: 2px solid var(--cta); }
+.cand { font-size: 12px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; }
+.vacio-t { margin: 0; font-size: 13.5px; color: var(--text-3); }
+
+.tabla-w { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; }
+.tabla th { text-align: left; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 12px 16px; white-space: nowrap; }
+.tabla td { padding: 13px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; text-align: left; }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover { background: var(--surface-2); }
+.num { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent-text); white-space: nowrap; letter-spacing: -0.01em; }
+.lk2 { all: unset; cursor: pointer; border-radius: 6px; }
+.lk2:hover { text-decoration: underline; }
+.lk2:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+.p { font-size: 14px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.s { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 100; background: var(--side); color: #faf9f5; font-size: 13.5px; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: var(--sombra-flot); max-width: calc(100vw - 32px); }
+.toast[hidden] { display: none; }
+@media (max-width: 720px) { h1 { font-size: 21px; } .cols { grid-template-columns: minmax(0, 1fr); } .card { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+/* Taller: lista de órdenes, apertura de orden con auditoría de recepción y detalle con barra de estados y pestañas. */
+.ruta a { cursor: pointer; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin: 0 0 20px; padding: 0; list-style: none; }
+.kpi { padding: 18px; margin: 0 !important; }
+.kpi h2 { margin: 0; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); }
+.kpi .v { margin: 8px 0 4px; font-size: 30px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kpi .n { margin: 0; font-size: 12.5px; color: var(--text-2); }
+.kpi.ambar .v { color: var(--ambar-fg); } .kpi.mal .v { color: var(--mal-fg); } .kpi.ok .v { color: var(--ok-fg); }
+.btn.g { min-height: 44px; }
+
+.filtros { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+.buscar { position: relative; }
+.buscar svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.buscar input { height: 46px; padding-left: 44px; border-radius: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 600; cursor: pointer; }
+.chip:hover { border-color: var(--border-hover); color: var(--text); }
+.chip[aria-pressed="true"] { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.chip .q { font-variant-numeric: tabular-nums; opacity: 0.7; }
+.lista-c { padding: 0; overflow: hidden; }
+.lista-c .tabla { min-width: 900px; }
+.tpie { padding: 12px 18px; background: var(--surface-2); border-top: 1px solid var(--border-soft); font-size: 12.5px; color: var(--text-3); }
+
+/* pasos de la nueva orden */
+.dos { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+.pasos { list-style: none; margin: 0; padding: 14px 20px; display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border-soft); counter-reset: paso; }
+.pasos li { flex: 1 0 auto; counter-increment: paso; }
+.pasos button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.pasos button::before { content: counter(paso); display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--neutro-bg); color: var(--neutro-fg); font-size: 11.5px; font-weight: 700; }
+.pasos button:disabled { opacity: 0.5; cursor: not-allowed; }
+.pasos li.hecho button::before { content: "✓"; background: var(--ok-bg); color: var(--ok-fg); }
+.pasos li[aria-current="step"] button { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.pasos li[aria-current="step"] button::before { background: var(--cta-fg); color: var(--cta); }
+.marco { padding: 0; }
+.panel { padding: 22px 24px 24px; min-height: 380px; }
+.panel h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.panel .ayuda { margin: 0 0 18px; font-size: 13.5px; color: var(--text-2); max-width: 64ch; }
+.pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--border-soft); }
+.pie .bt { display: flex; gap: 10px; }
+
+.eqc { display: flex; gap: 14px; align-items: center; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); margin-top: 14px; }
+.eqc .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--neutro-bg); color: var(--neutro-fg); }
+.eqc .tx { flex: 1; min-width: 0; }
+.eqc .tx b { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
+.eqc .tx span { font-size: 12.5px; color: var(--text-3); }
+.pick { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.pick button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.pick button:hover { border-color: var(--border-hover); }
+.pick button:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+.mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.mini .ancho { grid-column: 1 / -1; }
+.mini h3 { margin: 0; grid-column: 1 / -1; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+.seg span { display: inline-flex; align-items: center; justify-content: center; min-width: 68px; min-height: 40px; padding: 4px 16px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); font-size: 14px; font-weight: 600; transition: background-color 0.15s var(--ease); }
+.seg input:checked + span { background: var(--cta); border-color: var(--cta); color: var(--cta-fg); }
+.seg input:focus-visible + span { outline: 2px solid var(--cta); outline-offset: 2px; }
+.seg.si input:checked[value="0"] + span { background: var(--mal-fg); border-color: var(--mal-fg); color: var(--bg); }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.checks label { position: relative; }
+.checks input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+.checks span { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 14px; border: 1px solid var(--field-border); border-radius: 999px; background: var(--field); font-size: 13.5px; font-weight: 500; }
+.checks input:checked + span { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.checks input:focus-visible + span { outline: 2px solid var(--cta); outline-offset: 2px; }
+
+fieldset { margin: 0 0 14px; padding: 4px 16px 8px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+legend { padding: 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 0; }
+.fila + .fila { border-top: 1px solid var(--border-soft); }
+.fila .q { font-size: 14px; }
+.fila .seg span { min-height: 36px; min-width: 56px; font-size: 13px; }
+.ext { padding: 4px 0 8px; }
+.ext label.ck { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; cursor: pointer; }
+.ext input[type="checkbox"], .ck input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--cta); flex: none; margin: 0; }
+.subir { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1px dashed var(--field-border); border-radius: 12px; margin-bottom: 10px; }
+.subir .t { font-size: 14px; font-weight: 600; }
+.subir .t small { display: block; font-weight: 400; font-size: 12.5px; color: var(--text-3); }
+.subir ul { list-style: none; margin: 8px 0 0; padding: 0; width: 100%; display: grid; gap: 6px; }
+.subir li { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.subir li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.vivo { padding: 18px; position: sticky; top: 22px; }
+.vivo h2 { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.vivo dl { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.vivo dt { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+.vivo dd { margin: 3px 0 0; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.vivo dd .s { display: block; font-size: 12.5px; font-weight: 400; color: var(--text-3); margin-top: 4px; }
+.vivo .vacio { color: var(--text-3); font-weight: 400; }
+
+/* detalle */
+.cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 14px 0 16px; }
+.cab h1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-family: var(--mono); letter-spacing: -0.02em; margin: 0; }
+.cab .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.cab .sub { margin-top: 6px; }
+.cab .bt { display: flex; gap: 10px; flex-wrap: wrap; }
+.estapas { list-style: none; margin: 0 0 18px; padding: 18px 22px; display: flex; overflow-x: auto; gap: 0; }
+.estapas li { flex: 1 0 96px; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; font-size: 12px; color: var(--text-3); text-align: center; }
+.estapas li::before { content: ""; position: absolute; top: 15px; left: -50%; width: 100%; height: 2px; background: var(--border); }
+.estapas li:first-child::before { display: none; }
+.estapas li.hecho::before, .estapas li.act::before { background: var(--ok-dot); }
+.estapas .pt { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--neutro-bg); color: var(--neutro-fg); position: relative; z-index: 1; }
+.estapas li.hecho .pt { background: var(--ok-bg); color: var(--ok-fg); }
+.estapas li.act .pt { background: var(--cta); color: var(--cta-fg); }
+.estapas li.act { color: var(--text); font-weight: 600; }
+.estapas li.fin .pt { background: var(--mal-bg); color: var(--mal-fg); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding: 0 12px; overflow-x: auto; }
+.tabs button { all: unset; box-sizing: border-box; cursor: pointer; padding: 14px 14px; font-size: 14px; font-weight: 500; color: var(--text-2); border-bottom: 2px solid transparent; white-space: nowrap; margin-bottom: -1px; }
+.tabs button:hover { color: var(--text); }
+.tabs button[aria-selected="true"] { color: var(--accent-text); border-bottom-color: var(--accent); font-weight: 600; }
+.tabs button:focus-visible { outline: 2px solid var(--cta); outline-offset: -2px; border-radius: 6px; }
+.tp { padding: 22px 24px 24px; }
+.tp h3 { margin: 0 0 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.tp section + section { margin-top: 22px; }
+.tp p { margin: 0; font-size: 14.5px; }
+.kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 28px; margin: 0; }
+.kv div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.kv dt { color: var(--text-3); } .kv dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.res { list-style: none; margin: 0; padding: 0; }
+.res li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; }
+.res li + li { border-top: 1px solid var(--border-soft); }
+.fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.foto { aspect-ratio: 4 / 3; border-radius: 10px; background: var(--neutro-bg); color: var(--neutro-fg); display: grid; place-items: center; font-size: 11.5px; text-align: center; padding: 6px; overflow-wrap: anywhere; }
+.bit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.bit li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; }
+.bit li:last-child { border-bottom: 0; }
+.bit time { font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.bit small { display: block; color: var(--text-3); font-size: 12.5px; }
+.lado .card { padding: 18px; }
+.lado .card + .card { margin-top: 14px; }
+.gar-n { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.gar-n i { width: 10px; height: 10px; border-radius: 50%; }
+.gar-n[data-t="ok"] { color: var(--ok-fg); } .gar-n[data-t="ok"] i { background: var(--ok-dot); }
+.gar-n[data-t="ambar"] { color: var(--ambar-fg); } .gar-n[data-t="ambar"] i { background: var(--ambar-dot); }
+.gar-n[data-t="mal"] { color: var(--mal-fg); } .gar-n[data-t="mal"] i { background: var(--mal-dot); }
+.gar-n[data-t="neutro"] { color: var(--neutro-fg); } .gar-n[data-t="neutro"] i { background: var(--neutro-dot); }
+.cli-cab { display: flex; gap: 12px; align-items: center; }
+.cli-cab b { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
+.cli-cab small { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+.cont { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-2); }
+.cont li { display: flex; gap: 8px; align-items: center; overflow-wrap: anywhere; }
+.cont svg { flex: none; color: var(--text-3); }
+.mdoc { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mdoc li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
+.mdoc .ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--accent-bg); color: var(--accent-text); }
+.mdoc .ic.img { background: var(--ok-bg); color: var(--ok-fg); }
+.mdoc .tx { flex: 1; min-width: 0; }
+.mdoc .tx b { display: block; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mdoc .tx small { font-size: 11.5px; color: var(--text-3); }
+.recha { margin: 0 0 16px; padding: 14px 16px; }
+.recha[hidden] { display: none; }
+.dec { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.nota-rol { margin: 8px 0 0; font-size: 12px; color: var(--text-3); display: flex; gap: 6px; align-items: center; }
+
+@media (max-width: 1100px) { .dos { grid-template-columns: minmax(0, 1fr); } .vivo { position: static; order: -1; } }
+@media (max-width: 720px) {
+  .mini, .kv { grid-template-columns: minmax(0, 1fr); }
+  .panel, .tp { padding: 18px 16px 20px; }
+  .pasos { padding: 12px 16px; }
+  .pasos button { font-size: 0; gap: 0; padding: 6px 10px; }
+  .pasos li[aria-current="step"] { flex: 3 0 auto; }
+  .pasos li[aria-current="step"] button { font-size: 13px; gap: 7px; }
+  .fila { grid-template-columns: minmax(0, 1fr); }
+  .bit li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .pie { padding: 12px 16px; }
+  .pie .bt, .pie .bt .btn { width: 100%; }
+  .cab .bt, .cab .bt .btn { width: 100%; }
+}
+
+.buscar-r { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.ej { display: inline-flex; flex-wrap: wrap; gap: 6px; vertical-align: middle; }
+.ej button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 12px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-2); }
+.ej button:hover { border-color: var(--border-hover); color: var(--text); }
+.ej button:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Menú principal">
+    <div class="side-cab">
+      <span class="marca" aria-hidden="true">P</span>
+      <span class="nombre">Prime Telecom</span>
+      <button type="button" class="ibtn plegar" id="plegar" aria-label="Contraer menú" aria-pressed="false"></button>
+      <button type="button" class="ibtn cerrar" id="cerrar" aria-label="Cerrar menú"></button>
+    </div>
+    <nav class="nav" aria-label="Módulos"><ul id="menu"></ul></nav>
+    <div class="pie-side">
+      <p class="email" title="recepcion@primetelecom.example">recepcion@primetelecom.example</p>
+      <button type="button" class="enlace" id="salir" title="Cerrar sesión"></button>
+    </div>
+  </aside>
+  <div class="velo" id="velo"></div>
+
+  <div class="cuerpo">
+    <header class="barra">
+      <button type="button" class="ibtn" id="abrir" aria-label="Abrir menú" aria-expanded="false"></button>
+      <p class="ruta">Taller</p>
+    </header>
+    <main class="main" id="contenido">
+      <div class="topline">
+        <p class="ruta"><a id="volver">Prime Telecom</a> / <a id="crumbT">Taller</a><span id="crumbX"></span></p>
+        <label class="rol">Ver como <select id="rol" aria-label="Rol de prueba"><option value="REC">Recepción</option><option value="TEC">Técnico</option><option value="JEF">Jefatura de servicio</option></select></label>
+      </div>
+      <p class="sr" role="status" aria-live="polite" id="anuncio"></p>
+      <div id="vista"></div>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  var HOY = new Date(2026, 9, 30);
+  var DIA = 86400000;
+  var I = {
+    garantias: '<path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
+    taller: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z"/>',
+    entregas: '<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+    inventario: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+    reportes: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-2"/>',
+    clientes: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2 .8 3.5 2.6 3.5 5.6"/>',
+    notificaciones: '<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+    izq: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m6-11-3 3 3 3"/>',
+    der: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m3-9 3 3-3 3"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    mas: '<path d="M12 5v14M5 12h14"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    alerta: '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>', check2: '<path d="m5 12 5 5 9-10"/>',
+    subir: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    nube: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7Z"/>',
+    papelera: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
+  };
+  function svg(n, s, w) { return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>'; }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  /* ---------- sidebar (igual que el tablero) ---------- */
+  var DEST = [["garantias", "Garantías"], ["taller", "Taller"], ["entregas", "Entregas"], ["inventario", "Inventario"], ["reportes", "Reportes"], ["clientes", "Clientes"], ["notificaciones", "Notificaciones"]];
+  $("menu").innerHTML = DEST.map(function (x) {
+    return '<li><button type="button" class="enlace" data-m="' + x[0] + '"' + (x[0] === "taller" ? ' aria-current="page"' : '') + ' title="' + x[1] + '">' + svg(x[0]) + '<span class="etq">' + x[1] + '</span>' + (x[0] === "notificaciones" ? '<span class="cuenta">3<span class="sr"> sin leer</span></span>' : '') + '</button></li>';
+  }).join("");
+  $("salir").innerHTML = svg("salir", 18) + '<span class="etq">Cerrar sesión</span>';
+  $("cerrar").innerHTML = svg("x", 18); $("abrir").innerHTML = svg("menu");
+  var app = $("app"), side = $("side"), plegada = false;
+  try { plegada = localStorage.getItem("pt.plegada") === "1"; } catch (e) {}
+  function pintaPleg() { app.classList.toggle("plegada", plegada); $("plegar").innerHTML = svg(plegada ? "der" : "izq", 18); $("plegar").setAttribute("aria-label", plegada ? "Expandir menú" : "Contraer menú"); $("plegar").setAttribute("aria-pressed", String(plegada)); }
+  pintaPleg();
+  $("plegar").onclick = function () { plegada = !plegada; pintaPleg(); try { localStorage.setItem("pt.plegada", plegada ? "1" : "0"); } catch (e) {} };
+  function cajon(v) { side.classList.toggle("abierta", v); $("velo").classList.toggle("on", v); $("abrir").setAttribute("aria-expanded", String(v)); }
+  $("abrir").onclick = function () { cajon(true); }; $("cerrar").onclick = function () { cajon(false); }; $("velo").onclick = function () { cajon(false); };
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") cajon(false); });
+  var tt;
+  function aviso(t) { var el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 3200); }
+  $("menu").onclick = function (e) { var b = e.target.closest("[data-m]"); if (!b) return; if (b.dataset.m !== "garantias") aviso("«" + b.title + "» es otra pantalla del diseño."); else aviso("Volver al tablero de garantías (pantalla anterior)."); cajon(false); };
+  $("volver").onclick = function () { aviso("Volver al tablero de garantías (pantalla anterior)."); };
+  $("salir").onclick = function () { aviso("Cerrar sesión (maqueta)."); };
+
+  
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- Taller ---------- */
+  I.lupa = '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>';
+  I.archivo = '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/>';
+  I.imagen = '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>';
+  I.baja = '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>';
+  I.caja = '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>';
+  I.persona = '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>';
+  I.correo = '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>';
+  I.tel = '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>';
+  I.flecha = '<path d="M5 12h14M13 6l6 6-6 6"/>';
+  I.camara = '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>';
+  var MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fl(f) { return f.getDate() + " " + MES[f.getMonth()] + " " + f.getFullYear(); }
+  function fc(f) { return f.getDate() + " " + MES[f.getMonth()]; }
+  function fd(m, d) { return new Date(2026, m - 1, d); }
+  function norm(s) { return String(s).toUpperCase().replace(/[\s.-]/g, ""); }
+  function ini(n) { var p = n.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "").trim().split(/\s+/); return ((p[0] || "?")[0] + (p.length > 1 ? p[1][0] : "")).toUpperCase(); }
+  function fotoNombre(n) { return "foto-" + n; }
+
+  var COB = { EN_GARANTIA: ["En garantía", "ok"], FUERA_DE_GARANTIA: ["Fuera de garantía", "neutro"], ANULADA_POR_USO: ["Anulada por uso", "mal"], POR_DETERMINAR: ["Por determinar", "ambar"] };
+  var ATN = { GARANTIA: ["Garantía", "ok"], PAGO: ["Servicio pago", "neutro"], PENDIENTE: ["Atención pendiente", "ambar"] };
+  var EST = {
+    RECIBIDO: ["Recibido", "neutro"], EN_DIAGNOSTICO: ["En diagnóstico", "ambar"], PRESUPUESTADO: ["Presupuestado", "ambar"], EN_ESPERA_REPUESTO: ["En espera de repuesto", "ambar"],
+    EN_REPARACION: ["En reparación", "ambar"], REPARADO: ["Reparado", "ok"], IRREPARABLE: ["Irreparable", "mal"], RECHAZADO_POR_CLIENTE: ["Rechazado por cliente", "mal"],
+    RECHAZADO: ["Rechazado", "mal"], ENTREGADO: ["Entregado", "ok"], ANULADO: ["Anulado", "neutro"]
+  };
+  var CERRADOS = ["ENTREGADO", "ANULADO"];
+  var TRAMITE = ["La factura o nota está sin alteraciones", "Quien tramita coincide con el titular de la factura"];
+  var EQUIPO = ["El serial de fábrica es legible", "Caja original", "Los precintos de seguridad están intactos", "El equipo no fue abierto y está todo su contenido"];
+  var EXTERNAS = ["Descarga eléctrica", "Derrame de líquidos", "Altas temperaturas", "Golpes", "Manipulación de terceros"];
+  var ACCES = ["Cargador / adaptador", "Cable de red", "Caja original", "Antena", "Base o soporte", "Ninguno"];
+  var TECNICOS = ["Andrés Rojas", "Daniela Vera", "Luis Castillo"];
+  var ROLN = { REC: "Recepción", TEC: "Técnico", JEF: "Jefatura de servicio" };
+  var CATALOGO = ["Router Industrial EA2-RT500", "ONT Fibra GPON G-140W", "Switch 24p Gigabit SW-24G", "Repetidor WiFi Mesh MX3", "Fuente de Poder 90W", "Cámara IP 4MP Bullet", "Decodificador HD DX-20"];
+
+  function cli(t, doc, nombre, contacto, correo, tel) { return { tipo: t, doc: doc, nombre: nombre, contacto: contacto, correo: correo, tel: tel }; }
+  var EQ = [
+    { serial: "RT5-8842-AA", modelo: "Router Industrial EA2-RT500", marca: "EA2 Technology", cat: "Conectividad industrial", cli: cli("J", "30589214-7", "Comercializadora Andina C.A.", "Luisa Fernández", "compras@andina.com.ve", "+58 212 555 0142"), factura: "F-004519", emision: fd(10, 29), plazo: 15, origen: "VENTA", confirmada: true, desest: null },
+    { serial: "GPN-4471-KM", modelo: "ONT Fibra GPON G-140W", marca: "Huawei", cat: "Acceso de fibra", cli: cli("V", "12345678", "María Pérez", "María Pérez", "maria.perez@correo.example", "+58 414 123 4567"), factura: "F-004512", emision: fd(10, 25), plazo: 7, origen: "VENTA", confirmada: true, desest: null },
+    { serial: "SW24-0093-LM", modelo: "Switch 24p Gigabit SW-24G", marca: "NetCore", cat: "Conmutación", cli: cli("J", "40551220-3", "Distribuidora El Faro", "Pedro Salazar", "admin@elfaro.example", "+58 212 555 0188"), factura: "F-004488", emision: fd(10, 20), plazo: 7, origen: "VENTA", confirmada: true, desest: null },
+    { serial: "PW90-7781-ZZ", modelo: "Fuente de Poder 90W", marca: "VoltEdge", cat: "Energía", cli: cli("J", "31002948-1", "Telecom del Sur S.A.", "Rafael Brito", "soporte@telecomsur.example", "+58 241 555 0121"), factura: "F-003871", emision: fd(10, 26), plazo: 7, origen: "TALLER", confirmada: false, desest: null },
+    { serial: "CAM-3390-PL", modelo: "Cámara IP 4MP Bullet", marca: "VisionPro", cat: "Videovigilancia", cli: cli("J", "30112233-9", "Inversiones Delta", "Marcos Díaz", "ti@delta.example", "+58 212 555 0170"), factura: "F-004523", emision: fd(10, 27), plazo: 15, origen: "VENTA", confirmada: true, desest: null },
+    { serial: "OLT-1120-TT", modelo: "ONT Fibra GPON G-140W", marca: "Huawei", cat: "Acceso de fibra", cli: cli("V", "14220987", "José Ramírez", "José Ramírez", "jose.ramirez@correo.example", "+58 416 555 0190"), factura: "F-004470", emision: fd(10, 14), plazo: 7, origen: "VENTA", confirmada: true, desest: null },
+    { serial: "MX3-0561-BC", modelo: "Repetidor WiFi Mesh MX3", marca: "MeshNet", cat: "WiFi", cli: cli("V", "20441123", "Ana Gutiérrez", "Ana Gutiérrez", "ana.g@correo.example", "+58 424 555 0111"), factura: "F-004501", emision: fd(10, 22), plazo: 15, origen: "VENTA", confirmada: true, desest: null },
+    { serial: "DEC-7712-HD", modelo: "Decodificador HD DX-20", marca: "DigiTV", cat: "Televisión", cli: cli("V", "16778901", "Carlos Méndez", "Carlos Méndez", "cmendez@correo.example", "+58 412 555 0133"), factura: "F-004535", emision: fd(10, 29), plazo: 7, origen: "VENTA", confirmada: true, desest: null }
+  ];
+  function E(s) { return EQ.filter(function (e) { return e.serial === s; })[0]; }
+  function venceDe(e) { return new Date(e.emision.getTime() + e.plazo * DIA); }
+  function diasDe(e) { return Math.round((venceDe(e) - HOY) / DIA); }
+  function vig(e) {
+    var d = diasDe(e);
+    if (e.desest) return { k: "desest", t: "mal", txt: "Compra desestimada", dias: d };
+    if (e.origen === "TALLER" && !e.confirmada) return { k: "confirmar", t: "neutro", txt: "Por confirmar", dias: d };
+    if (d < 0) return { k: "vencida", t: "mal", txt: "Garantía vencida", dias: d };
+    return { k: "vigente", t: d <= 3 ? "ambar" : "ok", txt: "Garantía vigente", dias: d };
+  }
+  function pct(e) { var d = diasDe(e); return Math.round(Math.min(e.plazo, Math.max(0, e.plazo - d)) / e.plazo * 100); }
+
+  /* Cobertura: misma precedencia que el spec §4.2. `null` = faltan respuestas de la auditoría. */
+  function cobertura(e, aud, ingreso) {
+    if (e.desest) return "FUERA_DE_GARANTIA";
+    if (e.origen === "TALLER" && !e.confirmada) return "POR_DETERMINAR";
+    if (ingreso > venceDe(e)) return "FUERA_DE_GARANTIA";
+    if (aud.e.some(function (v) { return v === false; }) || aud.x.some(Boolean)) return "ANULADA_POR_USO";
+    if (aud.t.concat(aud.e).some(function (v) { return v === null; })) return null;
+    if (aud.t.some(function (v) { return v === false; })) return "POR_DETERMINAR";
+    return "EN_GARANTIA";
+  }
+  function atencion(c) { return c === "EN_GARANTIA" ? "GARANTIA" : c === "POR_DETERMINAR" ? "PENDIENTE" : c ? "PAGO" : null; }
+  function audOk() { return { t: [true, true], e: [true, true, true, true], x: [false, false, false, false, false], obs: "" }; }
+
+  var clk = 15 * 60 + 40;
+  function stamp() { clk += 3; return "30 oct · " + String(Math.floor(clk / 60)).padStart(2, "0") + ":" + String(clk % 60).padStart(2, "0"); }
+  function mk(num, ser, falla, estado, abierta, tec, extra) {
+    var e = E(ser), o = { num: num, eq: e, falla: falla, acc: ["Cargador / adaptador"], estado: estado, prev: null, abierta: abierta, ingreso: abierta, tec: tec, aud: audOk(), fotos: ["frente.jpg", "serial.jpg"], docs: [], diag: { texto: "", res: "" }, monto: null, bit: [] };
+    for (var k in (extra || {})) o[k] = extra[k];
+    o.cob = cobertura(e, o.aud, o.ingreso);
+    return o;
+  }
+  var ORD = [
+    mk("OS-2026-0150", "RT5-8842-AA", "No enciende tras corte eléctrico. El LED de encendido no responde y no hay señal en los puertos LAN.", "EN_DIAGNOSTICO", fd(10, 30), "Andrés Rojas", { docs: ["factura-F-004519.pdf"], bit: [["30 oct · 09:12", "Recepción", "Orden abierta. Auditoría de recepción completa."], ["30 oct · 09:40", "Andrés Rojas", "Pasó a En diagnóstico."]] }),
+    mk("OS-2026-0149", "PW90-7781-ZZ", "No entrega voltaje en la salida de 12 V.", "RECIBIDO", fd(10, 30), null, { fotos: [], docs: ["factura-presentada.jpg"], bit: [["30 oct · 08:55", "Recepción", "Orden abierta. Compra sin confirmar: cobertura por determinar."]] }),
+    mk("OS-2026-0148", "CAM-3390-PL", "Imagen con rayas horizontales.", "EN_REPARACION", fd(10, 28), "Daniela Vera", { diag: { texto: "Falla en el sensor de imagen. Se reemplaza el módulo bajo garantía.", res: "reparable" }, bit: [["28 oct · 10:05", "Recepción", "Orden abierta."], ["28 oct · 15:30", "Daniela Vera", "Diagnóstico registrado."], ["29 oct · 08:20", "Daniela Vera", "Pasó a En reparación."]] }),
+    mk("OS-2026-0147", "MX3-0561-BC", "Pierde conexión con el nodo principal.", "REPARADO", fd(10, 27), "Luis Castillo", { diag: { texto: "Firmware corrupto. Se reinstaló y se probó 24 h.", res: "reparable" }, bit: [["27 oct · 11:00", "Recepción", "Orden abierta."], ["28 oct · 16:45", "Luis Castillo", "Pasó a Reparado."]] }),
+    mk("OS-2026-0144", "OLT-1120-TT", "No sincroniza con la central.", "PRESUPUESTADO", fd(10, 26), "Andrés Rojas", { monto: 85, diag: { texto: "Puerto óptico dañado. Requiere reemplazo de la placa.", res: "reparable" }, bit: [["26 oct · 09:30", "Recepción", "Orden abierta. Garantía vencida: servicio pago."], ["26 oct · 14:10", "Andrés Rojas", "Presupuesto de USD 85,00 enviado al cliente."]] }),
+    mk("OS-2026-0139", "SW24-0093-LM", "Puertos 5 a 8 sin enlace.", "ENTREGADO", fd(10, 22), "Daniela Vera", { diag: { texto: "Chip de conmutación defectuoso. Se cambió la unidad.", res: "reparable" }, bit: [["22 oct · 10:00", "Recepción", "Orden abierta."], ["26 oct · 12:20", "Recepción", "Entregado al cliente."]] })
+  ];
+  ORD[4].cob = "FUERA_DE_GARANTIA"; ORD[4].ingreso = fd(10, 26);
+  function atn(o) { return atencion(o.cob); }
+  var sigNum = 151;
+
+  var rol = "REC", V = { vista: "lista", filtro: "TODAS", q: "", sel: null, tab: "resumen", N: null, recha: false, aviso: "" };
+  function can(a) { var M = { diag: ["TEC", "JEF"], entrega: ["REC", "JEF"], rechazo: ["JEF"], asignar: ["JEF"], decision: ["REC", "TEC", "JEF"], confirmar: ["JEF"] }; return M[a].indexOf(rol) >= 0; }
+  function badge(par, extra) { return '<span class="ins ' + (extra || "") + '" data-t="' + par[1] + '"><i></i>' + par[0] + '</span>'; }
+  function eloc() { return V.vista === "detalle" ? ORD.filter(function (o) { return o.num === V.sel; })[0] : null; }
+  function errp(id) { return '<p class="err" id="e-' + id + '" data-err="' + id + '" role="alert" hidden></p>'; }
+  function setErr(id, m) { var p = document.querySelector('[data-err="' + id + '"]'), inp = document.getElementById(id); if (!p) return; p.hidden = !m; p.innerHTML = m ? svg("alerta", 14, 2) + "<span>" + esc(m) + "</span>" : ""; if (inp) { if (m) { inp.setAttribute("aria-invalid", "true"); inp.setAttribute("aria-describedby", "e-" + id); } else inp.removeAttribute("aria-invalid"); } }
+  function crumb(x) { $("crumbX").innerHTML = x ? ' / <strong>' + x + '</strong>' : ""; $("crumbT").outerHTML = x ? '<a id="crumbT">Taller</a>' : '<strong id="crumbT">Taller</strong>'; $("crumbT").onclick = function () { ir("lista"); }; }
+  function ir(v, sel) { V.vista = v; if (sel) { V.sel = sel; V.tab = "resumen"; V.recha = false; V.aviso = ""; } window.scrollTo({ top: 0 }); render(); }
+  function render() {
+    if (V.vista === "lista") { crumb(""); vLista(); }
+    else if (V.vista === "nueva") { crumb("Nueva orden"); vNueva(); }
+    else { crumb(V.sel); vDetalle(); }
+  }
+
+  /* ===== LISTA ===== */
+  var FIL = [["TODAS", "Todas", null], ["RECIBIDO", "Recibido", ["RECIBIDO"]], ["EN_DIAGNOSTICO", "En diagnóstico", ["EN_DIAGNOSTICO", "PRESUPUESTADO"]], ["EN_REPARACION", "En reparación", ["EN_REPARACION", "EN_ESPERA_REPUESTO"]], ["REPARADO", "Reparado", ["REPARADO"]], ["CERRADAS", "Cerradas", ["ENTREGADO", "ANULADO", "RECHAZADO", "RECHAZADO_POR_CLIENTE", "IRREPARABLE"]]];
+  function vLista() {
+    var abiertas = ORD.filter(function (o) { return CERRADOS.indexOf(o.estado) < 0; });
+    var diag = ORD.filter(function (o) { return o.estado === "EN_DIAGNOSTICO"; }).length;
+    var porV = EQ.filter(function (e) { var v = vig(e); return v.k === "vigente" && v.dias <= 3; }).length;
+    var ent = ORD.filter(function (o) { return o.estado === "ENTREGADO"; }).length;
+    var nq = norm(V.q);
+    var base = ORD.filter(function (o) { return !nq || norm(o.num + o.eq.serial + o.eq.cli.nombre + o.eq.factura).indexOf(nq) >= 0; });
+    var cnt = {}; FIL.forEach(function (f) { cnt[f[0]] = base.filter(function (o) { return !f[2] || f[2].indexOf(o.estado) >= 0; }).length; });
+    var fl2 = FIL.filter(function (f) { return f[0] === V.filtro; })[0];
+    var v = base.filter(function (o) { return !fl2[2] || fl2[2].indexOf(o.estado) >= 0; });
+    $("vista").innerHTML =
+      '<div class="enc"><div><h1>Taller</h1><p class="sub">Órdenes de servicio técnico: recepción con auditoría, diagnóstico, presupuesto y entrega.</p></div><button type="button" class="btn principal" id="bNueva">' + svg("mas", 17, 2.4) + 'Nueva orden</button></div>' +
+      '<ul class="kpis"><li class="card kpi"><h2>Órdenes abiertas</h2><p class="v">' + abiertas.length + '</p><p class="n">en el taller ahora</p></li><li class="card kpi ambar"><h2>En diagnóstico</h2><p class="v">' + diag + '</p><p class="n">esperando resultado</p></li><li class="card kpi mal"><h2>Garantías por vencer</h2><p class="v">' + porV + '</p><p class="n">vencen en 3 días o menos</p></li><li class="card kpi ok"><h2>Entregadas</h2><p class="v">' + ent + '</p><p class="n">este mes</p></li></ul>' +
+      '<div class="filtros"><div class="buscar"><label class="sr" for="bq">Buscar orden</label>' + svg("lupa", 18) + '<input id="bq" type="search" autocomplete="off" value="' + esc(V.q) + '" placeholder="Buscar por n.º de orden, serial, cliente o factura…"></div></div>' +
+      '<div class="chips" role="group" aria-label="Filtrar por estado">' + FIL.map(function (f) { return '<button type="button" class="chip" data-f="' + f[0] + '" aria-pressed="' + (V.filtro === f[0]) + '">' + f[1] + ' <span class="q">' + cnt[f[0]] + '</span></button>'; }).join("") + '</div>' +
+      '<div class="card lista-c"><div class="tabla-w"><table class="tabla"><thead><tr><th scope="col">N.º orden</th><th scope="col">Cliente</th><th scope="col">Equipo</th><th scope="col">Atención</th><th scope="col">Estado</th><th scope="col">Abierta</th></tr></thead><tbody>' +
+      v.map(function (o) { var a = ATN[atn(o)] || ["Sin calcular", "neutro"]; return '<tr><td><button type="button" class="lk2 num" data-o="' + o.num + '">' + o.num + '</button></td><td><div class="p">' + esc(o.eq.cli.nombre) + '</div><div class="s mono2">' + o.eq.cli.tipo + '-' + esc(o.eq.cli.doc) + '</div></td><td><div class="p" style="font-weight:500">' + esc(o.eq.modelo) + '</div><div class="s mono2">' + esc(o.eq.serial) + '</div></td><td>' + badge(a) + '</td><td>' + badge(EST[o.estado]) + '</td><td class="s" style="font-size:13px;color:var(--text-2)">' + fc(o.abierta) + '</td></tr>'; }).join("") +
+      '</tbody></table></div>' + (v.length ? '' : '<p class="vacio-t" style="padding:28px;text-align:center">No hay órdenes con esos criterios.</p>') + '<div class="tpie">Mostrando ' + v.length + ' de ' + ORD.length + ' órdenes</div></div>';
+    $("bNueva").onclick = function () { V.N = nuevoN(); ir("nueva"); };
+    $("bq").oninput = function (e) { V.q = e.target.value; var p = e.target.selectionStart; vLista(); var n = $("bq"); n.focus(); n.setSelectionRange(p, p); };
+    document.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { V.filtro = b.dataset.f; vLista(); }; });
+    document.querySelectorAll("[data-o]").forEach(function (b) { b.onclick = function () { ir("detalle", b.dataset.o); }; });
+  }
+
+  /* ===== NUEVA ORDEN ===== */
+  function nuevoN() { return { paso: 0, max: 0, eq: null, busq: "", lista: null, noHay: false, reg: false, falla: "", acc: [], accOtro: "", aud: { t: [null, null], e: [null, null, null, null], x: [false, false, false, false, false], obs: "" }, motivo: "", fotos: [], docs: [], enviando: false }; }
+  var PASOS = ["Equipo", "Falla y accesorios", "Auditoría de recepción"];
+  function cobN() { var N = V.N; return N.eq ? cobertura(N.eq, N.aud, HOY) : null; }
+  function buscarEq(q) {
+    var n = norm(q), soloDoc = /^[VEJGP]?\d{5,}$/.test(n);
+    return EQ.filter(function (e) { return norm(e.serial).indexOf(n) >= 0 || norm(e.factura).indexOf(n) >= 0 || (soloDoc && (e.cli.tipo + norm(e.cli.doc)).indexOf(n) >= 0) || (soloDoc && /^\d+$/.test(n) && norm(e.cli.doc).indexOf(n) >= 0); });
+  }
+  function aviso1(e) {
+    var v = vig(e), ab = ORD.filter(function (o) { return o.eq === e && CERRADOS.indexOf(o.estado) < 0; })[0], out = "";
+    if (v.k === "vigente") out += '<div class="aviso ' + (v.t === "ambar" ? "ambar" : "ok") + '">' + svg("check", 18) + '<span><b>La garantía está vigente</b>: ' + (v.dias === 0 ? "vence hoy" : "quedan " + v.dias + " " + (v.dias === 1 ? "día" : "días")) + ' (vence el ' + fl(venceDe(e)) + '). La auditoría de recepción confirma si se atiende en garantía.</span></div>';
+    if (v.k === "vencida") out += '<div class="aviso mal">' + svg("alerta", 18) + '<span><b>La garantía venció hace ' + Math.abs(v.dias) + ' días.</b> Puedes abrir la orden: se atenderá como servicio pago.</span></div>';
+    if (v.k === "confirmar") out += '<div class="aviso ambar">' + svg("alerta", 18) + '<span><b>Compra sin confirmar.</b> La cobertura queda pendiente hasta que Jefatura la valide. Adjunta la factura que trae el cliente.</span></div>';
+    if (v.k === "desest") out += '<div class="aviso mal">' + svg("alerta", 18) + '<span><b>Compra desestimada.</b> Motivo: ' + esc(e.desest) + ' La orden se atenderá como servicio pago.</span></div>';
+    if (ab) out += '<div class="aviso ambar">' + svg("alerta", 18) + '<span>Este equipo ya tiene la orden <b>' + ab.num + '</b> abierta (' + EST[ab.estado][0] + '). Abre otra solo si es un ingreso nuevo.</span></div>';
+    return out;
+  }
+  function eqCard(e) {
+    var v = vig(e);
+    return '<div class="eqc"><span class="ico">' + svg("caja", 22) + '</span><div class="tx"><b>' + esc(e.modelo) + '</b><span class="mono2">' + esc(e.serial) + '</span> · <span>' + esc(e.cli.nombre) + '</span><br><span>Factura ' + esc(e.factura) + ' · emitida el ' + fl(e.emision) + ' · plazo ' + e.plazo + ' días</span></div>' + badge([v.txt, v.k === "vigente" ? "ok" : v.t], "lg") + '</div>';
+  }
+  function pasoEq() {
+    var N = V.N, h = '<h2>Equipo</h2><p class="ayuda">Busca el equipo por serial, cédula o RIF, o número de factura. El sistema comprueba si la garantía está vigente.</p>' +
+      '<div class="f"><label for="nq">Serial, cédula/RIF o factura</label><div class="buscar-r"><input id="nq" type="search" autocomplete="off" class="mono2" value="' + esc(N.busq) + '" placeholder="Escanea el serial o escribe"><button type="button" class="btn principal" id="nb">Buscar</button></div>' + errp("nq") +
+      '<p class="hint">Ejemplos: <span class="ej">' + ["RT5-8842-AA", "GPN-4471-KM", "SW24-0093-LM", "PW90-7781-ZZ", "NO-EXISTE-99"].map(function (s) { return '<button type="button" data-e="' + s + '">' + s + '</button>'; }).join("") + '</span></p></div><div id="nres">';
+    if (N.eq) h += aviso1(N.eq) + eqCard(N.eq);
+    else if (N.lista && N.lista.length > 1) h += '<ul class="pick">' + N.lista.map(function (e, i) { var v = vig(e); return '<li><button type="button" data-p="' + i + '"><span><span class="p">' + esc(e.modelo) + '</span><span class="s mono2" style="display:block">' + esc(e.serial) + ' · ' + esc(e.cli.nombre) + '</span></span>' + badge([v.txt, v.t]) + '</button></li>'; }).join("") + '</ul>';
+    else if (N.noHay) h += '<div class="aviso ambar" style="margin-top:14px">' + svg("alerta", 18) + '<span><b>No hay garantía registrada para «' + esc(N.busq) + '».</b> Puedes registrarla ahora con los datos de la factura que trae el cliente; quedará por confirmar y se exigirá adjuntar la factura en esta orden.</span></div>' +
+      (N.reg ? miniReg() : '<button type="button" class="btn" id="bReg">Registrar ahora</button>');
+    return h + '</div>';
+  }
+  function miniReg() {
+    return '<form class="mini" id="freg" novalidate><h3>Registrar ahora (origen Taller)</h3>' +
+      '<div class="f"><label for="r-nom">Titular</label><input id="r-nom" type="text" autocomplete="off">' + errp("r-nom") + '</div>' +
+      '<div class="f"><label for="r-doc">Cédula o RIF</label><input id="r-doc" type="text" autocomplete="off" placeholder="V-12345678">' + errp("r-doc") + '</div>' +
+      '<div class="f ancho"><label for="r-mod">Modelo</label><select id="r-mod"><option value="">Elige…</option>' + CATALOGO.map(function (m) { return '<option>' + m + '</option>'; }).join("") + '</select>' + errp("r-mod") + '</div>' +
+      '<div class="f"><label for="r-fac">N.º de factura</label><input id="r-fac" type="text" autocomplete="off" placeholder="F-000000">' + errp("r-fac") + '</div>' +
+      '<div class="f"><label for="r-fec">Fecha de emisión</label><input id="r-fec" type="date" max="2026-10-30" value="2026-10-30">' + errp("r-fec") + '</div>' +
+      '<div class="f ancho"><span class="lbl">Plazo</span><div class="seg"><label><input type="radio" name="r-pl" value="7" checked><span>7 días</span></label><label><input type="radio" name="r-pl" value="15"><span>15 días</span></label></div></div>' +
+      '<div class="ancho"><button type="submit" class="btn principal">Usar este equipo</button></div></form>';
+  }
+  function pasoFalla() {
+    var N = V.N;
+    return '<h2>Falla y accesorios</h2><p class="ayuda">Lo que cuenta el cliente y lo que deja en el mostrador.</p>' +
+      '<div class="f"><label for="falla">Falla reportada</label><textarea id="falla" maxlength="2000" placeholder="Describe lo que le pasa al equipo">' + esc(N.falla) + '</textarea><div style="display:flex;justify-content:space-between;gap:10px">' + errp("falla") + '<span class="hint" id="cnt" style="margin-left:auto">' + N.falla.trim().length + ' / 2000</span></div></div>' +
+      '<div class="f" style="margin-top:18px"><span class="lbl" id="l-acc">Accesorios que entrega</span><div class="checks" role="group" aria-labelledby="l-acc">' + ACCES.map(function (a) { return '<label><input type="checkbox" data-acc="' + a + '"' + (N.acc.indexOf(a) >= 0 ? " checked" : "") + '><span>' + a + '</span></label>'; }).join("") + '</div></div>' +
+      '<div class="f" style="margin-top:14px"><label for="accO">Otro accesorio <span class="op">(opcional)</span></label><input id="accO" type="text" autocomplete="off" value="' + esc(N.accOtro) + '" placeholder="Ej.: control remoto, tarjeta SIM"></div>';
+  }
+  function radioFila(g, i, txt, val) {
+    return '<div class="fila"><span class="q" id="q-' + g + i + '">' + txt + '</span><div class="seg si" role="radiogroup" aria-labelledby="q-' + g + i + '"><label><input type="radio" name="' + g + i + '" data-g="' + g + '" data-i="' + i + '" value="1"' + (val === true ? " checked" : "") + '><span>Sí</span></label><label><input type="radio" name="' + g + i + '" data-g="' + g + '" data-i="' + i + '" value="0"' + (val === false ? " checked" : "") + '><span>No</span></label></div></div>';
+  }
+  function listaArch(arr, k) { return arr.length ? '<ul>' + arr.map(function (n, i) { return '<li>' + svg(k === "fotos" ? "imagen" : "archivo", 16) + '<span>' + esc(n) + '</span><button type="button" class="ibt" data-q="' + k + ':' + i + '" aria-label="Quitar ' + esc(n) + '">' + svg("x", 15, 2) + '</button></li>'; }).join("") + '</ul>' : ''; }
+  function pasoAud() {
+    var N = V.N, a = N.aud, c = cobN(), tal = N.eq && N.eq.origen === "TALLER" && !N.eq.confirmada;
+    return '<h2>Auditoría de recepción</h2><p class="ayuda">Revisa el equipo con el cliente delante. Responde cada punto; esta revisión queda fija y no se edita después.</p>' +
+      '<fieldset><legend>Condiciones del trámite</legend>' + TRAMITE.map(function (t, i) { return radioFila("t", i, t, a.t[i]); }).join("") + '</fieldset>' +
+      '<fieldset><legend>Estado del equipo</legend>' + EQUIPO.map(function (t, i) { return radioFila("e", i, t, a.e[i]); }).join("") + '</fieldset>' +
+      '<fieldset class="ext"><legend>Señales de causas externas (marca las que observes)</legend>' + EXTERNAS.map(function (t, i) { return '<label class="ck"><input type="checkbox" data-x="' + i + '"' + (a.x[i] ? " checked" : "") + '>' + t + '</label>'; }).join("") + '</fieldset>' +
+      '<div id="bmot" ' + (c === "ANULADA_POR_USO" ? "" : "hidden") + '><div class="aviso mal">' + svg("alerta", 18) + '<span><b>La garantía queda anulada por uso.</b> La orden se atiende como servicio pago y Jefatura puede rechazarla. Explica qué observaste.</span></div><div class="f" style="margin-bottom:14px"><label for="motivo">Motivo (mínimo 10 caracteres)</label><textarea id="motivo" rows="3">' + esc(N.motivo) + '</textarea>' + errp("motivo") + '</div></div>' +
+      '<div class="f" style="margin-bottom:16px"><label for="obs">Observaciones <span class="op">(opcional)</span></label><textarea id="obs" rows="2" placeholder="Rayones, piezas faltantes, estado de la caja…">' + esc(a.obs) + '</textarea></div>' +
+      '<div class="subir"><div class="t">Fotos de recepción<small>' + (N.fotos.length ? N.fotos.length + " adjuntas" : "Hacen falta al menos una para pasar a diagnóstico") + '</small></div><button type="button" class="btn chico" id="bFoto">' + svg("camara", 15) + 'Agregar foto</button><input type="file" class="sr" id="inFoto" accept="image/jpeg,image/png,image/webp" multiple tabindex="-1" aria-label="Fotos de recepción">' + listaArch(N.fotos, "fotos") + '</div>' +
+      '<div class="subir"><div class="t">Documentos' + (tal ? ' <span class="etiq">Requerido</span>' : '') + '<small>' + (tal ? "Adjunta la factura que presenta el cliente: sin ella no se puede pasar a diagnóstico" : "Factura u otros papeles (opcional)") + '</small></div><button type="button" class="btn chico" id="bDoc">' + svg("subir", 15) + 'Agregar documento</button><input type="file" class="sr" id="inDoc" accept="application/pdf,image/jpeg,image/png" multiple tabindex="-1" aria-label="Documentos">' + listaArch(N.docs, "docs") + '</div>';
+  }
+  function vNueva() {
+    var N = V.N, c = cobN();
+    $("vista").innerHTML = '<div class="enc"><div><h1>Nueva orden de servicio</h1><p class="sub">Recepción del equipo en el mostrador: valida la garantía, registra la falla y haz la auditoría física.</p></div></div>' +
+      '<div class="dos"><section class="card marco" aria-label="Asistente de nueva orden"><ol class="pasos" aria-label="Pasos">' + PASOS.map(function (n, i) { return '<li class="' + (i < N.paso ? "hecho" : "") + '"' + (i === N.paso ? ' aria-current="step"' : "") + '><button type="button" data-p="' + i + '"' + (i > N.max ? " disabled" : "") + '>' + n + '</button></li>'; }).join("") + '</ol>' +
+      '<div class="panel" id="panel">' + [pasoEq, pasoFalla, pasoAud][N.paso]() + '</div><div class="pie"><button type="button" class="btn" id="atras"' + (N.paso === 0 ? " disabled" : "") + '>Atrás</button><div class="bt"><button type="button" class="btn" id="cancelar">Cancelar</button><button type="button" class="btn principal" id="sig"' + (N.enviando ? " disabled" : "") + '>' + (N.paso === 2 ? (N.enviando ? "Abriendo…" : "Abrir orden") : "Siguiente") + '</button></div></div></section><aside class="card vivo" id="vivo" aria-label="Resumen de la orden"></aside></div>';
+    $("anuncio").textContent = "Paso " + (N.paso + 1) + " de 3: " + PASOS[N.paso];
+    pintaVivo(); ligaNueva();
+  }
+  function pintaVivo() {
+    var N = V.N, c = cobN(), a = atencion(c), v = N.eq ? vig(N.eq) : null, e = N.eq;
+    var expl = { GARANTIA: "Sin costo para el cliente.", PAGO: "Requiere presupuesto y aceptación del cliente.", PENDIENTE: "No se avanza hasta confirmar la compra." };
+    var box = $("vivo"); if (!box) return;
+    box.innerHTML = '<h2>Resumen en vivo</h2><dl><div><dt>Equipo</dt><dd>' + (e ? esc(e.modelo) + '<span class="s mono2">' + esc(e.serial) + '</span>' : '<span class="vacio">Sin elegir</span>') + '</dd></div>' +
+      '<div><dt>Vigencia de la garantía</dt><dd>' + (v ? badge([v.txt, v.k === "vigente" ? "ok" : v.t]) + '<span class="s">' + (v.k === "confirmar" ? "Pendiente de confirmar la compra" : (v.dias < 0 ? "Venció el " : "Vence el ") + fl(venceDe(e)) + (v.dias >= 0 ? " · " + v.dias + " d" : "")) + '</span>' : '<span class="vacio">Pendiente de buscar el equipo</span>') + '</dd></div>' +
+      '<div><dt>Cobertura según la revisión</dt><dd>' + (c ? badge(COB[c]) : '<span class="vacio">' + (e ? "Completa la auditoría para calcularla" : "—") + '</span>') + '</dd></div>' +
+      '<div><dt>Tipo de atención</dt><dd>' + (a ? badge(ATN[a]) + '<span class="s">' + expl[a] + '</span>' : '<span class="vacio">—</span>') + '</dd></div>' +
+      '<div><dt>Adjuntos</dt><dd>' + N.fotos.length + (N.fotos.length === 1 ? " foto" : " fotos") + ' · ' + N.docs.length + (N.docs.length === 1 ? " documento" : " documentos") + '</dd></div></dl>';
+  }
+  function validaN(p) {
+    var N = V.N, ok = true;
+    if (p === 0) { if (!N.eq) { setErr("nq", "Busca y elige el equipo para continuar."); ok = false; } }
+    if (p === 1) { var l = N.falla.trim().length; if (l < 5 || l > 2000) { setErr("falla", l === 0 ? "La falla reportada es obligatoria." : "La falla va de 5 a 2000 caracteres."); $("falla").focus(); ok = false; } }
+    if (p === 2) {
+      var a = N.aud, falt = a.t.concat(a.e).filter(function (v) { return v === null; }).length;
+      if (falt) { aviso("Faltan " + falt + (falt === 1 ? " punto" : " puntos") + " por responder en la auditoría."); var r = document.querySelector('input[type="radio"][data-g]:not(:checked)'); var f1 = document.querySelector(".fila input"); document.querySelectorAll(".fila").forEach(function (fi) { var ins = fi.querySelectorAll("input"); if (!ins[0].checked && !ins[1].checked) fi.style.outline = "1px solid var(--mal-dot)"; }); ok = false; }
+      if (cobN() === "ANULADA_POR_USO" && N.motivo.trim().length < 10) { setErr("motivo", "Explica el motivo con al menos 10 caracteres (" + N.motivo.trim().length + "/10)."); $("motivo").focus(); ok = false; }
+    }
+    return ok;
+  }
+  function ligaNueva() {
+    var N = V.N, p = $("panel");
+    document.querySelectorAll(".pasos [data-p]").forEach(function (b) { b.onclick = function () { var t = +b.dataset.p; if (t > N.paso && !validaN(N.paso)) return; N.paso = t; vNueva(); }; });
+    $("atras").onclick = function () { N.paso--; vNueva(); };
+    $("cancelar").onclick = function () { ir("lista"); };
+    $("sig").onclick = function () {
+      if (!validaN(N.paso)) return;
+      if (N.paso < 2) { N.paso++; N.max = Math.max(N.max, N.paso); vNueva(); window.scrollTo({ top: 0 }); return; }
+      N.enviando = true; vNueva();
+      setTimeout(function () { crear(); }, 700);
+    };
+    if (N.paso === 0) {
+      function bus(q) {
+        q = q.trim(); N.busq = q; N.eq = null; N.reg = false;
+        if (q.length < 3) { setErr("nq", "Escribe al menos 3 caracteres."); return; }
+        var r = buscarEq(q); N.lista = r; N.noHay = !r.length;
+        if (r.length === 1) { N.eq = r[0]; N.lista = null; }
+        $("nres").outerHTML = '<div id="nres"></div>'; p.innerHTML = pasoEq(); ligaNueva2(); pintaVivo();
+      }
+      N._bus = bus; ligaPaso0(bus);
+    }
+    if (N.paso === 1) ligaPaso1();
+    if (N.paso === 2) ligaPaso2();
+  }
+  function ligaNueva2() { ligaPaso0(V.N._bus); }
+  function ligaPaso0(bus) {
+    var N = V.N;
+    $("nb").onclick = function () { bus($("nq").value); };
+    $("nq").onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); bus(this.value); } };
+    $("nq").oninput = function () { setErr("nq", ""); };
+    document.querySelectorAll(".ej [data-e]").forEach(function (b) { b.onclick = function () { $("nq").value = b.dataset.e; bus(b.dataset.e); }; });
+    document.querySelectorAll("[data-p].pick, .pick [data-p]").forEach(function (b) { b.onclick = function () { N.eq = N.lista[+b.dataset.p]; N.lista = null; $("panel").innerHTML = pasoEq(); ligaNueva2(); pintaVivo(); }; });
+    if ($("bReg")) $("bReg").onclick = function () { N.reg = true; $("panel").innerHTML = pasoEq(); ligaNueva2(); $("r-nom").focus(); };
+    if ($("freg")) $("freg").onsubmit = function (ev) {
+      ev.preventDefault(); var er = 0;
+      function req(id, m, cond) { var v = $(id).value.trim(); var bad = cond ? !cond(v) : !v; setErr(id, bad ? m : ""); if (bad) er++; return v; }
+      var nom = req("r-nom", "Escribe el nombre del titular.", function (v) { return v.length >= 3; });
+      var doc = req("r-doc", "Escribe la cédula o el RIF con al menos 5 dígitos.", function (v) { return v.replace(/\D/g, "").length >= 5; });
+      var mod = req("r-mod", "Elige el modelo.");
+      var fac = req("r-fac", "Escribe el número de factura.");
+      var fec = req("r-fec", "Indica la fecha de emisión.", function (v) { return v && v <= "2026-10-30"; });
+      if (er) { document.querySelector('[aria-invalid="true"]').focus(); return; }
+      var pl = +document.querySelector('input[name="r-pl"]:checked').value, f = fec.split("-");
+      var m = doc.toUpperCase().match(/^([VEJGP])?[\s-]*(\d+)/);
+      var e = { serial: N.busq.toUpperCase(), modelo: mod, marca: "—", cat: "—", cli: cli(m && m[1] ? m[1] : "V", m ? m[2] : doc, nom, nom, "—", "—"), factura: fac, emision: new Date(+f[0], +f[1] - 1, +f[2]), plazo: pl, origen: "TALLER", confirmada: false, desest: null };
+      EQ.push(e); N.eq = e; N.reg = false; N.noHay = false; $("panel").innerHTML = pasoEq(); ligaNueva2(); pintaVivo(); aviso("Garantía registrada como Taller: queda por confirmar.");
+    };
+  }
+  function ligaPaso1() {
+    var N = V.N;
+    $("falla").oninput = function () { N.falla = this.value; setErr("falla", ""); $("cnt").textContent = N.falla.trim().length + " / 2000"; };
+    $("accO").oninput = function () { N.accOtro = this.value; };
+    document.querySelectorAll("[data-acc]").forEach(function (c) { c.onchange = function () { var a = c.dataset.acc; if (c.checked) { if (a === "Ninguno") N.acc = ["Ninguno"]; else N.acc = N.acc.filter(function (x) { return x !== "Ninguno"; }).concat(a); } else N.acc = N.acc.filter(function (x) { return x !== a; }); $("panel").innerHTML = pasoFalla(); ligaPaso1(); }; });
+  }
+  function ligaPaso2() {
+    var N = V.N;
+    function refresca() { pintaVivo(); var c = cobN(); $("bmot").hidden = c !== "ANULADA_POR_USO"; }
+    document.querySelectorAll("[data-g]").forEach(function (r) { r.onchange = function () { N.aud[r.dataset.g][+r.dataset.i] = r.value === "1"; r.closest(".fila").style.outline = ""; refresca(); }; });
+    document.querySelectorAll("[data-x]").forEach(function (c) { c.onchange = function () { N.aud.x[+c.dataset.x] = c.checked; refresca(); }; });
+    $("obs").oninput = function () { N.aud.obs = this.value; };
+    if ($("motivo")) $("motivo").oninput = function () { N.motivo = this.value; setErr("motivo", ""); };
+    $("bFoto").onclick = function () { $("inFoto").click(); }; $("bDoc").onclick = function () { $("inDoc").click(); };
+    $("inFoto").onchange = function () { up(this.files, "fotos", ["image/jpeg", "image/png", "image/webp"]); this.value = ""; };
+    $("inDoc").onchange = function () { up(this.files, "docs", ["application/pdf", "image/jpeg", "image/png"]); this.value = ""; };
+    document.querySelectorAll("[data-q]").forEach(function (b) { b.onclick = function () { var q = b.dataset.q.split(":"); N[q[0]].splice(+q[1], 1); keep(); }; });
+    function up(files, k, mimes) { var mal = ""; Array.prototype.forEach.call(files, function (f) { if (mimes.indexOf(f.type) < 0) mal = "«" + f.name + "»: formato no admitido."; else if (f.size > 8 * 1048576) mal = "«" + f.name + "» pesa más de 8 MB."; else if (N[k].length >= (k === "fotos" ? 8 : 6)) mal = "Máximo " + (k === "fotos" ? 8 : 6) + " archivos."; else N[k].push(f.name); }); keep(); if (mal) aviso(mal); }
+    function keep() { var y = window.scrollY; $("panel").innerHTML = pasoAud(); ligaPaso2(); pintaVivo(); window.scrollTo({ top: y }); }
+  }
+  function crear() {
+    var N = V.N, c = cobN(), num = "OS-2026-" + String(sigNum++).padStart(4, "0");
+    var o = { num: num, eq: N.eq, falla: N.falla.trim(), acc: N.acc.concat(N.accOtro.trim() ? [N.accOtro.trim()] : []), estado: "RECIBIDO", prev: null, abierta: HOY, ingreso: HOY, tec: null, aud: JSON.parse(JSON.stringify(N.aud)), fotos: N.fotos.slice(), docs: N.docs.slice(), diag: { texto: "", res: "" }, monto: null, cob: c, motivoAnul: c === "ANULADA_POR_USO" ? N.motivo.trim() : "", bit: [[stamp(), ROLN[rol], "Orden abierta. Cobertura calculada: " + COB[c][0] + " (" + ATN[atencion(c)][0] + ")."]] };
+    if (c === "ANULADA_POR_USO") o.bit.push([stamp(), ROLN[rol], "Garantía anulada por uso. Motivo: " + o.motivoAnul]);
+    ORD.unshift(o); V.N = null; ir("detalle", num); aviso("Orden " + num + " abierta.");
+  }
+
+  /* ===== DETALLE ===== */
+  function pasos(o) {
+    var s = ["RECIBIDO", "EN_DIAGNOSTICO"]; if (atn(o) === "PAGO" || o.estado === "PRESUPUESTADO") s.push("PRESUPUESTADO"); return s.concat(["EN_REPARACION", "REPARADO", "ENTREGADO"]);
+  }
+  function guardIniDiag(o) {
+    if (!o.fotos.length) return "Falta al menos una foto de la auditoría de recepción.";
+    if (o.eq.origen === "TALLER" && !o.eq.confirmada && !o.docs.length) return "Falta la factura presentada: adjúntala en Documentos.";
+    return null;
+  }
+  function siguiente(o) {
+    var a = atn(o), s = o.estado, r;
+    if (s === "RECIBIDO") r = { to: "EN_DIAGNOSTICO", roles: ["TEC", "JEF"], guard: guardIniDiag(o) };
+    else if (s === "EN_DIAGNOSTICO") {
+      var d = o.diag.res;
+      if (!d) r = { to: "EN_REPARACION", roles: ["TEC", "JEF"], guard: "Registra el diagnóstico y su resultado en la pestaña Diagnóstico y presupuesto." };
+      else if (d === "irreparable") r = { to: "IRREPARABLE", roles: ["TEC", "JEF"], label: "Marcar como irreparable" };
+      else if (d === "repuesto") r = { to: "EN_ESPERA_REPUESTO", roles: ["TEC", "JEF"], label: "Poner en espera de repuesto" };
+      else if (a === "GARANTIA") r = { to: "EN_REPARACION", roles: ["TEC", "JEF"] };
+      else if (a === "PAGO") r = { to: "PRESUPUESTADO", roles: ["TEC", "JEF"], guard: o.monto > 0 ? null : "Fija el monto del presupuesto en la pestaña Diagnóstico y presupuesto." };
+      else r = { to: "EN_REPARACION", roles: ["TEC", "JEF"], guard: "La cobertura está por determinar: Jefatura debe confirmar la compra antes de avanzar." };
+    }
+    else if (s === "EN_ESPERA_REPUESTO") r = { to: "EN_REPARACION", roles: ["TEC", "JEF"] };
+    else if (s === "EN_REPARACION") r = { to: "REPARADO", roles: ["TEC", "JEF"] };
+    else if (s === "REPARADO") r = { to: "ENTREGADO", roles: ["REC", "JEF"] };
+    else if (["IRREPARABLE", "RECHAZADO_POR_CLIENTE", "RECHAZADO"].indexOf(s) >= 0) r = { to: "ENTREGADO", roles: ["REC", "JEF"], label: "Entregar sin reparar" };
+    else return null;
+    if (!r.label) r.label = "Avanzar a: " + EST[r.to][0];
+    if (!r.guard && r.roles.indexOf(rol) < 0) r.guard = "Tu rol (" + ROLN[rol] + ") no puede hacer este cambio.";
+    return r;
+  }
+  function mover(o, to, txt) { o.prev = o.estado; o.estado = to; o.bit.push([stamp(), ROLN[rol], txt || ("Pasó a " + EST[to][0] + ".")]); }
+  function recalcula(o) {
+    var antes = o.cob; o.cob = cobertura(o.eq, o.aud, o.ingreso);
+    if (o.cob !== antes) { var t = "La cobertura cambió: " + COB[antes] [0] + " → " + COB[o.cob][0] + "."; if (o.cob === "EN_GARANTIA" && o.monto) { o.monto = null; t += " Se limpió el presupuesto cargado."; } o.bit.push([stamp(), ROLN[rol], t]); }
+  }
+  function tabResumen(o) {
+    var e = o.eq, v = vig(e);
+    return '<section><h3>Equipo</h3><dl class="kv"><div><dt>Marca / Modelo</dt><dd>' + esc(e.marca) + ' · ' + esc(e.modelo) + '</dd></div><div><dt>Serial</dt><dd class="mono2">' + esc(e.serial) + '</dd></div><div><dt>Categoría</dt><dd>' + esc(e.cat) + '</dd></div><div><dt>Factura</dt><dd class="mono2">' + esc(e.factura) + '</dd></div></dl></section>' +
+      '<section><h3>Problema reportado</h3><p>' + esc(o.falla) + '</p></section>' +
+      '<section><h3>Accesorios entregados</h3><p>' + (o.acc.length ? esc(o.acc.join(", ")) : "No se registraron accesorios.") + '</p></section>' +
+      '<section><h3>Cobertura de garantía</h3><div class="prog-cab"><span>' + fl(e.emision) + '</span><span>' + fl(venceDe(e)) + '</span></div><div class="barra-prog" data-t="' + (v.k === "vigente" ? v.t : v.t) + '"><i style="width:' + pct(e) + '%"></i></div><p style="margin-top:8px;font-size:13px;font-weight:600;color:var(--' + (v.t === "ok" ? "ok" : v.t === "ambar" ? "ambar" : v.t === "mal" ? "mal" : "neutro") + '-fg)">' + (v.k === "confirmar" ? "Pendiente de confirmar la compra" : v.dias < 0 ? "Venció el " + fl(venceDe(e)) + " (hace " + Math.abs(v.dias) + " días)" : "Vence el " + fl(venceDe(e)) + " · " + (v.dias === 0 ? "hoy" : "quedan " + v.dias + " días")) + '</p></section>';
+  }
+  function tabAud(o) {
+    var a = o.aud, si = function (v) { return v ? badge(["Cumple", "ok"]) : badge(["No cumple", "mal"]); };
+    var obs = a.x.map(function (v, i) { return v ? EXTERNAS[i] : null; }).filter(Boolean);
+    var puede = o.estado === "RECIBIDO";
+    return '<section><h3>Condiciones del trámite</h3><ul class="res">' + TRAMITE.map(function (t, i) { return '<li><span>' + t + '</span>' + si(a.t[i]) + '</li>'; }).join("") + '</ul></section>' +
+      '<section><h3>Estado del equipo</h3><ul class="res">' + EQUIPO.map(function (t, i) { return '<li><span>' + t + '</span>' + si(a.e[i]) + '</li>'; }).join("") + '</ul></section>' +
+      '<section><h3>Señales de causas externas</h3><p>' + (obs.length ? esc(obs.join(", ")) : "No se observó ninguna.") + '</p></section>' +
+      (o.motivoAnul ? '<section><h3>Motivo de la anulación</h3><p>' + esc(o.motivoAnul) + '</p></section>' : '') +
+      (a.obs ? '<section><h3>Observaciones</h3><p>' + esc(a.obs) + '</p></section>' : '') +
+      '<section><h3>Fotos de recepción (' + o.fotos.length + ')</h3>' + (o.fotos.length ? '<div class="fotos">' + o.fotos.map(function (f) { return '<div class="foto">' + svg("imagen", 22) + '<span>' + esc(f) + '</span></div>'; }).join("") + '</div>' : '<div class="aviso ambar">' + svg("alerta", 18) + '<span>Sin fotos: no se puede pasar a diagnóstico hasta subir al menos una.</span></div>') +
+      (puede ? '<div style="margin-top:10px"><button type="button" class="btn chico" id="aFoto">' + svg("camara", 15) + 'Agregar foto</button><input type="file" class="sr" id="aInFoto" accept="image/jpeg,image/png,image/webp" multiple tabindex="-1" aria-label="Agregar fotos"></div>' : '') + '</section>' +
+      '<p class="hint">La auditoría de recepción no se edita. Cualquier revisión posterior queda como un registro nuevo.</p>';
+  }
+  function tabDiag(o) {
+    var a = atn(o), edit = can("diag") && CERRADOS.indexOf(o.estado) < 0, e = o.eq;
+    var presu = '';
+    if (a === "GARANTIA") presu = '<div class="aviso ok">' + svg("check", 18) + '<span><b>Cubierto por garantía.</b> No hay presupuesto: la reparación no tiene costo para el cliente.</span></div>';
+    else if (a === "PENDIENTE") presu = '<div class="aviso ambar">' + svg("alerta", 18) + '<span><b>Cobertura por determinar.</b> No se puede presupuestar ni avanzar hasta confirmar la compra.</span></div>' + (e.origen === "TALLER" && !e.confirmada ? '<button type="button" class="btn" id="dConf"' + (can("confirmar") ? "" : " disabled") + '>Confirmar compra</button>' + (can("confirmar") ? "" : '<p class="nota-rol">' + svg("lock", 13) + 'Confirmar la compra lo hace Jefatura o Administración.</p>') : '');
+    else presu = '<div class="aviso">' + svg("info", 18) + '<span>Servicio pago: el cliente debe aprobar el presupuesto para pasar a reparación.</span></div>' +
+      '<div class="f" style="max-width:260px"><label for="monto">Monto del presupuesto (USD)</label><input id="monto" type="number" min="0" step="0.01" inputmode="decimal" value="' + (o.monto != null ? o.monto : "") + '"' + (edit && ["EN_DIAGNOSTICO", "RECIBIDO"].indexOf(o.estado) >= 0 ? "" : " disabled") + '>' + errp("monto") + '</div>' +
+      (edit && ["EN_DIAGNOSTICO", "RECIBIDO"].indexOf(o.estado) >= 0 ? '<button type="button" class="btn chico" id="bMonto" style="margin-top:10px">Registrar presupuesto</button>' : '') +
+      (o.estado === "PRESUPUESTADO" ? '<div class="aviso ambar" style="margin-top:14px">' + svg("info", 18) + '<span>Presupuesto de <b>USD ' + o.monto.toFixed(2) + '</b> enviado. Registra la decisión del cliente.</span></div><div class="dec"><button type="button" class="btn principal" id="dOk">El cliente aceptó</button><button type="button" class="btn peligro" id="dNo">El cliente rechazó</button></div>' : '');
+    return '<section><h3>Diagnóstico técnico</h3><div class="f"><label for="dtxt">Qué se encontró y qué se hará</label><textarea id="dtxt" rows="4"' + (edit ? "" : " disabled") + ' placeholder="Describe la causa de la falla y el trabajo necesario">' + esc(o.diag.texto) + '</textarea>' + errp("dtxt") + '</div>' +
+      '<div class="f" style="margin-top:14px"><span class="lbl" id="l-res">Resultado del diagnóstico</span><div class="checks" role="radiogroup" aria-labelledby="l-res">' + [["reparable", "Reparable"], ["repuesto", "Requiere repuesto"], ["irreparable", "Irreparable"]].map(function (r) { return '<label><input type="radio" name="dres" value="' + r[0] + '"' + (o.diag.res === r[0] ? " checked" : "") + (edit ? "" : " disabled") + '><span>' + r[1] + '</span></label>'; }).join("") + '</div>' + errp("dres") + '</div>' +
+      (edit ? '<button type="button" class="btn principal chico" id="bDiag" style="margin-top:14px">Guardar diagnóstico</button>' : '<p class="nota-rol">' + svg("lock", 13) + (CERRADOS.indexOf(o.estado) >= 0 ? "La orden está cerrada." : "El diagnóstico lo registra el técnico o Jefatura.") + '</p>') + '</section>' +
+      '<section><h3>Presupuesto</h3>' + presu + '</section>';
+  }
+  function tabDocs(o) {
+    var todo = o.docs.map(function (d) { return [d, "Documento", "archivo"]; }).concat(o.fotos.map(function (f) { return [f, "Foto de recepción", "imagen"]; }));
+    return '<section><h3>Archivos vinculados (' + todo.length + ')</h3>' + (todo.length ? '<ul class="mdoc">' + todo.map(function (d, i) { return '<li><span class="ic' + (d[2] === "imagen" ? " img" : "") + '">' + svg(d[2], 16) + '</span><span class="tx"><b title="' + esc(d[0]) + '">' + esc(d[0]) + '</b><small>' + d[1] + '</small></span><button type="button" class="ibt" data-dl="' + esc(d[0]) + '" aria-label="Descargar ' + esc(d[0]) + '">' + svg("baja", 16) + '</button></li>'; }).join("") + '</ul>' : '<p class="vacio-t">Sin archivos.</p>') +
+      '<div style="margin-top:12px"><button type="button" class="btn chico" id="bAddDoc">' + svg("subir", 15) + 'Agregar documento</button><input type="file" class="sr" id="inAddDoc" accept="application/pdf,image/jpeg,image/png" multiple tabindex="-1" aria-label="Agregar documentos"></div><p class="hint" style="margin-top:8px">Las descargas están protegidas por sesión y rol.</p></section>';
+  }
+  function tabBit(o) {
+    return '<section><h3>Bitácora</h3><ol class="bit">' + o.bit.slice().reverse().map(function (b) { return '<li><time>' + b[0] + '</time><span>' + esc(b[2]) + '<small>' + esc(b[1]) + '</small></span></li>'; }).join("") + '</ol></section>';
+  }
+  function vDetalle() {
+    var o = eloc(), e = o.eq, v = vig(e), a = atn(o), sg = siguiente(o);
+    var P = pasos(o), mapa = P.indexOf(o.estado) >= 0 ? o.estado : (P.indexOf(o.prev) >= 0 ? o.prev : "EN_DIAGNOSTICO"), idx = P.indexOf(mapa), fuera = P.indexOf(o.estado) < 0;
+    var cerr = CERRADOS.indexOf(o.estado) >= 0;
+    var tabs = [["resumen", "Resumen"], ["aud", "Auditoría"], ["diag", "Diagnóstico y presupuesto"], ["docs", "Documentos"], ["bit", "Bitácora"]];
+    var rech = can("rechazo") && ["RECIBIDO", "EN_DIAGNOSTICO", "PRESUPUESTADO"].indexOf(o.estado) >= 0;
+    var acciones = '';
+    if (o.estado === "PRESUPUESTADO") acciones = '<button type="button" class="btn peligro" id="hNo">El cliente rechazó</button><button type="button" class="btn principal" id="hOk">' + svg("check2", 16, 2.2) + 'El cliente aceptó</button>';
+    else if (sg) acciones = (rech ? '<button type="button" class="btn peligro" id="hRech">Rechazar</button>' : '') + '<button type="button" class="btn principal" id="hAv"' + (sg.guard ? " disabled" : "") + '>' + svg("flecha", 16, 2) + sg.label + '</button>';
+    else if (rech) acciones = '<button type="button" class="btn peligro" id="hRech">Rechazar</button>';
+    $("vista").innerHTML =
+      '<div class="cab"><div><h1>' + o.num + '<span class="badges">' + badge(EST[o.estado]) + badge(COB[o.cob] ? ["Garantía: " + COB[o.cob][0], COB[o.cob][1]] : ["Sin calcular", "neutro"]) + badge(ATN[a] || ["—", "neutro"]) + '</span></h1><p class="sub" style="max-width:none">' + esc(e.modelo) + ' · Serial <b class="mono2">' + esc(e.serial) + '</b> · Cliente <b>' + esc(e.cli.nombre) + '</b></p></div><div class="bt">' + acciones + '</div></div>' +
+      (sg && sg.guard && o.estado !== "PRESUPUESTADO" ? '<div class="aviso ambar">' + svg("alerta", 18) + '<span>' + esc(sg.guard) + '</span></div>' : '') +
+      (V.aviso ? '<div class="aviso ok" id="avD">' + svg("check", 18) + '<span>' + esc(V.aviso) + '</span></div>' : '') +
+      (o.estado === "RECHAZADO" || o.estado === "RECHAZADO_POR_CLIENTE" ? '<div class="aviso mal">' + svg("alerta", 18) + '<span><b>' + (o.estado === "RECHAZADO" ? "Orden rechazada por el taller." : "El cliente rechazó el presupuesto.") + '</b> ' + esc(o.motivoRech || "") + ' Solo queda devolver el equipo.</span></div>' : '') +
+      '<section class="card recha" id="recha" ' + (V.recha ? "" : "hidden") + ' aria-label="Rechazar la orden"><div class="f"><label for="mrech">Motivo del rechazo (mínimo 10 caracteres)</label><textarea id="mrech" rows="3" placeholder="Por qué el taller no atiende esta orden"></textarea>' + errp("mrech") + '</div><div class="dec"><button type="button" class="btn peligro" id="rOk">Confirmar rechazo</button><button type="button" class="btn" id="rNo">Cancelar</button></div></section>' +
+      '<ol class="card estapas" aria-label="Estados de la orden">' + P.map(function (k, i) { var c = i < idx || (i === idx && o.estado === "ENTREGADO") ? "hecho" : i === idx ? (fuera ? "fin" : "act") : ""; return '<li class="' + c + '"' + (i === idx ? ' aria-current="step"' : "") + '><span class="pt">' + (c === "hecho" ? svg("check2", 16, 2.4) : (i + 1)) + '</span>' + EST[k][0] + '</li>'; }).join("") + '</ol>' +
+      '<div class="dos"><section class="card marco" style="padding:0"><div class="tabs" role="tablist" aria-label="Secciones de la orden">' + tabs.map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '" aria-selected="' + (V.tab === t[0]) + '">' + t[1] + '</button>'; }).join("") + '</div><div class="tp" role="tabpanel" id="tp">' + ({ resumen: tabResumen, aud: tabAud, diag: tabDiag, docs: tabDocs, bit: tabBit })[V.tab](o) + '</div></section>' +
+      '<aside class="lado"><section class="card"><h2 class="card-t">Garantía</h2><p class="gar-n" data-t="' + (v.k === "vigente" ? v.t : v.t) + '"><i></i>' + (v.k === "vigente" ? "Vigente" : v.txt.replace("Garantía ", "").replace(/^./, function (c) { return c.toUpperCase(); })) + '</p><p class="s" style="font-size:13px;margin-top:6px;color:var(--text-2)">' + (v.k === "confirmar" ? "Compra pendiente de confirmar" : v.dias < 0 ? "Venció el " + fl(venceDe(e)) : "Vence el " + fl(venceDe(e)) + " · quedan " + v.dias + " días") + '</p></section>' +
+      '<section class="card"><h2 class="card-t">Cliente</h2><div class="cli-cab"><span class="avatar" aria-hidden="true">' + ini(e.cli.nombre) + '</span><div><b>' + esc(e.cli.nombre) + '</b><small>' + e.cli.tipo + '-' + esc(e.cli.doc) + '</small></div></div><ul class="cont"><li>' + svg("persona", 15) + esc(e.cli.contacto) + '</li><li>' + svg("correo", 15) + esc(e.cli.correo) + '</li></ul></section>' +
+      '<section class="card"><h2 class="card-t">Documentos vinculados</h2>' + ((o.docs.length) ? '<ul class="mdoc">' + o.docs.slice(0, 3).map(function (d) { return '<li><span class="ic">' + svg("archivo", 15) + '</span><span class="tx"><b>' + esc(d) + '</b><small>Documento</small></span></li>'; }).join("") + '</ul>' : '<p class="vacio-t">Sin documentos.</p>') + '</section>' +
+      '<section class="card"><h2 class="card-t">Detalles</h2><dl class="dl2"><dt>Técnico</dt><dd>' + (can("asignar") && !cerr ? '<select id="tec" aria-label="Asignar técnico" style="min-height:36px;padding:4px 8px"><option value="">Sin asignar</option>' + TECNICOS.map(function (t) { return '<option' + (o.tec === t ? " selected" : "") + '>' + t + '</option>'; }).join("") + '</select>' : esc(o.tec || "Sin asignar")) + '</dd><dt>Abierta</dt><dd>' + fl(o.abierta) + '</dd><dt>En taller</dt><dd>' + Math.round((HOY - o.abierta) / DIA) + ' d</dd></dl></section></aside></div>';
+    $("anuncio").textContent = "Orden " + o.num + ": " + EST[o.estado][0];
+    ligaDetalle(o, sg);
+  }
+  function ligaDetalle(o, sg) {
+    document.querySelectorAll("[data-t]").forEach(function (b) { if (b.getAttribute("role") === "tab") b.onclick = function () { V.tab = b.dataset.t; V.aviso = ""; vDetalle(); $("tp").parentNode.querySelector('[aria-selected="true"]').focus(); }; });
+    if ($("hAv")) $("hAv").onclick = function () { mover(o, sg.to); V.aviso = "Orden en " + EST[sg.to][0] + "."; vDetalle(); };
+    if ($("hOk")) $("hOk").onclick = function () { mover(o, "EN_REPARACION", "El cliente aceptó el presupuesto de USD " + o.monto.toFixed(2) + ". Pasó a En reparación."); V.aviso = "El cliente aceptó el presupuesto."; vDetalle(); };
+    if ($("hNo")) $("hNo").onclick = function () { o.motivoRech = "El cliente no aprobó el presupuesto."; mover(o, "RECHAZADO_POR_CLIENTE", "El cliente rechazó el presupuesto."); vDetalle(); };
+    if ($("hRech")) $("hRech").onclick = function () { V.recha = true; $("recha").hidden = false; $("mrech").focus(); };
+    if ($("rNo")) $("rNo").onclick = function () { V.recha = false; $("recha").hidden = true; };
+    if ($("rOk")) $("rOk").onclick = function () { var m = $("mrech").value.trim(); if (m.length < 10) { setErr("mrech", "Explica el motivo con al menos 10 caracteres (" + m.length + "/10)."); $("mrech").focus(); return; } o.motivoRech = "Motivo: " + m; V.recha = false; mover(o, "RECHAZADO", "Orden rechazada. Motivo: " + m); vDetalle(); };
+    if ($("tec")) $("tec").onchange = function () { o.tec = this.value || null; if (o.tec) o.bit.push([stamp(), ROLN[rol], "Técnico asignado: " + o.tec + "."]); aviso(o.tec ? "Técnico asignado: " + o.tec + "." : "Técnico quitado."); };
+    if ($("aFoto")) { $("aFoto").onclick = function () { $("aInFoto").click(); }; $("aInFoto").onchange = function () { Array.prototype.forEach.call(this.files, function (f) { if (["image/jpeg", "image/png", "image/webp"].indexOf(f.type) >= 0 && f.size <= 8 * 1048576 && o.fotos.length < 8) o.fotos.push(f.name); }); o.bit.push([stamp(), ROLN[rol], "Se agregaron fotos de la auditoría de recepción."]); V.aviso = "Foto agregada a la auditoría."; vDetalle(); }; }
+    if ($("bAddDoc")) { $("bAddDoc").onclick = function () { $("inAddDoc").click(); }; $("inAddDoc").onchange = function () { Array.prototype.forEach.call(this.files, function (f) { if (["application/pdf", "image/jpeg", "image/png"].indexOf(f.type) >= 0 && f.size <= 8 * 1048576 && o.docs.length < 6) o.docs.push(f.name); }); o.bit.push([stamp(), ROLN[rol], "Se agregó un documento."]); V.aviso = "Documento agregado."; vDetalle(); }; }
+    document.querySelectorAll("[data-dl]").forEach(function (b) { b.onclick = function () { aviso("Descarga de «" + b.dataset.dl + "»: se valida la sesión y el rol (maqueta)."); }; });
+    if ($("bDiag")) $("bDiag").onclick = function () {
+      var t = $("dtxt").value.trim(), r = document.querySelector('input[name="dres"]:checked'), ok = true;
+      setErr("dtxt", t.length < 10 ? "Describe el diagnóstico con al menos 10 caracteres." : ""); if (t.length < 10) ok = false;
+      setErr("dres", r ? "" : "Elige el resultado del diagnóstico."); if (!r) ok = false;
+      if (!ok) { (t.length < 10 ? $("dtxt") : document.querySelector('input[name="dres"]')).focus(); return; }
+      o.diag = { texto: t, res: r.value }; o.bit.push([stamp(), ROLN[rol], "Diagnóstico registrado: " + ({ reparable: "reparable", repuesto: "requiere repuesto", irreparable: "irreparable" })[r.value] + "."]); V.aviso = "Diagnóstico guardado."; vDetalle();
+    };
+    if ($("bMonto")) $("bMonto").onclick = function () { var m = parseFloat($("monto").value); if (!(m > 0)) { setErr("monto", "Escribe un monto mayor que cero."); $("monto").focus(); return; } o.monto = Math.round(m * 100) / 100; o.bit.push([stamp(), ROLN[rol], "Presupuesto registrado: USD " + o.monto.toFixed(2) + "."]); V.aviso = "Presupuesto guardado."; vDetalle(); };
+    if ($("dOk")) $("dOk").onclick = $("hOk") ? $("hOk").onclick : function () {};
+    if ($("dNo")) $("dNo").onclick = function () { $("hNo").click(); };
+    if ($("dConf")) $("dConf").onclick = function () { o.eq.confirmada = true; ORD.forEach(function (x) { if (x.eq === o.eq && CERRADOS.indexOf(x.estado) < 0) recalcula(x); }); V.aviso = "Compra confirmada. La cobertura se recalculó: " + COB[o.cob][0] + "."; vDetalle(); };
+  }
+
+  /* ---------- arranque ---------- */
+  $("rol").onchange = function (ev) { rol = ev.target.value; V.recha = false; render(); };
+  $("menu").onclick = function (ev) { var b = ev.target.closest("[data-m]"); if (!b) return; if (b.dataset.m === "taller") ir("lista"); else aviso("«" + b.title + "» es otra pantalla del diseño."); cajon(false); };
+  $("volver").onclick = function () { aviso("Vuelve al inicio (tablero de garantías)."); };
+  render();
+
+})();
+</script>
