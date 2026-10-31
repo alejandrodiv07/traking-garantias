@@ -5,8 +5,18 @@ __pycache__/
 .coverage
 htmlcov/
 .env
+.env.*
+!.env.example
 *.db
 node_modules/
 dist/
 claude outputs/
 .superpowers/
+
+# Material de referencia (no es parte del proyecto)
+/11.jpeg
+/2_Flat_logo_on_transparent_5000.png
+/2_Flat_logo_on_transparent_5000-Photoroom.png
+/Catalogo-actualizado-Prime.pdf
+/Prime Telecom — Garantías.pdf
+/diseno.md
