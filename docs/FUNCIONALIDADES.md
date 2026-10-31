@@ -76,7 +76,7 @@ Catálogo de productos del taller (marca → modelo, categoría) de la migració
 | `pnpm test` (vitest + Testing Library) | ✅ **416 pruebas en 31 archivos, todas pasan** |
 | `pnpm lint` (oxlint) | ✅ Sin errores (7 avisos de variables/importes sin uso) |
 | `pnpm build` (Vite) | ✅ Construye; nota: un chunk > 500 kB (sin dividir, no es error) |
-| `bash supabase/tests/run.sh` (31 archivos SQL, Postgres 17 en Docker) | (corrida de la tarde del 31/10: ver abajo / git) |
+| `bash supabase/tests/run.sh` (31 archivos SQL, Postgres 17 en Docker) | ✅ **31/31 archivos pasan** (corrida completa del 31/10/2026; la nueva `31_catalogo.sql` de la migración 0025 suma 7 aserciones) |
 | `bash scripts/e2e-registro.sh` | punta a punta garantía → consulta → orden → rechazo → entrega → importar ventas |
 | Colecciones Postman (`postman/`) | contrato de garantías, ventas/roles/taller contra Supabase |
 
