@@ -153,6 +153,58 @@ describe("NuevaGarantia: productos", () => {
   });
 });
 
+describe("NuevaGarantia: catálogo del Inventario", () => {
+  const CATALOGO = [
+    { id: "p1", marca: { nombre: "TP-Link" }, modelo: "TL-SG108", categoria: "SWITCH" },
+    { id: "p2", marca: { nombre: "TP-Link" }, modelo: "Archer C6", categoria: "ROUTER" },
+    { id: "p3", marca: { nombre: "MikroTik" }, modelo: "RB750GR3", categoria: "ROUTER" },
+    { id: "p4", marca: { nombre: "APC" }, modelo: "BX600L-LM", categoria: "UPS Y REGULADORES" },
+  ];
+  const opciones = (etiqueta) => [...screen.getByLabelText(etiqueta).querySelectorAll("option")].map((o) => o.textContent);
+
+  async function alProductos(u) {
+    fakes.listarProductos.mockResolvedValue({ ok: true, datos: CATALOGO });
+    montar();
+    await titularExistente(u);
+    await screen.findByRole("option", { name: "ROUTER" });
+  }
+
+  it("ofrece los tipos de equipo del catálogo", async () => {
+    await alProductos(userEvent.setup());
+    expect(opciones("Tipo de equipo")).toEqual(["Todos los tipos", "ROUTER", "SWITCH", "UPS Y REGULADORES"]);
+  });
+
+  it("el tipo filtra las marcas y el modelo", async () => {
+    const u = userEvent.setup();
+    await alProductos(u);
+    await u.selectOptions(screen.getByLabelText("Tipo de equipo"), "ROUTER");
+    expect(opciones("Marca")).toEqual(["—", "MikroTik", "TP-Link"]);
+    await u.selectOptions(screen.getByLabelText("Marca"), "TP-Link");
+    expect(opciones("Modelo")).toEqual(["—", "Archer C6"]);
+  });
+
+  it("sin elegir tipo, la marca ofrece todas y el modelo solo los de esa marca", async () => {
+    const u = userEvent.setup();
+    await alProductos(u);
+    expect(opciones("Marca")).toEqual(["—", "APC", "MikroTik", "TP-Link"]);
+    await u.selectOptions(screen.getByLabelText("Marca"), "TP-Link");
+    expect(opciones("Modelo")).toEqual(["—", "Archer C6", "TL-SG108"]);
+  });
+
+  it("cambiar el tipo limpia la marca y el modelo elegidos", async () => {
+    const u = userEvent.setup();
+    await alProductos(u);
+    await u.selectOptions(screen.getByLabelText("Marca"), "TP-Link");
+    await u.selectOptions(screen.getByLabelText("Modelo"), "p1");
+    await u.type(screen.getByLabelText("Serial"), "SW-0001");
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeEnabled();
+    await u.selectOptions(screen.getByLabelText("Tipo de equipo"), "UPS Y REGULADORES");
+    expect(screen.getByLabelText("Marca")).toHaveValue("");
+    expect(screen.getByLabelText("Modelo")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeDisabled();
+  });
+});
+
 describe("NuevaGarantia: compra", () => {
   it("calcula el vencimiento y los días restantes en vivo", async () => {
     const u = userEvent.setup();

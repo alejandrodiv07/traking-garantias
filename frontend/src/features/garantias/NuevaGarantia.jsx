@@ -25,7 +25,7 @@ const hoyIso = () => new Date().toLocaleDateString("sv");
 const aMs = (iso) => Date.parse(`${iso}T00:00:00Z`);
 const nombreMarca = (p) => p.marca?.nombre ?? p.marca;
 let contador = 0;
-const nuevoItem = (serial = "") => ({ uid: ++contador, marca: "", productoId: "", serial });
+const nuevoItem = (serial = "") => ({ uid: ++contador, tipo: "", marca: "", productoId: "", serial });
 
 /** Vencimiento (el día exacto cuenta como vigente); la cobertura real la decide la base. */
 function vencimiento(fecha, plazo) {
@@ -69,7 +69,15 @@ export default function NuevaGarantia({ origen: origenPorDefecto = "VENTA" }) {
     };
   }, []);
 
-  const marcas = [...new Set(catalogo.map(nombreMarca))];
+  // Catálogo del Inventario: tipo de equipo -> marca -> modelo (cada paso filtra el siguiente).
+  const ordenar = (lista) => [...new Set(lista)].sort((a, b) => a.localeCompare(b));
+  const tipos = ordenar(catalogo.map((x) => x.categoria).filter(Boolean));
+  const deTipo = (tipo) => catalogo.filter((x) => !tipo || x.categoria === tipo);
+  const marcasDe = (tipo) => ordenar(deTipo(tipo).map(nombreMarca));
+  const modelosDe = (p) =>
+    deTipo(p.tipo)
+      .filter((x) => nombreMarca(x) === p.marca)
+      .sort((a, b) => a.modelo.localeCompare(b.modelo));
   const plazoDias = compra.plazo === "otro" ? Number(compra.otro) || null : Number(compra.plazo) || null;
   const venc = compra.sinSoporte ? null : vencimiento(compra.fecha, plazoDias);
   const hoy = hoyIso();
@@ -426,12 +434,28 @@ export default function NuevaGarantia({ origen: origenPorDefecto = "VENTA" }) {
                         </button>
                       )}
                     </div>
-                    <div className="wz-cols3">
+                    <div className="wz-cols">
+                      <div className="wz-f">
+                        <label htmlFor={`ng-tipo-${p.uid}`}>Tipo de equipo</label>
+                        <select
+                          id={`ng-tipo-${p.uid}`}
+                          className="campo"
+                          value={p.tipo}
+                          onChange={(e) => cambiarItem(p.uid, { tipo: e.target.value, marca: "", productoId: "" })}
+                        >
+                          <option value="">Todos los tipos</option>
+                          {tipos.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <div className="wz-f">
                         <label htmlFor={`ng-marca-${p.uid}`}>Marca</label>
                         <select id={`ng-marca-${p.uid}`} className="campo" value={p.marca} onChange={(e) => cambiarItem(p.uid, { marca: e.target.value, productoId: "" })}>
                           <option value="">—</option>
-                          {marcas.map((m) => (
+                          {marcasDe(p.tipo).map((m) => (
                             <option key={m} value={m}>
                               {m}
                             </option>
@@ -442,13 +466,11 @@ export default function NuevaGarantia({ origen: origenPorDefecto = "VENTA" }) {
                         <label htmlFor={`ng-modelo-${p.uid}`}>Modelo</label>
                         <select id={`ng-modelo-${p.uid}`} className="campo" value={p.productoId} disabled={!p.marca} onChange={(e) => cambiarItem(p.uid, { productoId: e.target.value })}>
                           <option value="">—</option>
-                          {catalogo
-                            .filter((x) => nombreMarca(x) === p.marca)
-                            .map((x) => (
-                              <option key={x.id} value={x.id}>
-                                {x.modelo}
-                              </option>
-                            ))}
+                          {modelosDe(p).map((x) => (
+                            <option key={x.id} value={x.id}>
+                              {x.modelo}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="wz-f">
@@ -569,8 +591,7 @@ export default function NuevaGarantia({ origen: origenPorDefecto = "VENTA" }) {
               <>
                 <h2>Documentos</h2>
                 <p className="wz-ayuda">
-                  Factura escaneada, PDF de la venta con el plazo y fotos. Son recomendados, no obligatorios: PDF, JPG o PNG de hasta 8 MB
-                  (fotos: hasta 8; documentos: hasta 6). Se vinculan a {productos.length > 1 ? "cada una de las garantías" : "la garantía"}.
+                  Factura escaneada, PDF de la venta y fotos. Son recomendados, no obligatorios. Se vinculan a {productos.length > 1 ? "cada una de las garantías" : "la garantía"}.
                 </p>
                 <PasoAdjuntos estado={{ archivosAdjuntos: adjuntos }} actualizar={(p) => setAdjuntos(p.archivosAdjuntos)} />
               </>
