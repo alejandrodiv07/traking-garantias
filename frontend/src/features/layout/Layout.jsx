@@ -80,6 +80,8 @@ export default function Layout() {
     document.title = `${actual?.etiqueta ?? "Inicio"} | Prime Telecom`;
   }, [actual]);
 
+  // Las subpáginas (consulta, nueva, detalle) traen su propia miga con el enlace de vuelta.
+  const esSubpagina = pathname.split("/").filter(Boolean).length > 1;
   const miga = (
     <p className="ruta">
       Prime Telecom / <strong>{actual?.etiqueta ?? "Inicio"}</strong>
@@ -134,13 +136,12 @@ export default function Layout() {
           <button type="button" className="ibtn" aria-label="Abrir menú" aria-expanded={abierta} onClick={() => setAbierta(true)}>
             <Menu size={20} aria-hidden="true" />
           </button>
-          {miga}
+          {!esSubpagina && miga}
         </header>
 
         <main className="main" id="contenido">
           <div className="topline">
-            {/* Las subpáginas (consulta, nueva, detalle) traen su propia miga con el enlace de vuelta. */}
-            {pathname.split("/").filter(Boolean).length > 1 ? <span className="ruta" /> : miga}
+            {esSubpagina ? <span className="ruta" /> : miga}
             <div className="perfil">
               <button
                 type="button"

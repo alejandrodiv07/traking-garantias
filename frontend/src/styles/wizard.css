@@ -110,7 +110,7 @@
 
 @media (max-width: 1100px) {
   .app .wz-grid { grid-template-columns: minmax(0, 1fr); }
-  .app .wz-vivo { position: static; order: -1; }
+  .app .wz-vivo { position: static; }
   .app .wz-vivo dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {

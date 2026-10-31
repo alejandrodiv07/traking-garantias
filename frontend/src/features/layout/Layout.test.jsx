@@ -84,6 +84,16 @@ describe("Layout", () => {
     expect(document.title).toBe(titulo);
   });
 
+  it("en una subpágina la barra superior no repite la miga que ya trae la página", () => {
+    montar("/garantias/consulta");
+    expect(screen.queryByText(/Prime Telecom \//)).toBeNull();
+  });
+
+  it("en la página raíz del módulo la barra sí lleva la miga", () => {
+    montar("/garantias");
+    expect(screen.getAllByText(/Prime Telecom \//).length).toBeGreaterThan(0);
+  });
+
   it("en móvil abre y cierra el cajón", async () => {
     montar("/garantias");
     const u = userEvent.setup();
