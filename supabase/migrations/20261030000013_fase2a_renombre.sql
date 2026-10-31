@@ -719,8 +719,15 @@ CREATE POLICY storage_ver_adjunto ON storage.objects
 -- La fila del bucket viejo sale SOLO si no queda ningún objeto dentro:
 -- en un remoto recién desplegado no hay objetos (datos de prueba), pero
 -- la guardia evita enredar archivos vivos con el renombre.
-DELETE FROM storage.buckets WHERE id = 'registros'
-  AND NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'registros');
+-- Supabase prohíbe el DELETE directo sobre storage (42501): allí el bucket
+-- vacío 'registros' se borra a mano desde el panel o la API de Storage.
+DO $$
+BEGIN
+    DELETE FROM storage.buckets WHERE id = 'registros'
+      AND NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'registros');
+EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Bucket "registros" no borrado (storage lo protege): bórralo desde el panel de Storage';
+END $$;
 
 -- ---------------------------------------------------------------------
 --  REPASO IDEMPOTENTE DE ADJUNTOS (decisión de la conversación: no se
