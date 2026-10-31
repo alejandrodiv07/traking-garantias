@@ -29,8 +29,8 @@ pnpm dev          # Vite en :5173
 
 # Pruebas
 pnpm test                             # vitest (312 pruebas)
-bash supabase/tests/run.sh            # SQL: 23 archivos, 436 aserciones, Postgres 17 en Docker
-bash scripts/e2e-registro.sh          # punta a punta: garantía → consulta → orden → rechazo → entrega
+bash supabase/tests/run.sh            # SQL: 24 archivos, 458 aserciones, Postgres 17 en Docker
+bash scripts/e2e-registro.sh          # punta a punta: garantía → consulta → orden → rechazo → entrega → importar ventas (15 comprobaciones)
 bash scripts/verificar-migraciones.sh # historial de migraciones sin duplicados
 
 # Verificación completa (lo que hace la CI)
@@ -41,7 +41,7 @@ La suite SQL levanta un contenedor por corrida y una base nueva por archivo; si 
 
 ## Base de datos
 
-La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a `0022`). La fase 2a añade:
+La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a `0023`). La fase 2a añade las 0013 a 0022 y la 2b la 0023:
 
 | Migración | Qué hace |
 |---|---|
@@ -55,6 +55,7 @@ La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a 
 | 0020 | `confirmar_compra` (ratifica) y `desestimar_compra` |
 | 0021 | `cambiar_estado`, `asignar_tecnico`, `registrar_presupuesto`; el UPDATE directo de estado y costo queda cerrado |
 | 0022 | Corrección de la bitácora de eventos (SECURITY DEFINER) |
+| 0023 | Facturas de Ventas: `importar_ventas`, confirmación automática de garantías `TALLER`, `verificacion` y `compra_confirmada_via` en `v_garantias` ([contrato](docs/CONTRATO_VENTAS_FRONTEND.md)) |
 
 `supabase/seed.sql` deja el catálogo de marcas y productos. El monolito antiguo quedó en `supabase/archivo/` y no se aplica.
 
@@ -67,5 +68,6 @@ La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a 
 - [Estado del proyecto](ESTADO_DEL_PROYECTO.md) — qué existe hoy, deuda y pendientes
 - [Diseño de la fase 2a](docs/superpowers/specs/2026-10-30-fase-2a-garantia-consulta-taller-design.md) — reglas de negocio, RPC y permisos
 - [Plan de la fase 2a](docs/superpowers/plans/2026-10-30-fase-2a-garantia-consulta-taller.md) — el orden de construcción
+- [Diseño de la fase 2b](docs/superpowers/specs/2026-10-30-fase-2b-facturas-ventas-csv-design.md) y su [contrato para el frontend](docs/CONTRATO_VENTAS_FRONTEND.md)
 - [Diseño de pantallas](docs/diseno-ui/README.md) — maquetas y lo que falta en el backend
 - [Reporte del hito 1](docs/REPORTE_HITO_1.md) y su [diseño](docs/superpowers/specs/2026-10-29-registro-y-control-de-garantia-design.md)

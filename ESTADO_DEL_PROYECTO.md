@@ -1,7 +1,7 @@
 # Track Garantía — Estado del proyecto
 
 **Prime Telecom · Sistema de seguimiento de garantías y reparaciones**
-**Corte:** 2026-10-30 · **Rama:** `feat/fase-2a` (fase 2a: garantía, consulta y taller; sobre el hito 1, PR #1) · último commit: ver `git log -1`
+**Corte:** 2026-10-30 · **Rama:** `feat/fase-2b` (fase 2b: facturas de Ventas por CSV, base de datos lista; sale de `feat/fase-2a`) · último commit: ver `git log -1`
 
 > Documento pensado para dos usos: **presentar** el sistema y **dar contexto rápido a agentes de IA** para planificar. Describe lo que hay *ahora* en el repo. Donde un documento antiguo contradiga a este, manda este (ver §6).
 
@@ -17,13 +17,13 @@ Aplicación web para un taller de servicio técnico, en tres módulos unidos por
 
 | Capa | Estado |
 |---|---|
-| Base de datos (garantías, órdenes, revisiones, adjuntos, reglas de avance, permisos) | 🟢 Construida y probada: 23 scripts SQL, 436 aserciones en verde; e2e de 12 comprobaciones |
+| Base de datos (garantías, órdenes, revisiones, adjuntos, reglas de avance, permisos) | 🟢 Construida y probada: 24 scripts SQL, 458 aserciones en verde; e2e de 15 comprobaciones |
 | Registrar garantía, Consulta, Abrir orden, Detalle de la orden, lista del Taller y tablero de garantías | 🟢 Construidos y probados (312 pruebas de vitest), conectados a las RPC reales |
 | Layout con barra lateral y rutas `/garantias` y `/taller` | 🟢 |
 | Autenticación + 2FA por correo | 🟡 Funciona; pendiente dominio verificado en Resend (la función desplegada sigue con destinatario fijo) |
 | Entregas, Inventario, Reportes, Clientes y Notificaciones (pantallas 05 a 08 del diseño) | ❌ Con maqueta en `docs/diseno-ui/`, sin backend (ver su README §4) |
 | Consulta pública del cliente y alertas de vencimiento | ❌ Fase 2c: la RPC `consultar_registro` existe, sin pantalla |
-| Facturas de Ventas por CSV | ❌ Fase 2b |
+| Facturas de Ventas por CSV | 🟡 Fase 2b: la base está construida y probada (migración 0023, importación y confirmación automática); falta la pantalla `/ventas/importar` y las insignias |
 
 **En una frase:** la fase 2a está completa de punta a punta (registrar la garantía → consultarla → abrir la orden → diagnosticar, presupuestar, rechazar o entregar); falta desplegarla y todo lo que rodea al taller.
 
@@ -63,14 +63,14 @@ Aplicación web para un taller de servicio técnico, en tres módulos unidos por
 
 ```
 ├─ supabase/
-│  ├─ migrations/        22 SQL activos (0013 a 0022 son de la fase 2a)
+│  ├─ migrations/        23 SQL activos (0013 a 0022 son de la fase 2a; la 0023 es de la 2b)
 │  ├─ archivo/           el monolito duplicado 20260906000001 (+ su referencia)
 │  ├─ functions/         admin-crear-usuario · mfa-enviar-codigo · limpiar-huerfanos
-│  ├─ tests/             00 harness · 10–28 pruebas SQL · 96–99 previos · apoyo_pruebas.sql · run.sh (Docker)
+│  ├─ tests/             00 harness · 10–29 pruebas SQL · 96–99 previos · apoyo_pruebas.sql · run.sh (Docker)
 │  └─ seed.sql           4 marcas y 8 productos
 ├─ scripts/
 │  ├─ verificar-migraciones.sh
-│  └─ e2e-registro.sh          garantía → consulta → orden → mal uso → rechazo con motivo → entrega
+│  └─ e2e-registro.sh          garantía → consulta → orden → mal uso → rechazo con motivo → entrega → importar ventas
 ├─ docs/diseno-ui/             8 maquetas HTML (01–04 conectadas; 05–08 pendientes de backend)
 ├─ frontend/src/features/
 │  ├─ layout/             Layout con barra lateral (NavLink)
@@ -194,7 +194,7 @@ pnpm build
 |---|---|---|---|
 | ~~D1~~ | ✅ Resuelta (hito 1) | Duplicado `20260906000001` y copia `_referencia_…` | Archivados en `supabase/archivo/` y protegidos por `verificar-migraciones.sh` (CI). Falta SOLO confirmar el historial remoto en el SQL Editor (ver §5) |
 | ~~D5~~ | ✅ Resuelta (hito 1) | Seed inexistente | `supabase/seed.sql` con 4 marcas y 8 productos; `run.sh` la valida |
-| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 436 aserciones SQL + 312 pruebas de frontend |
+| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 458 aserciones SQL + 312 pruebas de frontend |
 | D11 | 🟠 Media | `mfa-enviar-codigo` DESPLEGADA sigue con destinatario fijo (hotfix del sandbox de Resend); el código del repo ya envía al correo del usuario | Verificar el dominio en Resend y redesplegar; hasta entonces no redesplegar la función |
 | D12 | 🟡 Baja | Tablero y paneles del hito 1 (`/tablero`, `/jefe`, `/tecnico`, `/recepcion`) siguen montados junto a la app nueva | Retirarlos cuando se acepte la navegación de la fase 2a |
 | D13 | 🟡 Baja | La suite SQL completa necesita memoria (un contenedor por corrida) | Correr por tandas; limpiar contenedores `postgres:17` huérfanos |
@@ -214,7 +214,7 @@ La fase 2a está completa. Lo siguiente, priorizado:
 
 | # | Tarea | Terminado cuando |
 |---|---|---|
-| C1 | Confirmar el historial de migraciones remoto y aplicar la 0013–0022 | `schema_migrations` lista las 22 versiones; el aviso de despliegue de §5 revisado |
+| C1 | Confirmar el historial de migraciones remoto y aplicar la 0013–0023 | `schema_migrations` lista las 23 versiones; el aviso de despliegue de §5 revisado |
 | C2 | Definir `app.proyecto_ref`/`app.limpieza_secret` y desplegar las 3 Edge Functions reales; probar `limpiar-huerfanos` con `?simular=1` | La simulación lista sin borrar |
 | C3 | Verificar el dominio en Resend y redesplegar `mfa-enviar-codigo` (D11) | Un usuario distinto del dueño de la cuenta recibe el código |
 
@@ -222,7 +222,7 @@ La fase 2a está completa. Lo siguiente, priorizado:
 
 | # | Tarea | Notas |
 |---|---|---|
-| 2b | Facturas de Ventas por CSV | La confirmación de una garantía `TALLER` pasaría a ser automática cuando la factura coincida |
+| 2b | Pantalla de importación de Ventas | Base lista (0023, contrato en `docs/CONTRATO_VENTAS_FRONTEND.md`); falta `ventasService`, parser CSV, `/ventas/importar` e insignias |
 | 2c | Enlace público de seguimiento y alertas de vencimiento por correo | Necesita el dominio de Resend; pantalla de Notificaciones aún sin diseñar |
 | E | Entregas con datos (quién retira, cobro, plazo previsto) | Maqueta 05; faltan columnas y RPC |
 | I | Inventario (stock, mínimos, movimientos, repuestos) | Maqueta 06; fuente probable: `Catalogo-actualizado-Prime.pdf`, sin revisar |

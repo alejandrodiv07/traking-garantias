@@ -4,7 +4,8 @@
 # serial la muestra vigente → abre la orden con la auditoría de recepción →
 # una revisión con golpes la deja ANULADA_POR_USO (atención de PAGO) → la
 # revisión no se puede editar → el JEFE rechaza la orden (sin motivo falla,
-# con motivo pasa) → la entrega sin reparar conserva el motivo.
+# con motivo pasa) → la entrega sin reparar conserva el motivo → (fase 2b)
+# una garantía TALLER pasa sola a EN_GARANTIA al importar la venta.
 # Sale 1 ante CUALQUIER desvío.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -165,6 +166,20 @@ chk "e12 entregada: motivo intacto, fecha de entrega llena y fuera de lo abierto
   "(SELECT estado = 'ENTREGADO' AND fecha_entrega IS NOT NULL AND motivo_rechazo ~ 'golpes'
       FROM public.ordenes_servicio WHERE id='$ORDEN')
    AND (SELECT NOT abierto FROM public.v_tablero WHERE serial='RT5-8842-AA')"
+
+# 8) Fase 2b: una garantía TALLER (factura sin confirmar) pasa sola a
+#    EN_GARANTIA cuando el jefe importa la venta que la respalda.
+como "$TECNICO" "SELECT public.registrar_garantia('$CLIENTE','$PRODUCTO','RT5-9000-BB','FACTURA','F-2026-90', public.hoy_local() - 3, 7, 'TALLER');"   || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e13 registrar garantía TALLER"; }
+chk "e13 la garantía TALLER nace POR_DETERMINAR, PENDIENTE y sin venta que la respalde"   "(SELECT vigencia::text = 'POR_DETERMINAR' AND estado_compra = 'PENDIENTE' FROM public.v_garantias WHERE numero_serie='RT5-9000-BB')"
+
+FILA="jsonb_build_array(jsonb_build_object('numero_factura','F-2026-90','fecha_emision',to_char(public.hoy_local() - 3,'YYYY-MM-DD'),
+  'tipo_documento','V','numero_documento','12345678','nombre_cliente','Juan Perez','serial','RT5-9000-BB','modelo','HG8245'))"
+como "$JEFE" "SELECT * FROM public.importar_ventas('ventas.csv', $FILA);"   || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e14 importar_ventas"; }
+chk "e14 la importación confirmó la garantía sola (vía VENTAS) y quedó EN_GARANTIA"   "(SELECT vigencia::text = 'EN_GARANTIA' AND estado_compra = 'CONFIRMADA' AND compra_confirmada_via = 'VENTAS'
+      FROM public.v_garantias WHERE numero_serie='RT5-9000-BB')"
+
+como "$JEFE" "SELECT * FROM public.importar_ventas('ventas.csv', $FILA);"   || { FALLOS=$((FALLOS+1)); echo "*FALLA*  e15 reimportar"; }
+chk "e15 reimportar es idempotente: sigue una sola fila de venta"   "(SELECT count(*) = 1 FROM public.ventas_facturas WHERE numero_serie = 'RT5-9000-BB')"
 
 echo
 echo "PASA $PASAN · FALLA $FALLOS"
