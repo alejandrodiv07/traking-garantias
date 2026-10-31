@@ -68,8 +68,8 @@ export default function PasoAdjuntos({ estado, actualizar }) {
   }
 
   return (
-    <div>
-      <label htmlFor="inputFoto">
+    <div className="adj">
+      <label htmlFor="inputFoto" className="adj-slot">
         Fotos (con la cámara o del archivo)
         <input
           id="inputFoto"
@@ -83,7 +83,7 @@ export default function PasoAdjuntos({ estado, actualizar }) {
         />
       </label>
 
-      <label htmlFor="inputDoc">
+      <label htmlFor="inputDoc" className="adj-slot">
         Documentos (PDF, JPG o PNG)
         <input
           id="inputDoc"
@@ -97,11 +97,13 @@ export default function PasoAdjuntos({ estado, actualizar }) {
         />
       </label>
 
-      <ul>
+      <ul className="adj-lista">
         {lista.map((a) => (
           <li key={a.id}>
-            {a.archivo.name} ({a.tipo})
-            <button type="button" onClick={() => quitar(a.id)}>
+            <span>
+              {a.archivo.name} ({a.tipo})
+            </span>
+            <button type="button" className="btn chico" onClick={() => quitar(a.id)}>
               Quitar
             </button>
           </li>
@@ -109,7 +111,9 @@ export default function PasoAdjuntos({ estado, actualizar }) {
       </ul>
 
       {aviso && (
-        <p role="alert">{aviso}</p>
+        <p role="alert" className="aviso mal">
+          {aviso}
+        </p>
       )}
     </div>
   );

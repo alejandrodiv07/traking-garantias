@@ -69,7 +69,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --c-bg: #16150f;
     --c-surface: #201e19;
     --c-surface-2: #1b1a15;
@@ -118,7 +118,65 @@
     --c-shadow-card-grande: 0 18px 44px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(0, 0, 0, 0.3);
     --c-shadow-flotante: 0 12px 32px rgba(0, 0, 0, 0.55);
     --c-fondo-modal: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
   }
+}
+
+/* Tema elegido a mano (botón de la barra): manda sobre el del sistema. */
+:root[data-theme="dark"] {
+  --c-bg: #16150f;
+  --c-surface: #201e19;
+  --c-surface-2: #1b1a15;
+  --c-field-bg: #1a1914;
+  --c-border: rgba(250, 249, 245, 0.13);
+  --c-border-soft: rgba(250, 249, 245, 0.07);
+  --c-border-hover: rgba(250, 249, 245, 0.28);
+  --c-field-border: #8f897d;
+  --c-field-border-hover: #c2bcae;
+  --c-placeholder: #8f897d;
+  --c-text: rgba(250, 249, 245, 0.93);
+  --c-text-2: rgba(250, 249, 245, 0.7);
+  --c-text-3: rgba(250, 249, 245, 0.64);
+
+  --c-accent: #e0896b;
+  --c-accent-text: #f0a287;
+  --c-accent-text-hover: #f6bba6;
+  --c-accent-bg: rgba(224, 137, 107, 0.16);
+
+  --c-cta: #ece9e1;
+  --c-cta-hover: #ffffff;
+  --c-cta-fg: #191915;
+  --c-inverso: #0d0c09;
+
+  --c-neutro-bg: #2a2822;
+  --c-neutro-fg: #cfc9bb;
+  --c-neutro-dot: #8d8679;
+  --c-progreso-bg: #3a2c14;
+  --c-progreso-fg: #f0c27a;
+  --c-progreso-dot: #d99a3a;
+  --c-resuelto-bg: #1f3023;
+  --c-resuelto-fg: #94cf9f;
+  --c-resuelto-dot: #6aa575;
+  --c-adverso-bg: #3a1c22;
+  --c-adverso-fg: #f4a3b0;
+  --c-adverso-dot: #d4707f;
+
+  --c-error: #f29aa8;
+  --c-error-bg: rgba(242, 154, 168, 0.1);
+  --c-error-border: rgba(242, 154, 168, 0.3);
+  --c-invalid-border: #e0818f;
+  --c-info: #7ab2f2;
+  --c-info-bg: rgba(122, 178, 242, 0.13);
+
+  --c-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --c-shadow-card-grande: 0 18px 44px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(0, 0, 0, 0.3);
+  --c-shadow-flotante: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --c-fondo-modal: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 /* Foco visible en TODO el producto. Se sustituye, nunca se quita: el contorno

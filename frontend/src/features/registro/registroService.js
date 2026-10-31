@@ -40,11 +40,12 @@ export async function listarProductos() {
   try {
     const { data, error } = await supabase
       .from("productos")
-      .select("id, marca(nombre), modelo, categoria, meses_garantia")
+      .select("id, marcas(nombre), modelo, categoria, meses_garantia")
       .eq("activo", true)
       .order("modelo");
     if (error) return mapearError(error);
-    return { ok: true, datos: data ?? [] };
+    // La relación se llama `marcas` (tabla); las pantallas leen `p.marca.nombre`.
+    return { ok: true, datos: (data ?? []).map(({ marcas, ...p }) => ({ ...p, marca: marcas })) };
   } catch (err) {
     if (err instanceof TypeError || String(err?.name ?? "").startsWith("Fetch")) {
       return { ok: false, codigo: "SIN_CONEXION", mensaje: "Sin conexión" };
@@ -121,8 +122,10 @@ const MIME_DOC = ["application/pdf", "image/jpeg", "image/png"];
 /**
  * Sube un archivo al bucket privado y registra su fila en `adjuntos`.
  * Valida MIME y tamaño ANTES de subir (FORMATO_NO_ADMITIDO / LIMITE).
+ * El adjunto cuelga de una orden (`ordenes/{id}/…`) o de un equipo, es decir,
+ * de la garantía (`equipos/{id}/…`); la base exige exactamente uno de los dos.
  */
-export async function subirAdjunto(ordenId, archivo, { tipo, etiqueta }) {
+async function subir(destino, archivo, { tipo, etiqueta }) {
   const mime = archivo?.type ?? "";
   if (tipo === "FOTO" && !MIME_FOTO.includes(mime)) {
     return { ok: false, codigo: "FORMATO_NO_ADMITIDO", mensaje: "Formato no admitido: para las fotos usa JPG, PNG o WEBP" };
@@ -134,7 +137,7 @@ export async function subirAdjunto(ordenId, archivo, { tipo, etiqueta }) {
     return { ok: false, codigo: "LIMITE", mensaje: "El archivo no puede pesar más de 8 MB" };
   }
 
-  const ruta = `ordenes/${ordenId}/${archivo.name}`;
+  const ruta = `${destino.carpeta}/${destino.id}/${archivo.name}`;
   try {
     const { error: errorSubida } = await supabase.storage.from("ordenes").upload(ruta, archivo);
     if (errorSubida) return mapearError(errorSubida);
@@ -142,7 +145,7 @@ export async function subirAdjunto(ordenId, archivo, { tipo, etiqueta }) {
     const { data, error } = await supabase
       .from("adjuntos")
       .insert({
-        orden_id: ordenId,
+        [destino.columna]: destino.id,
         tipo,
         etiqueta: etiqueta ?? null,
         ruta,
@@ -159,3 +162,9 @@ export async function subirAdjunto(ordenId, archivo, { tipo, etiqueta }) {
     return { ok: false, codigo: "DESCONOCIDO", mensaje: err?.message ?? "Error inesperado" };
   }
 }
+
+export const subirAdjunto = (ordenId, archivo, opciones) =>
+  subir({ carpeta: "ordenes", columna: "orden_id", id: ordenId }, archivo, opciones);
+
+export const subirAdjuntoEquipo = (equipoId, archivo, opciones) =>
+  subir({ carpeta: "equipos", columna: "equipo_id", id: equipoId }, archivo, opciones);

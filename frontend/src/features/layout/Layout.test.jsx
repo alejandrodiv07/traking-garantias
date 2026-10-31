@@ -51,4 +51,35 @@ describe("Layout", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: /Cerrar sesión/ }));
     expect(salir).toHaveBeenCalled();
   });
+
+  it("muestra los siete destinos del diseño", () => {
+    montar("/garantias");
+    const nombres = ["Garantías", "Taller", "Entregas", "Inventario", "Reportes", "Clientes", "Notificaciones"];
+    for (const n of nombres) expect(screen.getByRole("link", { name: n })).toBeTruthy();
+  });
+
+  it("alterna el tema claro/oscuro y lo recuerda", async () => {
+    document.documentElement.dataset.theme = "dark";
+    montar("/garantias");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Cambiar a tema claro" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(localStorage.getItem("pt.tema")).toBe("light");
+    expect(screen.getByRole("button", { name: "Cambiar a tema oscuro" })).toBeTruthy();
+  });
+
+  it("pliega la barra a iconos y recuerda la preferencia", async () => {
+    montar("/garantias");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Contraer menú" }));
+    expect(document.querySelector(".app")).toHaveClass("plegada");
+    expect(localStorage.getItem("pt.plegada")).toBe("1");
+  });
+
+  it("en móvil abre y cierra el cajón", async () => {
+    montar("/garantias");
+    const u = userEvent.setup();
+    await u.click(screen.getByRole("button", { name: "Abrir menú" }));
+    expect(document.querySelector(".side")).toHaveClass("abierta");
+    await u.keyboard("{Escape}");
+    expect(document.querySelector(".side")).not.toHaveClass("abierta");
+  });
 });

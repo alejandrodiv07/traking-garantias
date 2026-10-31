@@ -52,6 +52,7 @@ import {
   previsualizarCobertura,
   registrarRevision,
   subirAdjunto,
+  subirAdjuntoEquipo,
 } from "./registroService.js";
 
 const ARCHIVO_JPG = (bytes = 100) =>
@@ -182,9 +183,20 @@ describe("listarProductos (catálogo del paso serial nuevo)", () => {
     const r = await listarProductos();
     expect(fakes.from).toHaveBeenCalledWith("productos");
     expect(select).toHaveBeenCalledWith(
-      "id, marca(nombre), modelo, categoria, meses_garantia",
+      "id, marcas(nombre), modelo, categoria, meses_garantia",
     );
-    expect(r).toEqual({ ok: true, datos: [{ id: "p1" }] });
+    expect(r).toEqual({ ok: true, datos: [{ id: "p1", marca: undefined }] });
+  });
+
+  it("entrega la marca como `marca.nombre` (la relación de la base se llama `marcas`)", async () => {
+    const select = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        order: vi.fn().mockResolvedValue({ data: [{ id: "p1", marcas: { nombre: "Huawei" }, modelo: "HG8245" }], error: null }),
+      }),
+    });
+    fakes.from.mockImplementation(() => ({ select }));
+    const r = await listarProductos();
+    expect(r.datos).toEqual([{ id: "p1", marca: { nombre: "Huawei" }, modelo: "HG8245" }]);
   });
 
   it("un fallo de red da SIN_CONEXION", async () => {
@@ -265,5 +277,27 @@ describe("subirAdjunto: camino feliz", () => {
       }),
     );
     expect(r).toEqual({ ok: true, datos: { id: "a1" } });
+  });
+});
+
+describe("subirAdjuntoEquipo: documentos de la garantía", () => {
+  it("sube a equipos/{id}/… y registra la fila con equipo_id (sin orden_id)", async () => {
+    fakes.upload.mockResolvedValue({ data: { path: "equipos/eq-1/factura.pdf" }, error: null });
+    fakes.setResultado({ data: [{ id: "a2" }], error: null });
+    const pdf = new File([new Uint8Array(10)], "factura.pdf", { type: "application/pdf" });
+
+    const r = await subirAdjuntoEquipo("eq-1", pdf, { tipo: "DOCUMENTO", etiqueta: "Factura" });
+    expect(fakes.upload).toHaveBeenCalledWith("equipos/eq-1/factura.pdf", expect.anything());
+    const fila = fakes.insert.mock.calls[0][0];
+    expect(fila).toMatchObject({ equipo_id: "eq-1", tipo: "DOCUMENTO", ruta: "equipos/eq-1/factura.pdf", mime: "application/pdf" });
+    expect(fila).not.toHaveProperty("orden_id");
+    expect(r).toEqual({ ok: true, datos: { id: "a2" } });
+  });
+
+  it("valida el formato antes de subir", async () => {
+    const heic = new File([new Uint8Array(10)], "x.heic", { type: "image/heic" });
+    const r = await subirAdjuntoEquipo("eq-1", heic, { tipo: "DOCUMENTO" });
+    expect(fakes.upload).not.toHaveBeenCalled();
+    expect(r).toMatchObject({ ok: false, codigo: "FORMATO_NO_ADMITIDO" });
   });
 });
