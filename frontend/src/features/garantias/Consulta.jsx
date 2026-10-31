@@ -355,7 +355,7 @@ function Ficha({ e, navigate, rol, onCambio }) {
           </dl>
           <div className="cn-sep" />
           <div className="cn-prog-cab">
-            <span>Período de cobertura</span>
+            <span>Período de cobertura · {usados} de {total} días consumidos</span>
             <b data-t={tono}>{etiquetaDias(e, clave)}</b>
           </div>
           <progress className="cn-prog" data-t={tono} max={total} value={usados} aria-label="Período de cobertura consumido" />
@@ -402,7 +402,7 @@ function Ficha({ e, navigate, rol, onCambio }) {
             </span>
             <div>
               <b>{e.titular}</b>
-              <small>{e.documento}</small>
+              <small>{e.tipo_documento ? `${e.tipo_documento}-${e.documento}` : e.documento}</small>
             </div>
           </div>
           <ul className="cn-cont">

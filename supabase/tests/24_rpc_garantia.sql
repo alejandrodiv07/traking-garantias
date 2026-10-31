@@ -170,6 +170,9 @@ SELECT pg_temp.chk('K6 sin criterios: 0 filas',
 SELECT pg_temp.chk('K7 dos criterios que apuntan al mismo equipo no lo duplican',
   (SELECT count(*) = 1 FROM public.buscar_equipo(p_serial => 'SN-TALLER-1', p_factura => 'F-TALLER')));
 
+SELECT pg_temp.chk('K11 devuelve el tipo de documento del titular (V-12345678)',
+  (SELECT bool_and(tipo_documento::text = 'V') FROM public.buscar_equipo(p_documento => '12345678')));
+
 SELECT pg_temp.chk('K8 equipo de VENTA con factura vigente: EN_GARANTIA y compra CONFIRMADA',
   (SELECT vigencia::text = 'EN_GARANTIA' AND estado_compra = 'CONFIRMADA'
      FROM public.buscar_equipo(p_serial => 'RT5-8842-AA') WHERE producto_id = pg_temp.producto_id()));

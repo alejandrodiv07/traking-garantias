@@ -3,7 +3,7 @@
 const TEXTOS = {
   COINCIDE: ["Respaldada por Ventas", "ok"],
   DIFIERE: ["No coincide: revisar", "mal"],
-  SIN_VENTA: ["Sin venta", "neutro"],
+  SIN_VENTA: ["Factura no hallada en Ventas", "neutro"],
 };
 
 export default function InsigniaVerificacion({ valor }) {

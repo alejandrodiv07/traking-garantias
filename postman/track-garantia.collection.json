@@ -386,6 +386,7 @@
                   "const f = pm.response.json()[0];",
                   "pm.test(\"hallado y en garantía\", () => { pm.expect(f).to.be.an(\"object\"); pm.expect(f.numero_serie).to.eql(pm.collectionVariables.get(\"serial\")); });",
                   "pm.test(\"titular correcto\", () => pm.expect(f.titular).to.eql(\"Cliente Postman\"));",
+                  "pm.test(\"incluye el tipo de documento (V)\", () => pm.expect(f.tipo_documento).to.eql(\"V\"));",
                   "console.log(\"cobertura/campos:\", Object.keys(f).join(\",\"));"
                 ]
               }

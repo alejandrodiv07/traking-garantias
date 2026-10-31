@@ -324,3 +324,27 @@ describe("Consulta: documentos vinculados", () => {
     expect(await screen.findByText(/ya tiene 6 documentos/)).toBeInTheDocument();
   });
 });
+
+describe("Consulta: ficha legible", () => {
+  it("rotula la barra con los días consumidos del plazo", async () => {
+    const u = userEvent.setup();
+    montar();
+    await buscar(u, "rt5-8842-aa");
+    expect(await screen.findByText(/10 de 15 días consumidos/)).toBeInTheDocument();
+  });
+
+  it("muestra la cédula con su tipo, como en el registro", async () => {
+    fakes.buscarGarantia.mockResolvedValue({ ok: true, datos: [EQUIPO({ tipo_documento: "V" })] });
+    const u = userEvent.setup();
+    montar();
+    await buscar(u, "rt5-8842-aa");
+    expect(await screen.findByText("V-12345678")).toBeInTheDocument();
+  });
+
+  it("sin tipo de documento muestra solo el número", async () => {
+    const u = userEvent.setup();
+    montar();
+    await buscar(u, "rt5-8842-aa");
+    expect(await screen.findByText("12345678")).toBeInTheDocument();
+  });
+});
