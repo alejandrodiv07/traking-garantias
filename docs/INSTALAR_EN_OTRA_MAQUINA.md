@@ -120,7 +120,28 @@ No hace falta instalar Deno: el CLI lo maneja.
 | 54321 | Supabase local | solo con `supabase start` |
 | — | Postgres 17 en Docker | la suite SQL usa contenedores efímeros con puertos internos, no ocupa puertos del equipo |
 
-## 8. Problemas típicos
+## 8. Probar sin internet
+
+Todo funciona offline **si la máquina ya pasó una vez por red** (dependencias e imágenes Docker descargadas). Después de eso:
+
+| Qué | Cómo | Internet |
+|---|---|---|
+| Pruebas del frontend | `pnpm test` (Supabase mockeado, todo local) | No |
+| Lint y build | `pnpm lint`, `pnpm build` | No |
+| Suite SQL | `bash supabase/tests/run.sh` — solo Docker con la imagen `postgres:17` en caché | No |
+| e2e | `bash scripts/e2e-registro.sh` | No |
+| App real en el navegador | Levantar **Supabase local**: `supabase start` y apuntar el frontend a él | No |
+| Pruebas API | Colecciones Postman con el entorno "Supabase local" (`postman/local.environment.json`, `http://[::1]:54321`) | No |
+| Login con código MFA | ❌ Sin internet no se puede: la función `mfa-enviar-codigo` llama a `api.resend.com` | Sí |
+
+Para la app en el navegador contra Supabase local hay dos ajustes, porque el repo apunta al proyecto remoto:
+
+1. `frontend/.env.local`: `VITE_SUPABASE_URL=http://127.0.0.1:54321` y la clave anon local que imprime `supabase start`.
+2. El CSP de `frontend/index.html` solo deja `connect-src 'self' https://<proyecto-remoto>.supabase.co` — hay que agregarle `http://127.0.0.1:54321` (y `http://[::1]:54321` para Postman) o el navegador bloquea cada petición.
+
+Nota: el correo que Supabase local procesa (verificación, invitaciones) aterriza en **Mailpit**, visible en `http://127.0.0.1:54324` — útil para probar correos sin Resend cuando haya red.
+
+## 9. Problemas típicos
 
 - **`pnpm` no se encuentra:** falta `corepack enable` o la versión de Node es menor a 22.12.
 - **`run.sh` cuelga o falla**: Docker Desktop no arrancó. En Windows se puede reiniciar con `wsl --shutdown` y abriendo Docker de nuevo; conviene limpiar contenedores viejos con `docker rm -f $(docker ps -aq --filter ancestor=postgres:17)`.
