@@ -17,8 +17,8 @@ Aplicación web para un taller de servicio técnico, en tres módulos unidos por
 
 | Capa | Estado |
 |---|---|
-| Base de datos (garantías, órdenes, revisiones, adjuntos, reglas de avance, permisos) | 🟢 Construida y probada: 24 scripts SQL, 458 aserciones en verde; e2e de 15 comprobaciones |
-| Registrar garantía, Consulta, Abrir orden, Detalle de la orden, lista del Taller y tablero de garantías | 🟢 Construidos y probados (312 pruebas de vitest), conectados a las RPC reales |
+| Base de datos (garantías, órdenes, revisiones, adjuntos, reglas de avance, permisos) | 🟢 Construida y probada: 25 scripts SQL, 473 aserciones en verde; e2e de 15 comprobaciones |
+| Registrar garantía, Consulta, Abrir orden, Detalle de la orden, lista del Taller y tablero de garantías | 🟢 Construidos y probados (378 pruebas de vitest), conectados a las RPC reales |
 | Layout con barra lateral y rutas `/garantias` y `/taller` | 🟢 |
 | Autenticación + 2FA por correo | 🟡 Funciona; pendiente dominio verificado en Resend (la función desplegada sigue con destinatario fijo) |
 | Entregas, Inventario, Reportes, Clientes y Notificaciones (pantallas 05 a 08 del diseño) | ❌ Con maqueta en `docs/diseno-ui/`, sin backend (ver su README §4) |
@@ -63,10 +63,10 @@ Aplicación web para un taller de servicio técnico, en tres módulos unidos por
 
 ```
 ├─ supabase/
-│  ├─ migrations/        23 SQL activos (0013 a 0022 son de la fase 2a; la 0023 es de la 2b)
+│  ├─ migrations/        24 SQL activos (0013 a 0022 son de la fase 2a; la 0023 y la 0024 son de la 2b)
 │  ├─ archivo/           el monolito duplicado 20260906000001 (+ su referencia)
 │  ├─ functions/         admin-crear-usuario · mfa-enviar-codigo · limpiar-huerfanos
-│  ├─ tests/             00 harness · 10–29 pruebas SQL · 96–99 previos · apoyo_pruebas.sql · run.sh (Docker)
+│  ├─ tests/             00 harness · 10–30 pruebas SQL · 96–99 previos · apoyo_pruebas.sql · run.sh (Docker)
 │  └─ seed.sql           4 marcas y 8 productos
 ├─ scripts/
 │  ├─ verificar-migraciones.sh
@@ -194,7 +194,7 @@ pnpm build
 |---|---|---|---|
 | ~~D1~~ | ✅ Resuelta (hito 1) | Duplicado `20260906000001` y copia `_referencia_…` | Archivados en `supabase/archivo/` y protegidos por `verificar-migraciones.sh` (CI). Falta SOLO confirmar el historial remoto en el SQL Editor (ver §5) |
 | ~~D5~~ | ✅ Resuelta (hito 1) | Seed inexistente | `supabase/seed.sql` con 4 marcas y 8 productos; `run.sh` la valida |
-| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 458 aserciones SQL + 312 pruebas de frontend |
+| ~~D6~~ | ✅ Resuelta (hito 1) | Sin README/CI/tests | README raíz, CI, 473 aserciones SQL + 378 pruebas de frontend |
 | D11 | 🟠 Media | `mfa-enviar-codigo` DESPLEGADA sigue con destinatario fijo (hotfix del sandbox de Resend); el código del repo ya envía al correo del usuario | Verificar el dominio en Resend y redesplegar; hasta entonces no redesplegar la función |
 | D12 | 🟡 Baja | Tablero y paneles del hito 1 (`/tablero`, `/jefe`, `/tecnico`, `/recepcion`) siguen montados junto a la app nueva | Retirarlos cuando se acepte la navegación de la fase 2a |
 | D13 | 🟡 Baja | La suite SQL completa necesita memoria (un contenedor por corrida) | Correr por tandas; limpiar contenedores `postgres:17` huérfanos |
@@ -214,7 +214,7 @@ La fase 2a está completa. Lo siguiente, priorizado:
 
 | # | Tarea | Terminado cuando |
 |---|---|---|
-| C1 | Confirmar el historial de migraciones remoto y aplicar la 0013–0023 | `schema_migrations` lista las 23 versiones; el aviso de despliegue de §5 revisado |
+| C1 | Confirmar el historial de migraciones remoto y aplicar la 0013–0024 | `schema_migrations` lista las 24 versiones; el aviso de despliegue de §5 revisado |
 | C2 | Definir `app.proyecto_ref`/`app.limpieza_secret` y desplegar las 3 Edge Functions reales; probar `limpiar-huerfanos` con `?simular=1` | La simulación lista sin borrar |
 | C3 | Verificar el dominio en Resend y redesplegar `mfa-enviar-codigo` (D11) | Un usuario distinto del dueño de la cuenta recibe el código |
 

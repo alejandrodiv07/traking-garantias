@@ -28,8 +28,8 @@ pnpm install
 pnpm dev          # Vite en :5173
 
 # Pruebas
-pnpm test                             # vitest (312 pruebas)
-bash supabase/tests/run.sh            # SQL: 24 archivos, 458 aserciones, Postgres 17 en Docker
+pnpm test                             # vitest (378 pruebas)
+bash supabase/tests/run.sh            # SQL: 25 archivos, 473 aserciones, Postgres 17 en Docker
 bash scripts/e2e-registro.sh          # punta a punta: garantía → consulta → orden → rechazo → entrega → importar ventas (15 comprobaciones)
 bash scripts/verificar-migraciones.sh # historial de migraciones sin duplicados
 
@@ -41,7 +41,7 @@ La suite SQL levanta un contenedor por corrida y una base nueva por archivo; si 
 
 ## Base de datos
 
-La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a `0023`). La fase 2a añade las 0013 a 0022 y la 2b la 0023:
+La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a `0024`). La fase 2a añade las 0013 a 0022; la 2b, la 0023 y la 0024:
 
 | Migración | Qué hace |
 |---|---|
@@ -56,12 +56,13 @@ La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a 
 | 0021 | `cambiar_estado`, `asignar_tecnico`, `registrar_presupuesto`; el UPDATE directo de estado y costo queda cerrado |
 | 0022 | Corrección de la bitácora de eventos (SECURITY DEFINER) |
 | 0023 | Facturas de Ventas: `importar_ventas`, confirmación automática de garantías `TALLER`, `verificacion` y `compra_confirmada_via` en `v_garantias` ([contrato](docs/CONTRATO_VENTAS_FRONTEND.md)) |
+| 0024 | Documentos vinculados a la garantía: `adjuntos.equipo_id` (de una orden o de un equipo, nunca de ambos), topes por destino y rutas `equipos/{id}/…` en el Storage |
 
 `supabase/seed.sql` deja el catálogo de marcas y productos. El monolito antiguo quedó en `supabase/archivo/` y no se aplica.
 
 ## Rutas del frontend
 
-`/garantias` (tablero de garantías) · `/garantias/nueva` · `/garantias/consulta` · `/taller` · `/taller/nueva?equipo=…` · `/taller/:id`. El diseño de las pantallas está en `docs/diseno-ui/`.
+`/garantias` (tablero) · `/garantias/nueva` (asistente de 5 pasos, con documentos) · `/garantias/consulta` · `/taller` · `/taller/nueva?equipo=…` · `/taller/:id` · `/ventas/importar` (Jefatura). `/entregas`, `/inventario`, `/reportes`, `/clientes` y `/notificaciones` muestran una pantalla «en preparación» hasta que tengan backend. Tema claro/oscuro (oscuro por defecto) con botón en la barra superior. El diseño de las pantallas está en `docs/diseno-ui/`.
 
 ## Documentación
 
