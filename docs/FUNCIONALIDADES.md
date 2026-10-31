@@ -18,7 +18,7 @@ Gestión del taller de servicio técnico de Prime Telecom en tres piezas unidas 
 | `ADMIN` | `/garantias` | Todo lo anterior + fijar plazos arbitrarios, gestionar usuarios y sus roles |
 
 - **Inicio de sesión:** correo + contraseña, y luego un **código de un solo uso por correo** (MFA por email, migración 0003). El código lo manda la Edge Function `mfa-enviar-codigo` vía Resend. La base exige `mfa_ok()` para devolver el rol: un perfil válido con sesión sin verificar ve datos restringidos. ⚠️ Deuda conocida (D11): mientras el dominio de Resend no esté verificado, la función manda todos los códigos a un destinatario fijo (hotfix temporal).
-- Los usuarios se crean con **invitación** desde la función `admin-crear-usuario` (solo ADMIN y vía `service_role`); nadie se auto-registra ni se auto-asigna rol.
+- Los usuarios se crean con **invitación** desde la función `admin-crear-usuario` (solo ADMIN y vía `service_role`); nadie se auto-registra ni se auto-asigna rol. **Cuentas ya verificadas para entrar:** [USUARIOS_LOGIN.md](USUARIOS_LOGIN.md).
 - Un usuario sin perfil, inactivo o con sesión revocada queda sin datos (`/sin-acceso`).
 
 ## 3. Módulos de la interfaz (todos funcionales)

@@ -68,6 +68,7 @@ La cadena de migraciones está en `supabase/migrations/` (de `0001_auth_base` a 
 
 - [Funcionalidades](docs/FUNCIONALIDADES.md) — qué existe hoy y qué está listo para probar
 - [Instalar en otra máquina](docs/INSTALAR_EN_OTRA_MAQUINA.md) — dependencias y pasos tras clonar
+- [Usuarios de login](docs/USUARIOS_LOGIN.md) — cuentas verificadas para entrar (local y nube)
 - [Estado del proyecto](ESTADO_DEL_PROYECTO.md) — qué existe hoy, deuda y pendientes
 - [Diseño de la fase 2a](docs/superpowers/specs/2026-10-30-fase-2a-garantia-consulta-taller-design.md) — reglas de negocio, RPC y permisos
 - [Plan de la fase 2a](docs/superpowers/plans/2026-10-30-fase-2a-garantia-consulta-taller.md) — el orden de construcción
