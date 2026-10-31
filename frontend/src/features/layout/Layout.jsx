@@ -37,6 +37,9 @@ const DESTINOS = [
   { a: "/notificaciones", etiqueta: "Notificaciones", Icono: Bell },
 ];
 
+// Pantallas que no tienen destino en la barra lateral pero sí merecen título propio.
+const TITULOS_FUERA_DEL_MENU = { "/ventas/importar": "Importar ventas" };
+
 const iniciales = (correo = "") => correo.slice(0, 2).toUpperCase() || "PT";
 
 export default function Layout() {
@@ -77,8 +80,8 @@ export default function Layout() {
   const actual = DESTINOS.find((d) => pathname === d.a || pathname.startsWith(`${d.a}/`));
 
   useEffect(() => {
-    document.title = `${actual?.etiqueta ?? "Inicio"} | Prime Telecom`;
-  }, [actual]);
+    document.title = `${actual?.etiqueta ?? TITULOS_FUERA_DEL_MENU[pathname] ?? "Inicio"} | Prime Telecom`;
+  }, [actual, pathname]);
 
   // Las subpáginas (consulta, nueva, detalle) traen su propia miga con el enlace de vuelta.
   const esSubpagina = pathname.split("/").filter(Boolean).length > 1;

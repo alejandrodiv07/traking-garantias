@@ -19,6 +19,7 @@ const montar = (ruta) =>
         <Route element={<Layout />}>
           <Route path="/garantias/*" element={<p>contenido garantías</p>} />
           <Route path="/taller/*" element={<p>contenido taller</p>} />
+          <Route path="/ventas/*" element={<p>contenido ventas</p>} />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -78,6 +79,7 @@ describe("Layout", () => {
     ["/garantias", "Garantías | Prime Telecom"],
     ["/garantias/consulta", "Garantías | Prime Telecom"],
     ["/taller/abc", "Taller | Prime Telecom"],
+    ["/ventas/importar", "Importar ventas | Prime Telecom"],
   ])("en %s el título de la pestaña es «%s»", (ruta, titulo) => {
     document.title = "Prime Telecom | Iniciar sesión";
     montar(ruta);
