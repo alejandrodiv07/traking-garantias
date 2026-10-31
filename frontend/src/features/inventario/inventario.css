@@ -1,0 +1,19 @@
+/* Inventario (maqueta 06): formulario de alta/edición y acciones de la tabla. Tokens vía .app. */
+.app .inv-form { padding: 20px 22px; margin-bottom: 18px; }
+.app .inv-form h2 { margin: 0 0 4px; font-size: 17px; font-weight: 700; }
+.app .inv-form .wz-cols { margin-top: 14px; }
+.app .inv-form .aviso { margin: 14px 0 0; }
+.app .inv-form-bt { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.app .inv-filtros { grid-template-columns: minmax(0, 1fr) 200px 220px; }
+.app .inv-filtros .fecha .campo { width: 100%; }
+.app .inv-acc { display: flex; gap: 6px 12px; flex-wrap: wrap; }
+
+@media (max-width: 1100px) {
+  .app .inv-filtros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .app .inv-filtros .buscar { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .app .inv-filtros { grid-template-columns: minmax(0, 1fr); }
+  .app .inv-form { padding: 16px; }
+  .app .inv-form-bt .btn { flex: 1; }
+}

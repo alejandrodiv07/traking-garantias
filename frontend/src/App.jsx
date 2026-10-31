@@ -19,6 +19,7 @@ import OrdenDetalle from "./features/taller/OrdenDetalle.jsx";
 import Tablero from "./features/tablero/Tablero.jsx";
 import ImportarVentas from "./features/ventas/ImportarVentas.jsx";
 import Proximamente from "./features/layout/Proximamente.jsx";
+import Inventario from "./features/inventario/Inventario.jsx";
 import { rutaDeInicio } from "./features/auth/authService.js";
 import "./features/auth/estado.css";
 
@@ -98,7 +99,7 @@ function Rutas() {
         <Route path="/taller/nueva" element={<AbrirOrden />} />
         <Route path="/taller/:id" element={<OrdenDetalle />} />
         <Route path="/entregas" element={<Proximamente titulo="Entregas" motivo="Falta el backend: plazo previsto y datos de la entrega (quién retira, cobro, accesorios)." />} />
-        <Route path="/inventario" element={<Proximamente titulo="Inventario" motivo="Falta el backend: stock, mínimos, movimientos y repuestos." />} />
+        <Route path="/inventario" element={<Inventario />} />
         <Route path="/reportes" element={<Proximamente titulo="Reportes" motivo="Falta el backend: expedientes, generación de PDF y exportaciones." />} />
         <Route path="/clientes" element={<Proximamente titulo="Clientes" motivo="Falta el backend: registro de avisos y envío de correos (depende de Resend)." />} />
         <Route path="/notificaciones" element={<Proximamente titulo="Notificaciones" motivo="Fase 2c: alertas automáticas de vencimiento y su bandeja." />} />
