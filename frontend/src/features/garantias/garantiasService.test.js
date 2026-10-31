@@ -3,10 +3,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpcFalso = vi.hoisted(() => vi.fn());
+const subirFalso = vi.hoisted(() => vi.fn());
 const supabaseFalso = vi.hoisted(() => ({ rpc: undefined }));
 vi.mock("../../lib/supabaseClient.js", () => ({ supabase: supabaseFalso }));
+vi.mock("../registro/registroService.js", async (orig) => ({ ...(await orig()), subirAdjuntoEquipo: subirFalso }));
 
-import { buscarGarantia, confirmarCompra, desestimarCompra, listarGarantias, registrarGarantia } from "./garantiasService.js";
+import {
+  buscarGarantia,
+  confirmarCompra,
+  desestimarCompra,
+  documentosDeEquipo,
+  listarGarantias,
+  registrarGarantia,
+  subirDocumentosEquipo,
+  urlDocumento,
+} from "./garantiasService.js";
 
 beforeEach(() => {
   rpcFalso.mockReset();
@@ -137,5 +148,42 @@ describe("confirmar y desestimar compra", () => {
       p_motivo: "la factura no corresponde",
     });
     expect(r).toMatchObject({ ok: false, codigo: "SIN_PERMISO" });
+  });
+});
+
+describe("documentos de la garantía", () => {
+  it("subirDocumentosEquipo sube cada archivo al equipo y devuelve solo los que fallaron", async () => {
+    const a = { archivo: { name: "a.pdf" }, tipo: "DOCUMENTO", etiqueta: "Factura" };
+    const b = { archivo: { name: "b.jpg" }, tipo: "FOTO" };
+    subirFalso.mockReset().mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false, mensaje: "Sin conexión" });
+    const pendientes = await subirDocumentosEquipo("e1", [a, b]);
+    expect(subirFalso).toHaveBeenCalledWith("e1", a.archivo, { tipo: "DOCUMENTO", etiqueta: "Factura" });
+    expect(pendientes).toEqual([{ ...b, mensaje: "Sin conexión" }]);
+  });
+
+  it("documentosDeEquipo lee los adjuntos del equipo, el más reciente primero", async () => {
+    const order = vi.fn().mockResolvedValue({ data: [{ id: "d1" }], error: null });
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    supabaseFalso.from = vi.fn(() => ({ select }));
+    const r = await documentosDeEquipo("e1");
+    expect(supabaseFalso.from).toHaveBeenCalledWith("adjuntos");
+    expect(eq).toHaveBeenCalledWith("equipo_id", "e1");
+    expect(order).toHaveBeenCalledWith("subido_en", { ascending: false });
+    expect(r).toEqual({ ok: true, datos: [{ id: "d1" }] });
+  });
+
+  it("urlDocumento pide un enlace firmado de 60 s", async () => {
+    const createSignedUrl = vi.fn().mockResolvedValue({ data: { signedUrl: "https://x/firmado" }, error: null });
+    supabaseFalso.storage = { from: vi.fn(() => ({ createSignedUrl })) };
+    const r = await urlDocumento("equipos/e1/factura.pdf");
+    expect(supabaseFalso.storage.from).toHaveBeenCalledWith("ordenes");
+    expect(createSignedUrl).toHaveBeenCalledWith("equipos/e1/factura.pdf", 60);
+    expect(r).toEqual({ ok: true, datos: "https://x/firmado" });
+  });
+
+  it("urlDocumento devuelve el error si la base lo niega", async () => {
+    supabaseFalso.storage = { from: () => ({ createSignedUrl: vi.fn().mockResolvedValue({ data: null, error: { message: "Object not found" } }) }) };
+    expect(await urlDocumento("equipos/e1/x.pdf")).toMatchObject({ ok: false, mensaje: "Object not found" });
   });
 });

@@ -1,120 +1,314 @@
 /**
- * Tablero de garantías (maqueta 01, /garantias): una fila por equipo registrado.
- * Los chips clasifican con lo que ya calcula la base (vigencia, días restantes,
- * estado de la compra); la búsqueda se hace en la base.
+ * Tablero de garantías (maqueta 01, /garantias): una fila por equipo
+ * registrado. Los estados salen de lo que ya calcula la base (vigencia, días
+ * restantes, estado de la compra); el filtrado es en el navegador sobre las
+ * garantías que vencen primero (límite de 200 de `listarGarantias`).
  */
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowDown, ArrowUp, Plus, Search, ShieldCheck, X } from "lucide-react";
+import { useAuth } from "../auth/AuthContext.jsx";
 import { listarGarantias } from "./garantiasService.js";
-import "./garantias.css";
+import { ESTADOS, estadoDe } from "./estado.js";
+import InsigniaVerificacion from "./InsigniaVerificacion.jsx";
 
-const POR_VENCER_DIAS = 3;
+const ROLES_JEFATURA = ["ADMIN", "JEFE_SERVICIO"];
+const LIMITE = 200;
 
 const CHIPS = [
-  ["Todas", () => true],
-  ["Vigente", (g) => g.vigencia === "EN_GARANTIA"],
-  ["Por vencer", (g) => g.vigencia === "EN_GARANTIA" && g.dias_restantes <= POR_VENCER_DIAS],
-  ["Vencida", (g) => g.vigencia === "FUERA_DE_GARANTIA"],
-  ["Por confirmar", (g) => g.estado_compra === "PENDIENTE"],
+  ["todas", "Todas"],
+  ["vigente", "Vigentes"],
+  ["porvencer", "Por vencer"],
+  ["vencida", "Vencidas"],
+  ["confirmar", "Por confirmar"],
 ];
+const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-function estadoDe(g) {
-  if (g.estado_compra === "PENDIENTE") return "Por confirmar";
-  if (g.estado_compra === "DESESTIMADA") return "Compra desestimada";
-  if (g.vigencia === "FUERA_DE_GARANTIA") return "Vencida";
-  if (g.dias_restantes <= POR_VENCER_DIAS) return "Por vencer";
-  return "Vigente";
+// Las fechas llegan como AAAA-MM-DD: se cortan a mano para no mover el día por zona horaria.
+function fcorta(iso) {
+  if (!iso) return "—";
+  const [, m, d] = iso.split("-");
+  return `${Number(d)} ${MES[Number(m) - 1]}`;
+}
+
+const norm = (s) => String(s ?? "").toUpperCase().replace(/[\s-]/g, "");
+
+function textoDias(g, estado) {
+  if (estado === "confirmar") return <span className="s">Pendiente de confirmar</span>;
+  if (typeof g.dias_restantes !== "number") return null;
+  if (g.dias_restantes < 0) return <strong>Venció hace {Math.abs(g.dias_restantes)} d</strong>;
+  if (g.dias_restantes === 0) return <strong>Vence hoy</strong>;
+  return <strong>{g.dias_restantes === 1 ? "1 día" : `${g.dias_restantes} días`}</strong>;
 }
 
 export default function Garantias() {
   const navigate = useNavigate();
-  const [busqueda, setBusqueda] = useState("");
-  const [chip, setChip] = useState("Todas");
+  const { rol } = useAuth();
+  const [q, setQ] = useState("");
+  const [chip, setChip] = useState("todas");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
+  const [asc, setAsc] = useState(true);
   const [filas, setFilas] = useState(null);
   const [error, setError] = useState(null);
 
-  // La búsqueda va a la base con una pausa, como el Tablero.
   useEffect(() => {
     let vivo = true;
-    const t = setTimeout(() => {
-      listarGarantias({ busqueda }).then((r) => {
-        if (!vivo) return;
-        setError(r.ok ? null : r.mensaje || "No se pudo cargar");
-        if (r.ok) setFilas(r.datos);
-      });
-    }, busqueda ? 250 : 0);
+    listarGarantias().then((r) => {
+      if (!vivo) return;
+      if (r.ok) setFilas(r.datos);
+      else setError(r.mensaje || "No se pudo cargar");
+    });
     return () => {
       vivo = false;
-      clearTimeout(t);
     };
-  }, [busqueda]);
+  }, []);
 
-  const filtro = CHIPS.find(([n]) => n === chip)[1];
-  const visibles = (filas ?? []).filter(filtro);
+  const todas = (filas ?? []).map((g) => ({ g, e: estadoDe(g) }));
+  const buscado = norm(q);
+  const base = todas.filter(({ g }) => {
+    if (buscado && !norm(g.numero_serie + g.documento + g.numero_soporte + g.titular).includes(buscado)) return false;
+    if (desde && (g.fecha_emision ?? "") < desde) return false;
+    if (hasta && (g.fecha_emision ?? "9999") > hasta) return false;
+    return true;
+  });
+  const cuenta = { todas: base.length, vigente: 0, porvencer: 0, vencida: 0, confirmar: 0 };
+  base.forEach(({ e }) => {
+    if (e in cuenta) cuenta[e] += 1;
+  });
+  const global = { vigente: 0, porvencer: 0, vencida: 0, confirmar: 0 };
+  todas.forEach(({ e }) => {
+    if (e in global) global[e] += 1;
+  });
+  const visibles = base
+    .filter(({ e }) => chip === "todas" || e === chip)
+    .sort((a, b) => {
+      const va = a.g.vence_el ?? "9999";
+      const vb = b.g.vence_el ?? "9999";
+      return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
 
   return (
-    <section className="gr">
-      <header className="gr-cab">
-        <h1>Garantías</h1>
-        <button type="button" className="ng-principal" onClick={() => navigate("/garantias/nueva")}>
-          Nueva garantía
-        </button>
-      </header>
-
-      <label htmlFor="gr-buscar">
-        Buscar
-        <input
-          id="gr-buscar"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Serial, titular, cédula o factura"
-          autoComplete="off"
-        />
-      </label>
-
-      <div className="gr-chips" role="group" aria-label="Filtrar por estado">
-        {CHIPS.map(([nombre]) => (
-          <button key={nombre} type="button" aria-pressed={nombre === chip} onClick={() => setChip(nombre)}>
-            {nombre}
+    <>
+      <div className="enc">
+        <div>
+          <h1>Tablero de garantías</h1>
+          {filas && (
+            <p className="sub">
+              {filas.length} garantías registradas · {base.length} con los filtros actuales
+            </p>
+          )}
+        </div>
+        <div className="enc-acc">
+          {ROLES_JEFATURA.includes(rol) && (
+            <Link to="/ventas/importar" className="btn suave">
+              Importar ventas
+            </Link>
+          )}
+          <button type="button" className="btn principal" onClick={() => navigate("/garantias/nueva")}>
+            <Plus size={17} strokeWidth={2.4} aria-hidden="true" />
+            Nueva garantía
           </button>
-        ))}
+        </div>
       </div>
 
-      {error && <p role="alert">{error}</p>}
-      {filas && visibles.length === 0 && <p role="status">No hay garantías para este filtro.</p>}
+      <ul className="kpis">
+        <li className="card kpi">
+          <h2>Registradas</h2>
+          <p className="v">{todas.length}</p>
+          <p className="n">{global.confirmar} por confirmar</p>
+        </li>
+        <li className="card kpi ok">
+          <h2>Vigentes</h2>
+          <p className="v">{global.vigente}</p>
+          <p className="n">cobertura activa hoy</p>
+        </li>
+        <li className="card kpi ambar">
+          <h2>Vencen en 3 días</h2>
+          <p className="v">{global.porvencer}</p>
+          <p className="n">avisar al titular</p>
+        </li>
+        <li className="card kpi mal">
+          <h2>Vencidas</h2>
+          <p className="v">{global.vencida}</p>
+          <p className="n">se atienden como servicio pago</p>
+        </li>
+      </ul>
 
-      {visibles.length > 0 && (
-        <table className="gr-tabla">
-          <caption className="gr-sr">Garantías registradas</caption>
-          <thead>
-            <tr>
-              <th scope="col">Serial</th>
-              <th scope="col">Titular</th>
-              <th scope="col">Equipo</th>
-              <th scope="col">Factura</th>
-              <th scope="col">Emisión</th>
-              <th scope="col">Vence</th>
-              <th scope="col">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.map((g) => (
-              <tr
-                key={g.equipo_id}
-                onClick={() => navigate(`/garantias/consulta?serial=${encodeURIComponent(g.numero_serie)}`)}
-              >
-                <td className="cs-serial">{g.numero_serie}</td>
-                <td>{g.titular}</td>
-                <td>{g.producto}</td>
-                <td>{g.numero_soporte ?? "—"}</td>
-                <td>{g.fecha_emision ?? "—"}</td>
-                <td>{g.vence_el ?? "—"}</td>
-                <td>{estadoDe(g)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
+      <section aria-label="Garantías registradas">
+        <div className="filtros">
+          <div className="buscar">
+            <label className="sr" htmlFor="gr-q">
+              Buscar por serial, cédula o RIF, o número de factura
+            </label>
+            <Search className="lupa" size={18} aria-hidden="true" />
+            <input
+              id="gr-q"
+              className="campo"
+              type="search"
+              autoComplete="off"
+              placeholder="Buscar por serial, cédula/RIF o n.º de factura…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            {q && (
+              <button type="button" className="limpiar" aria-label="Borrar la búsqueda" onClick={() => setQ("")}>
+                <X size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          <div className="fecha">
+            <label htmlFor="gr-desde">Emitida desde</label>
+            <input id="gr-desde" className="campo" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+          </div>
+          <div className="fecha">
+            <label htmlFor="gr-hasta">Hasta</label>
+            <input id="gr-hasta" className="campo" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+          </div>
+          {(desde || hasta) && (
+            <button
+              type="button"
+              className="btn suave btn-lim"
+              onClick={() => {
+                setDesde("");
+                setHasta("");
+              }}
+            >
+              Quitar fechas
+            </button>
+          )}
+        </div>
+
+        <div className="chips" role="group" aria-label="Filtrar por estado">
+          {CHIPS.map(([k, nombre]) => (
+            <button key={k} type="button" className="chip" aria-pressed={chip === k} onClick={() => setChip(k)}>
+              {nombre} <span className="q">{cuenta[k]}</span>
+            </button>
+          ))}
+        </div>
+        <p className="sr" role="status" aria-live="polite">
+          {filas ? `${visibles.length} garantías visibles` : ""}
+        </p>
+
+        {error && (
+          <p role="alert" className="aviso-error">
+            {error}
+          </p>
+        )}
+
+        <div className="card caja fichas">
+          {visibles.length > 0 && (
+            <div className="scroll">
+              <table>
+                <caption className="sr">Garantías registradas</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Serial</th>
+                    <th scope="col">Titular</th>
+                    <th scope="col">Equipo</th>
+                    <th scope="col">Factura</th>
+                    <th scope="col">Emitida</th>
+                    <th scope="col" aria-sort={asc ? "ascending" : "descending"}>
+                      <button type="button" className="ord" onClick={() => setAsc(!asc)}>
+                        Vence {asc ? <ArrowUp size={14} strokeWidth={2} aria-hidden="true" /> : <ArrowDown size={14} strokeWidth={2} aria-hidden="true" />}
+                      </button>
+                    </th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">
+                      <span className="sr">Acción</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibles.map(({ g, e }) => (
+                    <tr key={g.equipo_id}>
+                      <td data-l="Serial">
+                        <span className="serie mono">{g.numero_serie}</span>
+                      </td>
+                      <td data-l="Titular">
+                        <div>
+                          <div className="p">{g.titular}</div>
+                          <div className="s mono">{g.documento}</div>
+                        </div>
+                      </td>
+                      <td data-l="Equipo">
+                        <div className="p">{g.producto}</div>
+                      </td>
+                      <td data-l="Factura">
+                        <div>
+                          <span className="mono dias">{g.numero_soporte ?? "—"}</span>
+                          {g.origen === "TALLER" && (
+                            <div>
+                              <span className="origen">Registrada en taller</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td data-l="Emitida">
+                        <div className="dias">
+                          {fcorta(g.fecha_emision)}
+                          {g.plazo_dias && <div className="s">plazo {g.plazo_dias} d</div>}
+                        </div>
+                      </td>
+                      <td data-l="Vence">
+                        <div className="dias">
+                          {e !== "confirmar" && g.vence_el && (
+                            <>
+                              {fcorta(g.vence_el)}
+                              <div className="s" />
+                            </>
+                          )}
+                          {textoDias(g, e)}
+                        </div>
+                      </td>
+                      <td data-l="Estado">
+                        <div>
+                          <span className="ins" data-t={ESTADOS[e].t}>
+                            <i />
+                            {ESTADOS[e].n}
+                          </span>
+                          <div>
+                            <InsigniaVerificacion valor={g.verificacion} />
+                          </div>
+                        </div>
+                      </td>
+                      <td data-l="">
+                        <button
+                          type="button"
+                          className="abrir"
+                          onClick={() => navigate(`/garantias/consulta?serial=${encodeURIComponent(g.numero_serie)}`)}
+                        >
+                          Ver<span className="sr"> garantía {g.numero_serie}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {filas && visibles.length === 0 && (
+            <div className="vacio">
+              <ShieldCheck size={34} strokeWidth={1.6} aria-hidden="true" />
+              <h3>No hay garantías con esos criterios</h3>
+              <p>Revisa el serial, la cédula o RIF y la factura, o quita los filtros. Si el equipo no está registrado, puedes crearlo.</p>
+              <button type="button" className="btn principal" onClick={() => navigate("/garantias/nueva")}>
+                Registrar garantía
+              </button>
+            </div>
+          )}
+          <div className="tpie">
+            <span>{filas ? `Mostrando ${visibles.length} de ${filas.length} garantías` : "Cargando…"}</span>
+            <span>
+              Hoy: <time dateTime={new Date().toISOString().slice(0, 10)}>{new Date().toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })}</time>
+            </span>
+          </div>
+        </div>
+        <p className="nota">
+          El plazo de garantía es de 7 o 15 días desde la emisión de la factura.
+          {filas?.length >= LIMITE && ` Se muestran las ${LIMITE} que vencen primero.`}
+        </p>
+      </section>
+    </>
   );
 }
