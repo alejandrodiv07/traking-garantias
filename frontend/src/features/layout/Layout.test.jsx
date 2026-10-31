@@ -74,6 +74,16 @@ describe("Layout", () => {
     expect(localStorage.getItem("pt.plegada")).toBe("1");
   });
 
+  it.each([
+    ["/garantias", "Garantías | Prime Telecom"],
+    ["/garantias/consulta", "Garantías | Prime Telecom"],
+    ["/taller/abc", "Taller | Prime Telecom"],
+  ])("en %s el título de la pestaña es «%s»", (ruta, titulo) => {
+    document.title = "Prime Telecom | Iniciar sesión";
+    montar(ruta);
+    expect(document.title).toBe(titulo);
+  });
+
   it("en móvil abre y cierra el cajón", async () => {
     montar("/garantias");
     const u = userEvent.setup();

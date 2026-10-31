@@ -75,6 +75,11 @@ export default function Layout() {
   }
 
   const actual = DESTINOS.find((d) => pathname === d.a || pathname.startsWith(`${d.a}/`));
+
+  useEffect(() => {
+    document.title = `${actual?.etiqueta ?? "Inicio"} | Prime Telecom`;
+  }, [actual]);
+
   const miga = (
     <p className="ruta">
       Prime Telecom / <strong>{actual?.etiqueta ?? "Inicio"}</strong>
