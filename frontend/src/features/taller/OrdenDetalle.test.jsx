@@ -91,7 +91,7 @@ describe("OrdenDetalle: encabezado", () => {
     expect(await cargada()).toBeTruthy();
     expect(fakes.obtenerOrden).toHaveBeenCalledWith("o1");
     expect(screen.getAllByText("En diagnóstico").length).toBeGreaterThan(0);
-    expect(screen.getByText("En garantía")).toBeTruthy();
+    expect(screen.getAllByText("En garantía").length).toBeGreaterThan(0);
     expect(screen.getByText("Atención: garantía")).toBeTruthy();
   });
 
@@ -145,7 +145,7 @@ describe("OrdenDetalle: pestañas", () => {
     montar();
     await cargada();
     for (const t of ["RT5-8842-AA", "Huawei HG8245", /Juan Perez/, "No enciende", "cargador y caja", /Tomás Técnico/]) {
-      expect(screen.getByText(t)).toBeTruthy();
+      expect(screen.getAllByText(t).length).toBeGreaterThan(0);
     }
   });
 

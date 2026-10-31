@@ -6,7 +6,7 @@
  * una no tumba el resto.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { cobertura, estado as estadoDe, estaAbierta, transicionesDesde } from "../tablero/dominio.js";
 import HistorialRevisiones from "../revisiones/HistorialRevisiones.jsx";
@@ -53,28 +53,42 @@ function useLista(leer, ordenId) {
 
 function Resumen({ o }) {
   return (
-    <dl className="od-resumen">
-      <dt>Equipo</dt>
-      <dd>{o.producto}</dd>
-      <dt>Serial</dt>
-      <dd className="ao-serial">{o.serial}</dd>
-      <dt>Titular</dt>
-      <dd>
-        {o.cliente} ({o.documento})
-      </dd>
-      <dt>Falla reportada</dt>
-      <dd>{o.falla_reportada}</dd>
-      <dt>Accesorios</dt>
-      <dd>{o.accesorios || "—"}</dd>
-      <dt>Ingreso</dt>
-      <dd>{String(o.fecha_ingreso).slice(0, 10)}</dd>
-      <dt>Técnico</dt>
-      <dd>{o.tecnico ? `Técnico: ${o.tecnico}` : "Sin técnico asignado"}</dd>
+    <dl className="od-kv">
+      <div>
+        <dt>Equipo</dt>
+        <dd>{o.producto}</dd>
+      </div>
+      <div>
+        <dt>Serial</dt>
+        <dd className="mono">{o.serial}</dd>
+      </div>
+      <div>
+        <dt>Titular</dt>
+        <dd>
+          {o.cliente} ({o.documento})
+        </dd>
+      </div>
+      <div>
+        <dt>Ingreso</dt>
+        <dd>{String(o.fecha_ingreso).slice(0, 10)}</dd>
+      </div>
+      <div>
+        <dt>Técnico</dt>
+        <dd>{o.tecnico ? `Técnico: ${o.tecnico}` : "Sin técnico asignado"}</dd>
+      </div>
+      <div>
+        <dt>Accesorios</dt>
+        <dd>{o.accesorios || "—"}</dd>
+      </div>
+      <div className="ancho">
+        <dt>Falla reportada</dt>
+        <dd>{o.falla_reportada}</dd>
+      </div>
       {o.motivo_rechazo && (
-        <>
+        <div className="ancho">
           <dt>Motivo del rechazo</dt>
           <dd>{o.motivo_rechazo}</dd>
-        </>
+        </div>
       )}
     </dl>
   );
@@ -133,18 +147,24 @@ function DiagnosticoPresupuesto({ orden, onCambio }) {
 
   return (
     <div className="od-dx">
-      {aviso && <p role="status">{aviso}</p>}
+      {aviso && (
+        <p role="status" className="aviso ok">
+          {aviso}
+        </p>
+      )}
       <form className="od-forma" onSubmit={guardarDiagnostico}>
         <label htmlFor="od-dx">
           Diagnóstico
           <textarea
             id="od-dx"
+            className="campo"
+            rows={4}
             placeholder="Aún no hay diagnóstico"
             value={texto}
             onChange={(ev) => setTexto(ev.target.value)}
           />
         </label>
-        <button type="submit" disabled={enviando}>
+        <button type="submit" className="btn principal" disabled={enviando}>
           Guardar diagnóstico
         </button>
       </form>
@@ -155,6 +175,7 @@ function DiagnosticoPresupuesto({ orden, onCambio }) {
             Presupuesto (monto)
             <input
               id="od-monto"
+              className="campo"
               type="number"
               min="0"
               step="0.01"
@@ -162,26 +183,32 @@ function DiagnosticoPresupuesto({ orden, onCambio }) {
               onChange={(ev) => setMonto(ev.target.value)}
             />
           </label>
-          <button type="submit" disabled={enviando}>
+          <button type="submit" className="btn principal" disabled={enviando}>
             Registrar presupuesto
           </button>
         </form>
       ) : (
-        <p role="note">Solo se presupuesta un servicio pago.</p>
+        <p role="note" className="aviso">
+          Solo se presupuesta un servicio pago.
+        </p>
       )}
 
       {orden.estado === "PRESUPUESTADO" && (
         <div className="od-decision">
           <p>Decisión del cliente:</p>
-          <button type="button" onClick={() => decidir("EN_REPARACION")}>
+          <button type="button" className="btn principal" onClick={() => decidir("EN_REPARACION")}>
             Aceptó el presupuesto
           </button>
-          <button type="button" onClick={() => decidir("RECHAZADO_POR_CLIENTE")}>
+          <button type="button" className="btn suave" onClick={() => decidir("RECHAZADO_POR_CLIENTE")}>
             No aceptó el presupuesto
           </button>
         </div>
       )}
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="aviso mal">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -192,7 +219,7 @@ function Documentos({ ordenId }) {
   if (e.error) return <p role="alert">{e.error}</p>;
   if (e.datos.length === 0) return <p>Sin documentos.</p>;
   return (
-    <ul>
+    <ul className="od-lista">
       {e.datos.map((a) => (
         <li key={a.id}>
           {a.tipo === "FOTO" ? "Foto" : "Documento"} — {a.etiqueta || a.ruta.split("/").pop()}
@@ -236,8 +263,11 @@ function LecturaBitacora({ ordenId }) {
     <ol className="od-bitacora">
       {entradas.map((e) => (
         <li key={e.clave}>
-          <time>{String(e.fecha).slice(0, 10)}</time> <span>{e.texto}</span>
-          {e.autor && <small> — {e.autor}</small>}
+          <time>{String(e.fecha).slice(0, 10)}</time>
+          <div>
+            <span>{e.texto}</span>
+            {e.autor && <small> — {e.autor}</small>}
+          </div>
         </li>
       ))}
     </ol>
@@ -276,16 +306,22 @@ function Bitacora({ ordenId }) {
           Nota interna
           <textarea
             id="od-nota"
+            className="campo"
+            rows={3}
             placeholder="Visible solo para el taller"
             value={nota}
             onChange={(ev) => setNota(ev.target.value)}
           />
         </label>
-        <button type="submit" disabled={enviando || !nota.trim()}>
+        <button type="submit" className="btn principal" disabled={enviando || !nota.trim()}>
           Agregar nota
         </button>
       </form>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="aviso mal">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -293,12 +329,14 @@ function Bitacora({ ordenId }) {
 /** Modal del detalle: un div `role="dialog"` con nombre accesible y desechable. */
 function Modal({ titulo, cerrar, children }) {
   return (
-    <div className="od-modal" role="dialog" aria-label={titulo}>
-      <h2>{titulo}</h2>
-      {children}
-      <button type="button" onClick={cerrar}>
-        Cancelar
-      </button>
+    <div className="od-velo">
+      <div className="od-modal" role="dialog" aria-label={titulo}>
+        <h2>{titulo}</h2>
+        {children}
+        <button type="button" className="btn suave" onClick={cerrar}>
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }
@@ -409,12 +447,12 @@ function Acciones({ orden, rol, onCambio }) {
   if (!estaAbierta(orden.estado)) return null;
 
   return (
-    <div className="od-acciones">
+    <div className="card od-acciones">
       {opciones.length > 0 && (
         <form className="od-avanzar" onSubmit={avanzar}>
           <label htmlFor="avanzar-a">
             Avanzar a:
-            <select id="avanzar-a" value={destino} onChange={(ev) => setDestino(ev.target.value)}>
+            <select id="avanzar-a" className="campo" value={destino} onChange={(ev) => setDestino(ev.target.value)}>
               <option value="">Elegir estado</option>
               {opciones.map((e) => (
                 <option key={e.codigo} value={e.codigo}>
@@ -427,28 +465,33 @@ function Acciones({ orden, rol, onCambio }) {
             Comentario
             <input
               id="avanzar-cmt"
+              className="campo"
               value={comentario}
               onChange={(ev) => setComentario(ev.target.value)}
               placeholder="Va a la bitácora (opcional)"
             />
           </label>
-          <button type="submit" disabled={!destino || enviando}>
+          <button type="submit" className="btn principal" disabled={!destino || enviando}>
             Avanzar
           </button>
         </form>
       )}
 
       {puedeRechazar && (
-        <button type="button" onClick={() => setDialogo("rechazar")}>
+        <button type="button" className="btn peligro" onClick={() => setDialogo("rechazar")}>
           Rechazar
         </button>
       )}
       {JEFE.includes(rol) && (
-        <button type="button" onClick={abrirTecnicos}>
+        <button type="button" className="btn suave" onClick={abrirTecnicos}>
           Asignar técnico
         </button>
       )}
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="aviso mal">
+          {error}
+        </p>
+      )}
 
       {dialogo === "rechazar" && (
         <Modal titulo="Rechazar orden" cerrar={() => setDialogo(null)}>
@@ -457,12 +500,14 @@ function Acciones({ orden, rol, onCambio }) {
               Motivo
               <textarea
                 id="rechazar-motivo"
+                className="campo"
+                rows={3}
                 placeholder="Motivo del rechazo"
                 value={motivo}
                 onChange={(ev) => setMotivo(ev.target.value)}
               />
             </label>
-            <button type="submit" disabled={enviando || motivo.trim().length < MOTIVO_MIN}>
+            <button type="submit" className="btn peligro" disabled={enviando || motivo.trim().length < MOTIVO_MIN}>
               Rechazar orden
             </button>
           </form>
@@ -474,7 +519,7 @@ function Acciones({ orden, rol, onCambio }) {
           <form onSubmit={asignar}>
             <label htmlFor="asignar-tecnico">
               Técnico
-              <select id="asignar-tecnico" value={tecnico} onChange={(ev) => setTecnico(ev.target.value)}>
+              <select id="asignar-tecnico" className="campo" value={tecnico} onChange={(ev) => setTecnico(ev.target.value)}>
                 <option value="">Elegir técnico</option>
                 {tecnicos.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -483,7 +528,7 @@ function Acciones({ orden, rol, onCambio }) {
                 ))}
               </select>
             </label>
-            <button type="submit" disabled={enviando || !tecnico}>
+            <button type="submit" className="btn principal" disabled={enviando || !tecnico}>
               Asignar
             </button>
           </form>
@@ -515,52 +560,97 @@ export default function OrdenDetalle() {
     cargar();
   }, [cargar]);
 
-  if (error) return <p role="alert">{error}</p>;
+  if (error) {
+    return (
+      <p role="alert" className="aviso-error">
+        {error}
+      </p>
+    );
+  }
   if (!orden) return <p role="status">Cargando orden…</p>;
 
   const cob = cobertura(orden.cobertura);
+  const tonoCob = { resuelto: "ok", adverso: "mal", progreso: "ambar", neutro: "neutro" }[cob.tono] ?? "neutro";
+  const iniciales =
+    (orden.cliente ?? "")
+      .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((x) => x[0])
+      .join("")
+      .toUpperCase() || "?";
   return (
-    <section className="od">
+    <>
+      <p className="ruta">
+        <Link to="/taller">Taller</Link> / <strong>{orden.numero_orden}</strong>
+      </p>
       <header className="od-cab">
-        <h1>{orden.numero_orden}</h1>
-        <p>{orden.estado_nombre}</p>
-        <span className="cs-insignia" data-tono={cob.tono}>
-          {cob.nombre}
-        </span>{" "}
-        <span className="cs-insignia" data-tono="neutro">
-          Atención: {ATENCION[orden.tipo_atencion] ?? orden.tipo_atencion}
-        </span>
+        <div>
+          <h1>{orden.numero_orden}</h1>
+          <p className="sub">
+            {orden.producto} · <span className="mono">{orden.serial}</span>
+          </p>
+        </div>
+        <div className="od-badges">
+          <p className="ins" data-t="neutro">
+            <i />
+            {orden.estado_nombre}
+          </p>
+          <span className="ins" data-t={tonoCob}>
+            <i />
+            {cob.nombre}
+          </span>
+          <span className="ins" data-t="neutro">
+            <i />
+            Atención: {ATENCION[orden.tipo_atencion] ?? orden.tipo_atencion}
+          </span>
+        </div>
       </header>
 
       <Acciones orden={orden} rol={rol} onCambio={cargar} />
 
-      <BarraEstados
-        estado={orden.estado}
-        tipoAtencion={orden.tipo_atencion}
-        tieneDiagnostico={Boolean(orden.diagnostico)}
-      />
+      <BarraEstados estado={orden.estado} tipoAtencion={orden.tipo_atencion} tieneDiagnostico={Boolean(orden.diagnostico)} />
 
-      <div role="tablist" aria-label="Secciones de la orden" className="od-pestanas">
-        {PESTANAS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            role="tab"
-            aria-selected={p === pestana}
-            onClick={() => setPestana(p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
+      <div className="od-dos">
+        <section className="card" aria-label="Detalle de la orden">
+          <div role="tablist" aria-label="Secciones de la orden" className="od-pestanas">
+            {PESTANAS.map((p) => (
+              <button key={p} type="button" role="tab" aria-selected={p === pestana} onClick={() => setPestana(p)}>
+                {p}
+              </button>
+            ))}
+          </div>
 
-      <div role="tabpanel" className="od-panel">
-        {pestana === "Resumen" && <Resumen o={orden} />}
-        {pestana === "Auditoría" && <Auditoria ordenId={orden.orden_id} rol={rol} onCambio={cargar} />}
-        {pestana === "Diagnóstico y presupuesto" && <DiagnosticoPresupuesto orden={orden} onCambio={cargar} />}
-        {pestana === "Documentos" && <Documentos ordenId={orden.orden_id} />}
-        {pestana === "Bitácora" && <Bitacora ordenId={orden.orden_id} />}
+          <div role="tabpanel" className="od-panel">
+            {pestana === "Resumen" && <Resumen o={orden} />}
+            {pestana === "Auditoría" && <Auditoria ordenId={orden.orden_id} rol={rol} onCambio={cargar} />}
+            {pestana === "Diagnóstico y presupuesto" && <DiagnosticoPresupuesto orden={orden} onCambio={cargar} />}
+            {pestana === "Documentos" && <Documentos ordenId={orden.orden_id} />}
+            {pestana === "Bitácora" && <Bitacora ordenId={orden.orden_id} />}
+          </div>
+        </section>
+
+        <aside className="od-lado">
+          <section className="card" aria-label="Garantía de la orden">
+            <h2>Garantía</h2>
+            <p className="gar-n">{cob.nombre}</p>
+            <p className="s">Atención {ATENCION[orden.tipo_atencion] ?? orden.tipo_atencion}</p>
+          </section>
+          <section className="card" aria-label="Cliente de la orden">
+            <h2>Cliente</h2>
+            <div className="od-cli-cab">
+              <span className="avatar" aria-hidden="true">
+                {iniciales}
+              </span>
+              <div>
+                <b>{orden.cliente}</b>
+                <small>{orden.documento}</small>
+              </div>
+            </div>
+          </section>
+        </aside>
       </div>
-    </section>
+    </>
   );
 }

@@ -1,6 +1,6 @@
-// Abrir orden con auditoría de recepción (Tarea 15 del plan; spec §8).
-// Reutiliza PasoVerificacion y PasoAdjuntos; los servicios se simulan en el borde.
-import { render, screen, waitFor } from "@testing-library/react";
+// Abrir orden con auditoría de recepción (maqueta 04): equipo → falla → auditoría.
+// Los servicios se simulan en el borde; la base vuelve a validar todo.
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,6 +30,7 @@ const EQUIPO = (extras = {}) => ({
   numero_serie: "RT5-8842-AA",
   titular: "Juan Perez",
   vence_el: "2026-11-04",
+  dias_restantes: 5,
   vigencia: "EN_GARANTIA",
   estado_compra: "CONFIRMADA",
   ...extras,
@@ -53,12 +54,21 @@ const montar = (ruta = "/taller/nueva?equipo=e1") =>
   );
 
 const abrir = () => screen.getByRole("button", { name: "Abrir orden" });
+const siguiente = (u) => u.click(screen.getByRole("button", { name: "Siguiente" }));
 
-async function completar(usuario, { documento = false } = {}) {
-  await screen.findByText("Huawei HG8245");
-  await usuario.type(screen.getByLabelText("Falla reportada"), "no enciende");
-  await usuario.upload(screen.getByLabelText(/Fotos/), FOTO);
-  if (documento) await usuario.upload(screen.getByLabelText(/Documentos/), DOC);
+async function responderTodo(u, valor = "Sí") {
+  for (const g of screen.getAllByRole("radiogroup")) await u.click(within(g).getByLabelText(valor));
+}
+
+/** Llena los tres pasos: falla, auditoría (todo «Sí») y la foto. */
+async function completar(u, { documento = false } = {}) {
+  await screen.findByRole("heading", { name: "Equipo" });
+  await siguiente(u);
+  await u.type(screen.getByLabelText("Falla reportada"), "no enciende");
+  await siguiente(u);
+  await responderTodo(u);
+  await u.upload(screen.getByLabelText(/Fotos/), FOTO);
+  if (documento) await u.upload(screen.getByLabelText(/Documentos/), DOC);
 }
 
 beforeEach(() => {
@@ -81,16 +91,18 @@ beforeEach(() => {
 describe("AbrirOrden: el equipo", () => {
   it("lee el equipo por id y lo muestra en solo lectura", async () => {
     montar();
-    expect(await screen.findByText("Huawei HG8245")).toBeTruthy();
+    expect(await screen.findAllByText("Huawei HG8245")).not.toHaveLength(0);
     expect(fakes.leerEquipo).toHaveBeenCalledWith("e1");
-    expect(screen.getByText("RT5-8842-AA")).toBeTruthy();
-    expect(screen.getByText(/Juan Perez/)).toBeTruthy();
+    expect(screen.getAllByText("RT5-8842-AA").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Juan Perez/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Vigente")).toBeTruthy();
   });
 
-  it("sin ?equipo= o con equipo inexistente muestra el error", async () => {
+  it("sin ?equipo= o con equipo inexistente muestra el error y ofrece buscar", async () => {
     fakes.leerEquipo.mockResolvedValue({ ok: false, codigo: "NO_ENCONTRADO", mensaje: "No existe ese equipo" });
     montar("/taller/nueva?equipo=zz");
     expect((await screen.findByRole("alert")).textContent).toMatch(/No existe ese equipo/);
+    expect(screen.getByRole("button", { name: "Buscar el equipo" })).toBeTruthy();
   });
 
   it.each([
@@ -104,85 +116,124 @@ describe("AbrirOrden: el equipo", () => {
 });
 
 describe("AbrirOrden: lo que exige el formulario", () => {
-  it("no deja abrir sin falla ni foto", async () => {
+  it("tiene los tres pasos y no deja pasar de la falla con menos de 5 caracteres", async () => {
+    const u = userEvent.setup();
     montar();
-    await screen.findByText("Huawei HG8245");
-    expect(abrir()).toBeDisabled();
+    await screen.findByRole("heading", { name: "Equipo" });
+    expect([...screen.getByRole("list", { name: "Pasos" }).querySelectorAll("li")].map((li) => li.textContent)).toEqual(["Equipo", "Falla", "Auditoría"]);
+    await siguiente(u);
+    await u.type(screen.getByLabelText("Falla reportada"), "abc");
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeDisabled();
+    await u.type(screen.getByLabelText("Falla reportada"), "de");
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeEnabled();
   });
 
-  it("falla de menos de 5 caracteres no cuenta", async () => {
-    const usuario = userEvent.setup();
+  it("no deja abrir sin responder la auditoría ni subir una foto", async () => {
+    const u = userEvent.setup();
     montar();
-    await screen.findByText("Huawei HG8245");
-    await usuario.type(screen.getByLabelText("Falla reportada"), "abc");
-    await usuario.upload(screen.getByLabelText(/Fotos/), FOTO);
+    await screen.findByRole("heading", { name: "Equipo" });
+    await siguiente(u);
+    await u.type(screen.getByLabelText("Falla reportada"), "no enciende");
+    await siguiente(u);
     expect(abrir()).toBeDisabled();
+    await u.upload(screen.getByLabelText(/Fotos/), FOTO);
+    expect(abrir()).toBeDisabled();
+    await responderTodo(u);
+    expect(abrir()).toBeEnabled();
+  });
+
+  it("un «No» cuenta como respuesta y la auditoría incompleta no calcula la cobertura", async () => {
+    const u = userEvent.setup();
+    montar();
+    await screen.findByRole("heading", { name: "Equipo" });
+    await siguiente(u);
+    await u.type(screen.getByLabelText("Falla reportada"), "no enciende");
+    await siguiente(u);
+    await u.click(within(screen.getAllByRole("radiogroup")[0]).getByLabelText("No"));
+    expect(screen.getByText(/responde los seis puntos/)).toBeTruthy();
+    expect(fakes.previsualizarCobertura).not.toHaveBeenCalled();
+  });
+
+  it("completa la auditoría y muestra la cobertura que calcula la base", async () => {
+    const u = userEvent.setup();
+    montar();
+    await completar(u);
+    expect(await screen.findAllByText(/Anulada por uso/)).not.toHaveLength(0);
+    expect(fakes.previsualizarCobertura).toHaveBeenCalledWith(
+      expect.objectContaining({ venceEl: "2026-11-04", checklist: expect.objectContaining({ senales: expect.any(Object) }) }),
+    );
   });
 
   it("un equipo con compra PENDIENTE exige el documento presentado", async () => {
     fakes.leerEquipo.mockResolvedValue({ ok: true, datos: EQUIPO({ estado_compra: "PENDIENTE" }) });
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
-    await completar(usuario);
+    await completar(u);
     expect(screen.getByText(/exige el documento presentado/)).toBeTruthy();
     expect(abrir()).toBeDisabled();
-    await usuario.upload(screen.getByLabelText(/Documentos/), DOC);
+    await u.upload(screen.getByLabelText(/Documentos/), DOC);
     expect(abrir()).toBeEnabled();
   });
 });
 
 describe("AbrirOrden: el envío", () => {
   it("abre la orden con la firma de la 0019, sube los adjuntos y va al detalle", async () => {
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
-    await completar(usuario);
-    await usuario.type(screen.getByLabelText("Accesorios"), "cargador");
-    await usuario.click(abrir());
+    await screen.findByRole("heading", { name: "Equipo" });
+    await siguiente(u);
+    await u.type(screen.getByLabelText("Falla reportada"), "no enciende");
+    await u.type(screen.getByLabelText(/Accesorios/), "cargador");
+    await siguiente(u);
+    await responderTodo(u);
+    await u.upload(screen.getByLabelText(/Fotos/), FOTO);
+    await u.click(abrir());
 
     await waitFor(() => expect(fakes.abrirOrden).toHaveBeenCalledTimes(1));
     expect(fakes.abrirOrden).toHaveBeenCalledWith({
       equipoId: "e1",
       falla: "no enciende",
       accesorios: "cargador",
-      checklist: null,
+      checklist: {
+        condiciones: { factura_presentada: true, titular_coincide: true },
+        equipo: { serial_legible: true, caja_original: true, precintos_intactos: true, contenido_completo: true },
+        senales: { descarga_electrica: false, liquidos: false, altas_temperaturas: false, golpes: false, manipulacion_terceros: false },
+      },
       observaciones: null,
       claveEnvio: expect.stringMatching(/^[0-9a-f-]{36}$/),
     });
-    expect(fakes.subirAdjuntos).toHaveBeenCalledWith("o1", [
-      expect.objectContaining({ archivo: FOTO, tipo: "FOTO" }),
-    ]);
+    expect(fakes.subirAdjuntos).toHaveBeenCalledWith("o1", [expect.objectContaining({ archivo: FOTO, tipo: "FOTO" })]);
     expect(await screen.findByText("/taller/o1")).toBeTruthy();
   });
 
-  it("manda el checklist que marcó el técnico", async () => {
-    const usuario = userEvent.setup();
+  it("manda las señales de causas externas que marcó el técnico", async () => {
+    const u = userEvent.setup();
     montar();
-    await completar(usuario);
-    await usuario.click(screen.getByLabelText("Golpes"));
-    await screen.findByText(/ANULADA_POR_USO/);
-    await usuario.click(abrir());
+    await completar(u);
+    await u.click(screen.getByLabelText("Golpes"));
+    await u.click(abrir());
     await waitFor(() => expect(fakes.abrirOrden).toHaveBeenCalled());
     expect(fakes.abrirOrden.mock.calls[0][0].checklist.senales.golpes).toBe(true);
   });
 
   it("si la base rechaza, muestra el mensaje y no navega", async () => {
     fakes.abrirOrden.mockResolvedValue({ ok: false, codigo: "SIN_PERMISO", mensaje: "sin permiso" });
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
-    await completar(usuario);
-    await usuario.click(abrir());
+    await completar(u);
+    await u.click(abrir());
     expect((await screen.findByRole("alert")).textContent).toMatch(/sin permiso/);
     expect(fakes.subirAdjuntos).not.toHaveBeenCalled();
   });
 
   it("si falla una subida no navega y reintenta SOLO los adjuntos, sin crear otra orden", async () => {
     fakes.subirAdjuntos.mockResolvedValueOnce([{ archivo: FOTO, tipo: "FOTO", etiqueta: null }]);
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
-    await completar(usuario);
-    await usuario.click(abrir());
+    await completar(u);
+    await u.click(abrir());
 
-    await usuario.click(await screen.findByRole("button", { name: "Reintentar adjuntos" }));
+    await u.click(await screen.findByRole("button", { name: "Reintentar adjuntos" }));
     expect(await screen.findByText("/taller/o1")).toBeTruthy();
     expect(fakes.abrirOrden).toHaveBeenCalledTimes(1);
     expect(fakes.subirAdjuntos).toHaveBeenCalledTimes(2);
@@ -192,14 +243,18 @@ describe("AbrirOrden: el envío", () => {
 // Borrador de 24 h (I3 de la revisión; spec §8): la clave de envío y el estado
 // viajan en el borrador del módulo 'orden' — cerrar la pestaña NO genera una
 // segunda orden al reintentar: la clave se reutiliza y los pendientes apuntan
-// a la MISMA orden. Restauración OFRECIDA, no impuesta (patrón del Hito 1).
+// a la MISMA orden. Restauración OFRECIDA, no impuesta.
 describe("AbrirOrden: borrador de 24 h", () => {
   const BORRADOR = () => ({
     equipoId: "e1",
     serial: "RT5-8842-AA",
     falla: "pantalla rota",
     accesorios: "cargador",
-    checklist: { equipo: { golpes: true } },
+    checklist: {
+      condiciones: { factura_presentada: true, titular_coincide: true },
+      equipo: { serial_legible: true, caja_original: true, precintos_intactos: true, contenido_completo: true },
+      senales: { golpes: true },
+    },
     observaciones: null,
     diagnostico: null,
     claveEnvio: "0bfe6b8c-1111-4222-8333-444455556666",
@@ -209,61 +264,57 @@ describe("AbrirOrden: borrador de 24 h", () => {
   });
 
   it("lo escribe en el borrador del módulo 'orden' (con la clave de envío) en cada cambio", async () => {
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
-    await completar(usuario);
+    await completar(u);
     expect(fakes.guardarBorrador).toHaveBeenCalledWith(
       "u7",
-      expect.objectContaining({
-        equipoId: "e1",
-        serial: "RT5-8842-AA",
-        falla: "no enciende",
-        claveEnvio: expect.any(String),
-      }),
+      expect.objectContaining({ equipoId: "e1", serial: "RT5-8842-AA", falla: "no enciende", claveEnvio: expect.any(String) }),
       "orden",
     );
   });
 
   it("OFRECE restaurar un borrador del mismo equipo; al restaurar, la clave de envío es LA MISMA", async () => {
     fakes.leerBorrador.mockReturnValue(BORRADOR());
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
     expect(await screen.findByText(/¿Lo restauras\?/)).toBeTruthy();
     expect(fakes.leerBorrador).toHaveBeenCalledWith("u7", "orden");
-    await usuario.click(screen.getByRole("button", { name: "Restaurar" }));
-    await screen.findByText("Huawei HG8245");
+    await u.click(screen.getByRole("button", { name: "Restaurar" }));
+    await screen.findByRole("heading", { name: "Equipo" });
+    await siguiente(u);
     expect(screen.getByLabelText("Falla reportada")).toHaveValue("pantalla rota");
-    expect(screen.getByLabelText("Accesorios")).toHaveValue("cargador");
+    expect(screen.getByLabelText(/Accesorios/)).toHaveValue("cargador");
+    await siguiente(u);
 
-    await usuario.upload(screen.getByLabelText(/Fotos/), FOTO);
-    await usuario.click(abrir());
+    await u.upload(screen.getByLabelText(/Fotos/), FOTO);
+    await u.click(abrir());
     await waitFor(() => expect(fakes.abrirOrden).toHaveBeenCalledTimes(1));
     // LA MISMA clave: la idempotencia de la 0012 devuelve LA orden; no hay segunda.
     expect(fakes.abrirOrden).toHaveBeenCalledWith(expect.objectContaining({ claveEnvio: "0bfe6b8c-1111-4222-8333-444455556666" }));
     expect(await screen.findByText("/taller/o1")).toBeTruthy();
-    // Éxito completo: el borrador muere.
     expect(fakes.limpiarBorrador).toHaveBeenCalledWith("u7", "orden");
   });
 
   it("un borrador de OTRO equipo no se ofrece y genera su propia clave", async () => {
     fakes.leerBorrador.mockReturnValue({ ...BORRADOR(), equipoId: "otro-equipo" });
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
-    await screen.findByText("Huawei HG8245");
+    await screen.findByRole("heading", { name: "Equipo" });
     expect(screen.queryByText(/¿Lo restauras\?/)).toBeNull();
-    await usuario.type(screen.getByLabelText("Falla reportada"), "no enciende");
+    await siguiente(u);
+    await u.type(screen.getByLabelText("Falla reportada"), "no enciende");
     const guardado = fakes.guardarBorrador.mock.calls.at(-1)?.[1] ?? {};
-    // El guardado propio sí ocurre (con SU clave nueva), aunque el borrador ajeno exista.
     expect(Object.keys(guardado).length).toBeGreaterThan(0);
     expect(guardado.claveEnvio).not.toBe("0bfe6b8c-1111-4222-8333-444455556666");
   });
 
   it("'Empezar de cero' descarta el borrador", async () => {
     fakes.leerBorrador.mockReturnValue(BORRADOR());
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
     await screen.findByText(/¿Lo restauras\?/);
-    await usuario.click(screen.getByRole("button", { name: "Empezar de cero" }));
+    await u.click(screen.getByRole("button", { name: "Empezar de cero" }));
     expect(fakes.limpiarBorrador).toHaveBeenCalledWith("u7", "orden");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -275,13 +326,12 @@ describe("AbrirOrden: borrador de 24 h", () => {
       numero_orden: "OS-2026-0007",
       pendientes: [{ tipo: "FOTO", etiqueta: "frente" }],
     });
-    const usuario = userEvent.setup();
+    const u = userEvent.setup();
     montar();
     await screen.findByText(/¿Lo restauras\?/);
-    await usuario.click(screen.getByRole("button", { name: "Restaurar" }));
+    await u.click(screen.getByRole("button", { name: "Restaurar" }));
     expect(await screen.findByRole("status")).toHaveTextContent(/La orden OS-2026-0007 ya existe/);
-    await usuario.click(screen.getByRole("button", { name: "Reintentar adjuntos" }));
-    // La MISMA orden: no se llama abrirOrden (no habría segunda) y la subida va a `o1`.
+    await u.click(screen.getByRole("button", { name: "Reintentar adjuntos" }));
     expect(fakes.abrirOrden).not.toHaveBeenCalled();
     expect(fakes.subirAdjuntos).toHaveBeenCalledWith("o1", [expect.objectContaining({ tipo: "FOTO", etiqueta: "frente" })]);
     expect(await screen.findByText("/taller/o1")).toBeTruthy();

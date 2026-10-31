@@ -60,9 +60,9 @@ describe("Taller", () => {
     expect(within(fila).getByText("Recibido")).toBeTruthy();
   });
 
-  it("el clic en una fila abre el detalle de la orden", async () => {
+  it("«Ver» abre el detalle de la orden", async () => {
     montar();
-    await userEvent.setup().click(await screen.findByText("Ana Gomez"));
+    await userEvent.setup().click(await screen.findByRole("button", { name: /Ver orden OS-2026-0002/ }));
     expect(await screen.findByText("/taller/o2")).toBeTruthy();
   });
 
@@ -74,7 +74,7 @@ describe("Taller", () => {
     const usuario = userEvent.setup();
     montar();
     await screen.findByText("OS-2026-0001");
-    await usuario.click(screen.getByRole("button", { name: "En reparación" }));
+    await usuario.click(screen.getByRole("button", { name: /^En reparación/ }));
     expect(screen.getByText("OS-2026-0002")).toBeTruthy();
     expect(screen.getByText("OS-2026-0004")).toBeTruthy();
     expect(screen.queryByText("OS-2026-0001")).toBeNull();
@@ -84,7 +84,7 @@ describe("Taller", () => {
     const usuario = userEvent.setup();
     montar();
     await screen.findByText("OS-2026-0001");
-    await usuario.click(screen.getByRole("button", { name: "Rechazado" }));
+    await usuario.click(screen.getByRole("button", { name: /^Rechazado/ }));
     expect(screen.getByText("OS-2026-0003")).toBeTruthy();
     expect(screen.queryByText("OS-2026-0002")).toBeNull();
   });
@@ -92,7 +92,7 @@ describe("Taller", () => {
   it("sin órdenes muestra el estado vacío", async () => {
     fakes.listarTablero.mockResolvedValue({ ok: true, filas: [] });
     montar();
-    expect(await screen.findByText(/No hay órdenes/)).toBeTruthy();
+    expect(await screen.findByText(/No hay órdenes para este filtro/)).toBeTruthy();
   });
 
   it("muestra el error del servicio", async () => {
@@ -105,5 +105,37 @@ describe("Taller", () => {
     montar();
     await userEvent.setup().click(await screen.findByRole("button", { name: "Nueva orden" }));
     expect(await screen.findByText("/garantias/consulta")).toBeTruthy();
+  });
+
+  it("los indicadores y los chips cuentan las órdenes", async () => {
+    montar();
+    await screen.findByText("OS-2026-0001");
+    const kpi = (n) => screen.getByRole("heading", { name: n }).closest("li");
+    expect(kpi("Abiertas")).toHaveTextContent("3");
+    expect(kpi("En reparación")).toHaveTextContent("1");
+    expect(screen.getByRole("button", { name: /^Todas/ })).toHaveTextContent("3");
+  });
+
+  it("busca por número, cliente o serial", async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await screen.findByText("OS-2026-0001");
+    await usuario.type(screen.getByRole("searchbox"), "ana");
+    expect(screen.getByText("OS-2026-0002")).toBeTruthy();
+    expect(screen.queryByText("OS-2026-0001")).toBeNull();
+    await usuario.click(screen.getByRole("button", { name: "Borrar la búsqueda" }));
+    expect(screen.getByText("OS-2026-0001")).toBeTruthy();
+  });
+
+  it("llegando con ?buscar= (desde la Consulta) filtra esa orden", async () => {
+    render(
+      <MemoryRouter initialEntries={["/taller?buscar=OS-2026-0003"]}>
+        <Routes>
+          <Route path="/taller" element={<Taller />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText("OS-2026-0003")).toBeTruthy();
+    expect(screen.queryByText("OS-2026-0001")).toBeNull();
   });
 });
